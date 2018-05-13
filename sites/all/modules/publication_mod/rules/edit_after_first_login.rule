@@ -1,0 +1,14 @@
+<?php
+$rule = '{ "publication_mod_edit_after_first_login" : {
+    "LABEL" : "Edit after first login",
+    "PLUGIN" : "reaction rule",
+    "OWNER" : "rules",
+    "REQUIRES" : [ "rules", "php" ],
+    "ON" : { "user_insert" : [] },
+    "DO" : [
+      { "redirect" : { "url" : [ "account:edit-url" ] } },
+      { "drupal_message" : { "message" : "Please review your account information" } },
+      { "php_eval" : { "code" : "$prefix = variable_get(\u0027publication_mod_blazegraph_prefix\u0027, \u0027http:\/\/www.ics.forth.gr\/PMSOntology#\u0027);\r\n$sparql = \u0022prefix foaf: \u003Chttp:\/\/xmlns.com\/foaf\/0.1\/\u003E\u0022.\r\n\u0022prefix pms: \u003Chttp:\/\/example.com\/PMSOntology#\u003E\u0022.\r\n\u0022INSERT DATA{\u0022.\r\n  \u0022\u003Curn:uuid:\u0022. $user-\u003Euuid.\u0022\u003E rdf:type foaf:Person;\u0022.\r\n                                            \u0022\u003C\u0022. $prefix .\u0022Person_UUID\u003E \\\u0022urn:uuid:\u0022 . $user-\u003Euuid. \u0022\\\u0022;\u0022.\r\n                                            \u0022foaf:familyName \\\u0022\u0022. $user-\u003Efield_last_name[\u0027und\u0027][0][\u0027value\u0027] .\u0022\\\u0022;\u0022 .\r\n                                            \u0022foaf:givenName \\\u0022\u0022 . $user-\u003Efield_first_name[\u0027und\u0027][0][\u0027value\u0027] .\u0022\\\u0022;\u0022.\r\n                                            \u0022foaf:mbox \\\u0022mailto:\u0022. $user-\u003Email . \u0022\\\u0022;\u0022.\r\n                                            \u0022\u003C\u0022. $prefix .\u0022Person_Group\u003E \\\u0022FORTH_ICS_Author\\\u0022;\u0022.\r\n                                            \u0022\u003C\u0022. $prefix .\u0022memberOf\u003E \u003C\u0022. $prefix . list_allowed_values(field_info_fields()[\u0027field_laboratory\u0027])[$user-\u003Efield_laboratory[\u0027und\u0027][0][\u0027value\u0027]] .\u0022\u003E.\u0022 .\r\n\u0022}\u0022;\r\n\r\n$url = variable_get(\u0027publication_mod_blazegraph_url\u0027);\r\n$curl = curl_init();\r\ncurl_setopt($curl, CURLOPT_POSTFIELDS, \u0022update= \u0022 . $sparql);\r\ncurl_setopt($curl, CURLOPT_URL, $url);\r\ncurl_setopt($curl, CURLOPT_RETURNTRANSFER , 1);\r\ncurl_setopt($curl, CURLOPT_HTTPHEADER, array(\u0027Content-Type: application\/x-www-form-urlencoded\u0027));\r\n$result = curl_exec($curl);\r\ncurl_close($curl);\r\nwatchdog(\u0022Blazegraph Person Creation\u0022, $result, $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL);" } }
+    ]
+  }
+}';

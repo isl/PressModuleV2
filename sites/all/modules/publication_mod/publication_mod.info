@@ -1,0 +1,14 @@
+; Copyright FORTH-ICS, Emmanouil Dermitzakis
+name = PRESS Publication Module
+description = A module for publication management
+core = 7.x
+package = Publications
+dependencies[] = entity
+dependencies[] = libraries
+dependencies[] = jquery_update
+dependencies[] = pathauto
+dependencies[] = uuid
+dependencies[] = rules
+dependencies[] = php
+
+configure = admin/config/publications/publication_mod
