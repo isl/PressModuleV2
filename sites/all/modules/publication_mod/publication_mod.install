@@ -289,7 +289,24 @@ function publication_mod_enable() {
     field_create_instance($instance);
     $user -> field_laboratory['und'][0]['value'] = "Default";
     user_save($user);
+  }
 
+  if(!field_info_instance('user', 'field_blazegraph_uuid', 'user')){
+    $instance = array(
+      'field_name' => 'field_blazegraph_uuid',
+      'entity_type' => 'user',
+      'label' => 'Blazegraph UUID',
+      'bundle' => 'user',
+      'required' => FALSE,
+      'settings' => array(
+        'user_register_form' => 0
+      ),
+      'widget' => array(
+        'type' => 'textfield',
+        'weight' => '4'
+      ),
+    );
+    field_create_instance($instance);
   }
 
   if (empty(user_role_load_by_name('Power User'))){
