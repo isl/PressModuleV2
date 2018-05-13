@@ -1207,6 +1207,8 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
   }
   $ewrapper->save();
   header('Content-Type: application/json');
+  $ewrapper->field_blazegraph_uuid->set($ewrapper->value()->uuid);
+  $ewrapper->save();
   $result = array(
     'uuid' => $ewrapper->value()->uuid,
     'path' => drupal_get_path_alias("node/" . $ewrapper->value()->nid, null),
