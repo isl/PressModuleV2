@@ -385,6 +385,18 @@ function publication_mod_enable() {
   }
 }
 
-// function publication_mod_modules_enabled(){
-  
-// }
+// Custom Laboratory Field Type
+
+function publication_mod_field_schema($field){
+  $schema = array(
+    'columns' => array(
+      'option' => array(
+        'type' => 'varchar',
+        'length' => 25,
+        'not null' => TRUE
+      )
+    )
+  );
+
+  return $schema;
+}

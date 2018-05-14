@@ -118,6 +118,7 @@
             this.parameters = options.parameters;
 
         console.log(this.parameters);
+
         this.loader = $('<div id="loader">');
         this.filterLoader = $('<div id="filterLoader">');
         element.append(this.loader);
@@ -212,7 +213,7 @@
             this.element.append(this.resultContainer);
             this.element.append(this.filters);
 
-            if (!$.isEmptyObject(this.parameters)) {
+            if (!$.isEmptyObject(this.parameters) && !window.location.hash.startsWith('#overlay=')) {
                 if (this.parameters.type) {
                     if (this.parameters.type === 'browse') {
                         this.searchByCategory(this.parameters.category, this.parameters.offset);

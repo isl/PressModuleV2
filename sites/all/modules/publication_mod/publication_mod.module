@@ -1417,3 +1417,108 @@ function publication_mod_ajax_callback_get_path(){
   echo json_encode($result, true);
   exit();
 }
+
+
+// Custom Laboratory Field Type
+
+function publication_mod_field_info(){
+  return array(
+    'my_field_name' => array(
+      'label' => t('My Field'),
+      'description' => t('Description of My Field'),
+      'settings' => array('max_length' => 255),
+      'instance_settings' => array(
+        'text_processing' => 0,
+      ),
+      'default_widget' => 'options_select',
+      'default_formater' => 'states_field_options',
+    )
+  );
+}
+
+function publication_mod_field_widget_info_alter(&$info){
+  $widgets = array(
+    'options_select' => array('my_field_type'),
+  );
+
+  foreach($widgets as $widget => $field_types){
+    $info[$widget]['field types'] = array_merge($info[$widget]['field types'], $field_types);
+  }
+}
+
+function publication_mod_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  foreach ($items as $delta => $item) {
+    if(!empty($item['option'])){
+      if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
+        $errors[$field['my_field_name']][$langcode][$delta][] = array(
+          'error' => 'publication_mod_field_invalid',
+          'message' => t('Lab Value must be one word and contain letters, numbers and _')
+        );
+      }
+    }
+  }
+}
+
+function publication_mod_options_list($field, $instance, $entity_type, $entity){
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  $query = `prefix press:<` . $ontologyPrefix .`>
+
+select ?org ?org_name where{
+  ?org rdf:type press:Organization;
+       press:Organization_Name ?org_name.
+}`;
+
+  $q = http_build_query(array('query' => $query));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($dbURL, $options);
+
+  $data = json_decode($result->data);
+  $options = array();
+  foreach($data->results->bindings as $org){
+    $options[$org->org->value] = $org->org->value;  //TODO CHANGE
+  }
+
+  return $options;
+}
+
+function publication_mod_field_formatter_info(){
+  return array(
+    'my_field_default' => array(
+      'label' => t('Default'),
+      'field types' => array('my_field_name')
+    )
+  );
+}
+
+function publication_mod_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  //Currently we only have one display option, use switch
+  //to prepare for future options.
+  switch ($display['type']) {
+    case 'my_field_default':
+      foreach ($items as $delta => $item) {
+        if (isset($options[$item['option']]['option'])) {
+          $output = field_filter_xss($options[$item['option']]['option']);
+        }
+        else {
+          $output = "Not Supplied";
+        }
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+    default:
+  }
+  return $element;
+}
