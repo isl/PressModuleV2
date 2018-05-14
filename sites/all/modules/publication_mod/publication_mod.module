@@ -278,9 +278,8 @@ function _external_authors_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
+  _add_presslib_library();
+
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
@@ -303,9 +302,7 @@ function _projects_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
+  _add_presslib_library();
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
@@ -328,9 +325,7 @@ function _tags_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
+  _add_presslib_library();
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
@@ -684,8 +679,7 @@ function publication_mod_import_progress(){
  * @return type
  */
 function publication_mod_add_project(){
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/daterangepicker.css");
+  _add_presslib_library();
 
   $blazegraph_info = _publication_mod_get_blazegraph_info();
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -811,6 +805,28 @@ function _get_labs_to_json(){
   return $labs;
 }
 
+function _add_presslib_library(){
+  $module_path = drupal_get_path('module', 'publication_mod');
+
+  drupal_add_js($module_path . '/js/typeahead.bundle.js');
+  drupal_add_js($module_path . '/js/Sortable.js');
+  drupal_add_js($module_path . '/js/moment.min.js');
+  drupal_add_js($module_path . '/js/daterangepicker.js');
+  drupal_add_js($module_path . '/js/pressfields.js');
+  drupal_add_js($module_path . '/js/presslib.js');
+  drupal_add_js($module_path . '/js/pressSearch.js');
+  drupal_add_js($module_path . '/js/pressExternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressEditProjects.js');
+  drupal_add_js($module_path . '/js/pressEditTags.js');
+  drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
+  drupal_add_js($module_path . '/js/pressProjects.js');
+
+  drupal_add_css($module_path . "/css/presslib.css");
+  drupal_add_css($module_path . "/css/typeaheadjs.css");
+  drupal_add_css($module_path . "/css/sortable.css");
+  drupal_add_css($module_path . "/css/daterangepicker.css");
+}
+
 /**
  * Creates Add Publication page
  * @return type
@@ -823,11 +839,7 @@ function publication_mod_add_publication(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
-  drupal_add_css("sites/all/libraries/presslib/sortable.css");
-  drupal_add_css("sites/all/libraries/presslib/daterangepicker.css");
+  _add_presslib_library();
 
   $current_user = _get_user_info_to_json();
   $labs = _get_labs_to_json();
@@ -986,11 +998,8 @@ function publication_mod_search_publication(){
 
   $JSONGet = json_encode($_GET);
   // echo $JSONGet;
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
-  drupal_add_css("sites/all/libraries/presslib/sortable.css");
-  drupal_add_css("sites/all/libraries/presslib/daterangepicker.css");
+
+  _add_presslib_library();
 
   $current_user = _get_user_info_to_json();
 
@@ -1045,12 +1054,9 @@ function publication_mod_edit_publication(){
     }
   }
   $category = $_GET['category'];
+  
+  _add_presslib_library();
 
-  $library = libraries_load("presslib");
-  drupal_add_css("sites/all/libraries/presslib/presslib.css");
-  drupal_add_css("sites/all/libraries/presslib/typeaheadjs.css");
-  drupal_add_css("sites/all/libraries/presslib/sortable.css");
-  drupal_add_css("sites/all/libraries/presslib/daterangepicker.css");
   global $user;
   $current_user = _get_user_info_to_json();
 
