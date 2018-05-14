@@ -56,7 +56,9 @@ function publication_mod_install(){
   );
 
   foreach($fields as $field){
-    field_create_field($field);
+    if(!field_info_field($field['field_name'])){
+      field_create_field($field);
+    }
   }
 
   $instances = array(
@@ -118,12 +120,43 @@ function publication_mod_install(){
   foreach ($instances as $instance) {
     $instance['entity_type'] = 'node';
     $instance['bundle'] = 'publications';
-
-    field_create_instance($instance);
+    if(!field_info_instance('node', $instance['field_name'], 'publications')){
+      field_create_instance($instance);
+    }
   }
 
   $new_folder = 'public://publications';
   file_prepare_directory($new_folder, FILE_CREATE_DIRECTORY);
+
+  // $database = \Drupal::database();
+  // $fields = array(
+  //   'key' => 'blazegraph_url',
+  //   'value' => 'http://139.91.183.97:19999/blazegraph/namespace/kb/sparql'
+  // );
+  // $database->insert('publication_mod')
+  //   ->fields($fields)
+  //   ->execute();
+
+  // $fields = array(
+  //   'key' => 'blazegraph_prefix',
+  //   'value' => 'http://www.ics.forth.gr/PRESSOntology#'
+  // );
+  // $database->insert('publication_mod')
+  //   ->fields($fields)
+  //   ->execute();
+
+  $nid = db_insert('publication_mod')
+    ->fields(array(
+      'pm_key' => 'blazegraph_url',
+      'pm_value' => 'http://139.91.183.97:19999/blazegraph/namespace/kb/sparql'
+    ))
+    ->execute();
+  $nid = db_insert('publication_mod')
+    ->fields(array(
+      'pm_key' => 'blazegraph_prefix',
+      'pm_value' => 'http://www.ics.forth.gr/PRESSOntology#'
+    ))
+    ->execute();
 }
 
 /**
@@ -199,20 +232,20 @@ function publication_mod_schema(){
   $schema['publication_mod'] = array(
     'description' => 'Stores all the info for the publication_mod setting.',
     'fields' => array(
-      'key' => array(
+      'pm_key' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'description' => 'Primary Key. Value name'
       ),
-      'value' => array(
-        'type' => 'longtext',
+      'pm_value' => array(
+        'type' => 'text',
+        'size' => 'big',
         'not null' => TRUE,
-        'default' => '',
         'description' => 'Value'
       )
     ),
-    'primary key' => array('key')
+    'primary key' => array('pm_key')
   );
 
   return $schema;

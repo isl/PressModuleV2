@@ -220,6 +220,20 @@ function publication_mod_menu(){
 
   return $menu;
 }
+
+function _publication_mod_get_blazegraph_info(){
+  $or = db_or();
+  $or->condition('pm_key', 'blazegraph_url');
+  $or->condition('pm_key', 'blazegraph_prefix');
+  $result = db_select('publication_mod', 'pm')
+    ->fields('pm', array('pm_key', 'pm_value'))
+    ->condition($or)
+    ->execute()
+    ->fetchAllKeyed();
+
+  return $result;
+}
+
 function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
   if (substr($root_path, 0, 5) === 'node/'){
     foreach ($router_item['page_arguments'] as $key => $argument) {
@@ -260,8 +274,9 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
 }
 
 function _external_authors_edit(){
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $library = libraries_load("presslib");
   drupal_add_css("sites/all/libraries/presslib/presslib.css");
@@ -284,8 +299,9 @@ function _external_authors_edit(){
 }
 
 function _projects_edit(){
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $library = libraries_load("presslib");
   drupal_add_css("sites/all/libraries/presslib/presslib.css");
@@ -308,8 +324,9 @@ function _projects_edit(){
 }
 
 function _tags_edit(){
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $library = libraries_load("presslib");
   drupal_add_css("sites/all/libraries/presslib/presslib.css");
@@ -369,8 +386,9 @@ function publication_mod_import_pubs_form($form, &$form_state){
 
 function _publication_mod_create_page_body($pub_uri){
   global $base_url;
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   // $query = 'prefix press: <'. $ontologyPrefix. '>
   //           select * where{
@@ -570,8 +588,9 @@ function _publication_mod_create_page_body($pub_uri){
  */
 function publication_mod_import_submit_callback($form, $form_state){
   global $base_url;
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   //Get all pubs without a Publication_URL
 
@@ -668,8 +687,9 @@ function publication_mod_add_project(){
   $library = libraries_load("presslib");
   drupal_add_css("sites/all/libraries/presslib/daterangepicker.css");
 
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $inlineJS = 'jQuery(document).ready(function($){';
   $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "'. $dbURL .'");'; 
@@ -798,6 +818,10 @@ function _get_labs_to_json(){
 function publication_mod_add_publication(){
   global $user;
   global $base_url;
+  
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $library = libraries_load("presslib");
   drupal_add_css("sites/all/libraries/presslib/presslib.css");
@@ -811,8 +835,8 @@ function publication_mod_add_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". variable_get('publication_mod_blazegraph_url') ."', \n" .
-      "prefix: '" . variable_get('publication_mod_blazegraph_prefix') . "', \n" .
+      "dbURL: '". $dbURL ."', \n" .
+      "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
@@ -842,8 +866,9 @@ function publication_mod_add_publication(){
 function publication_mod_all_publications(){
   global $base_url;
 
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $query = 'prefix press:<' . $ontologyPrefix .'>
             select ?pub ?url (group_concat(?concat; separator="") as ?authors) where {
@@ -914,9 +939,10 @@ function publication_mod_author_publications($author_uri){
   }
   echo 'test1';
   echo print_r(func_get_args(), true);
-echo 'test2';
-  $dbURL = variable_get('publication_mod_blazegraph_url');
-  $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
+  echo 'test2';
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $query = 'prefix press: <'. $ontologyPrefix. '>
           select ?Publication_URL ?English_Title ?Chapter_Title ?Book_Title ?type where{
@@ -954,6 +980,10 @@ function publication_mod_search_publication(){
   global $user;
   global $base_url;
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
   $JSONGet = json_encode($_GET);
   // echo $JSONGet;
   $library = libraries_load("presslib");
@@ -969,8 +999,8 @@ function publication_mod_search_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#search-publication').pressSearch({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". variable_get('publication_mod_blazegraph_url') ."', \n" .
-      "prefix: '" . variable_get('publication_mod_blazegraph_prefix') . "', \n" .
+      "dbURL: '". $dbURL ."', \n" .
+      "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
@@ -1001,6 +1031,9 @@ function publication_mod_search_publication(){
 function publication_mod_edit_publication(){
   global $base_url;
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   if (empty($_GET['uuid']) && empty($_GET['category'])){
     return "You didn't specify a Publication and/or it's Category";
@@ -1026,8 +1059,8 @@ function publication_mod_edit_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". variable_get('publication_mod_blazegraph_url') ."', \n" .
-      "prefix: '" . variable_get('publication_mod_blazegraph_prefix') . "', \n" .
+      "dbURL: '". $dbURL ."', \n" .
+      "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
@@ -1057,17 +1090,12 @@ function publication_mod_edit_publication(){
  * Creates the publication_mod Configuration Page
  */
 function publication_mod_settings_form($form, &$form_state){
-  $result = db_select('publication_mod', 'pm')
-    ->fields('key', 'k')
-    ->condition('k', 'blazegraph_url')
-    ->execute()
-    ->fetchAssoc();
-  echo '<pre>' . print_r($result) . '</pre>';
-  
+  $blazegraph_info = _publication_mod_get_blazegraph_info();
+
   $form['publication_mod_blazegraph_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Blazegraph URL'),
-    '#default_value' => variable_get('publication_mod_blazegraph_url', 'http://139.91.183.97:19999/blazegraph/namespace/kb/sparql'),
+    '#default_value' => $blazegraph_info['blazegraph_url'],
     '#size' => 50,
     '#maxlength' => 200,
     '#description' => t('The sparql REST API URL of Blazegraph'),
@@ -1077,14 +1105,36 @@ function publication_mod_settings_form($form, &$form_state){
   $form['publication_mod_blazegraph_prefix'] = array(
     '#type' => 'textfield',
     '#title' => t('Ontology Prefix'),
-    '#default_value' => variable_get('publication_mod_blazegraph_prefix', 'http://www.ics.forth.gr/PRESSOntology#'),
+    '#default_value' => $blazegraph_info['blazegraph_prefix'],
     '#size' => 50,
     '#maxlength' => 50,
     '#description' => t('The Ontology Prefix that will be used'),
     '#required' => TRUE,
   );
 
-  return system_settings_form($form);
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#value' => 'Save',
+    '#submit' => array('publication_mod_settings_form_submit')
+  );
+
+  return $form;
+}
+
+function publication_mod_settings_form_submit($form, $form_state){
+  db_merge('publication_mod')
+    ->key(array('pm_key' => 'blazegraph_url'))
+    ->fields(array(
+      'pm_value' => $form_state['values']['publication_mod_blazegraph_url']
+    ))
+    ->execute();
+
+  db_merge('publication_mod')
+    ->key(array('pm_key' => 'blazegraph_prefix'))
+    ->fields(array(
+      'pm_value' => $form_state['values']['publication_mod_blazegraph_prefix']
+    ))
+    ->execute();
 }
 
 /*
