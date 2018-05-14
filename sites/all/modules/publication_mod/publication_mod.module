@@ -58,7 +58,7 @@ function publication_mod_menu(){
     'title' => 'PRESS Publication Module',
     'description' => 'Configuration for PRESS Publication Module',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('publication_mod_form'),
+    'page arguments' => array('publication_mod_settings_form'),
     'access arguments' => array('access administration pages'),
     // 'type' => MENU_NORMAL_ITEM,
   );
@@ -841,28 +841,6 @@ function publication_mod_add_publication(){
  */
 function publication_mod_all_publications(){
   global $base_url;
-  /*
-  $node_type = 'publications';
-
-  $select = db_select('node', 'n');
-  $select->join('url_alias', 'ua', "ua.source = CONCAT('node/', n.nid)");
-  $select->fields('ua', array('alias'))
-    ->fields('n', array('title'))
-    ->condition('type', $node_type);
-  $result = $select->execute();
-
-
-
-  $urls = array();
-  $h = "";
-
-
-
-  foreach($result as $obj){
-    $h = $h . '<a href="' . $base_url . '/' . $obj->alias . '">' . $obj->title . '</a><br/>';
-  }
-
-  echo $h;*/
 
   $dbURL = variable_get('publication_mod_blazegraph_url');
   $ontologyPrefix = variable_get('publication_mod_blazegraph_prefix');
@@ -1078,7 +1056,14 @@ function publication_mod_edit_publication(){
 /*
  * Creates the publication_mod Configuration Page
  */
-function publication_mod_form($form, &$form_state){
+function publication_mod_settings_form($form, &$form_state){
+  $result = db_select('publication_mod', 'pm')
+    ->fields('key', 'k')
+    ->condition('k', 'blazegraph_url')
+    ->execute()
+    ->fetchAssoc();
+  echo '<pre>' . print_r($result) . '</pre>';
+  
   $form['publication_mod_blazegraph_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Blazegraph URL'),

@@ -145,15 +145,15 @@ function publication_mod_uninstall() {
   node_delete_multiple($nids);
 
   // Delete fields
-  $fields = array(
-    'field_category',
-    'field_blazegraph_uuid',
-    'field_file'
-  );
+  // $fields = array(
+  //   'field_category',
+  //   'field_blazegraph_uuid',
+  //   'field_file'
+  // );
 
-  foreach($fields as $field){
-    field_delete_field($field);
-  }
+  // foreach($fields as $field){
+  //   field_delete_field($field);
+  // }
 
   // Delete our content type
   // http://api.drupal.org/api/function/node_type_delete/7
@@ -161,32 +161,63 @@ function publication_mod_uninstall() {
   /**
   * Delete nodes and content types.
   */
-  $types = array(
-    'publications'
-  );
-  foreach($types as $type) {
-    // First, delete nodes
-    $results = db_select('node', 'n')
-                ->fields('n', array('nid'))
-                ->condition('type', $type)
-                ->execute();
-    foreach ($results as $result) {
-      $nids[] = $result->nid;
-    }
-    if (!empty($nids)) {
-      node_delete_multiple($nids);
-      drupal_set_message(t('%count nodes has been deleted.', array('%count' => count($nids))));
-    }
-    // Then, delete content type
-    if (node_type_load($type)) {
-      node_type_delete($type);
-      variable_del('node_preview_' . $type);
-      drupal_set_message(t('%type content type has been deleted.', array('%type' => $type)));
-    }
-  }
-  node_types_rebuild();
+  // $types = array(
+  //   'publications'
+  // );
+  // foreach($types as $type) {
+  //   // First, delete nodes
+  //   $results = db_select('node', 'n')
+  //               ->fields('n', array('nid'))
+  //               ->condition('type', $type)
+  //               ->execute();
+  //   foreach ($results as $result) {
+  //     $nids[] = $result->nid;
+  //   }
+  //   if (!empty($nids)) {
+  //     node_delete_multiple($nids);
+  //     drupal_set_message(t('%count nodes has been deleted.', array('%count' => count($nids))));
+  //   }
+  //   // Then, delete content type
+  //   if (node_type_load($type)) {
+  //     node_type_delete($type);
+  //     variable_del('node_preview_' . $type);
+  //     drupal_set_message(t('%type content type has been deleted.', array('%type' => $type)));
+  //   }
+  // }
+  // node_types_rebuild();
   menu_rebuild();
 }
+
+/**
+ * Implements hook_schema().
+ * 
+ * Defines the database table used by this module.
+ * @see hook_schema()
+ */
+
+function publication_mod_schema(){
+  $schema['publication_mod'] = array(
+    'description' => 'Stores all the info for the publication_mod setting.',
+    'fields' => array(
+      'key' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Primary Key. Value name'
+      ),
+      'value' => array(
+        'type' => 'longtext',
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Value'
+      )
+    ),
+    'primary key' => array('key')
+  );
+
+  return $schema;
+}
+
 
  /**
   * Implementation of hook_enable().
