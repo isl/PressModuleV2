@@ -1,0 +1,3 @@
+*.module linuist-language=PHP
+*.install linuist-language=PHP
+*.inc linuist-language=PHP
