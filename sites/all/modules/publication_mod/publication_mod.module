@@ -103,6 +103,15 @@ function publication_mod_menu(){
     'access arguments' => array('access administration pages'),
   );
 
+  $menu['admin/config/publications/publication_mod/edit_orgs'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Edit Organizations',
+    'weight' => 6,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('publication_mod_edit_orgs_form'),
+    'access arguments' => array('access administration pages'),
+  );
+
   $menu['admin/config/publications/publication_mod/import_pubs/progress'] = array(
     'title' => t('Import progress'),
     'page callback' => 'publication_mod_import_progress',
@@ -221,10 +230,14 @@ function publication_mod_menu(){
   return $menu;
 }
 
-function _publication_mod_get_blazegraph_info(){
+function _publication_mod_get_blazegraph_info($keys){
   $or = db_or();
-  $or->condition('pm_key', 'blazegraph_url');
-  $or->condition('pm_key', 'blazegraph_prefix');
+  // $or->condition('pm_key', 'blazegraph_url');
+  // $or->condition('pm_key', 'blazegraph_prefix');
+  // $or->condition('pm_key', 'blazegraph_orgs');
+  foreach ($keys as $key) {
+    $or->condition('pm_key', $key);
+  }
   $result = db_select('publication_mod', 'pm')
     ->fields('pm', array('pm_key', 'pm_value'))
     ->condition($or)
@@ -274,7 +287,7 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
 }
 
 function _external_authors_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -298,7 +311,7 @@ function _external_authors_edit(){
 }
 
 function _projects_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -321,7 +334,7 @@ function _projects_edit(){
 }
 
 function _tags_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -379,9 +392,66 @@ function publication_mod_import_pubs_form($form, &$form_state){
   return $form;
 }
 
+function publication_mod_edit_orgs_form($form, &$form_state){
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+
+//   $query = 'prefix press:<' . $ontologyPrefix .'>'.
+// 'select ?org ?org_name where{'.
+//   '?org rdf:type press:Organization;'.
+//        'press:Organization_Name ?org_name.'.
+// '}';
+
+//   $q = http_build_query(array('query' => $query));
+
+//   $options = array(
+//     'headers' => array(
+//       'Accept'=>'application/sparql-results+json',
+//       'content-type'=> 'application/x-www-form-urlencoded'),
+//     'method' => 'POST',
+//     'data' => $q
+//   );
+
+//   $result = drupal_http_request($dbURL, $options);
+
+//   $data = json_decode($result->data);
+//   $default_value = '';
+//   foreach ($data->results->bindings as $org) {
+//     $blazegraph_value = substr($org->org->value, strlen($ontologyPrefix . 'Organization/'));
+//     $default_value .= $org->org_name->value . ' | ' . $blazegraph_value . ' | [' . $org->org_name->value . ']&#13;&#10;'; 
+//   }
+
+
+
+  $form['publication_mod_org_configuration'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Organizations Format'),
+    '#default_value' => $blazegraph_info['blazegraph_orgs'],
+    '#description' => t('Above you can see the organizations that already exist.<br/>You can add an organization in each line in the format "[Label] | [Blazegraph_value] | [array of possible values for LDAP]"<br/>e.g. "ISL | ISL | [ISL, ISLGRP]"'),
+    '#required' => FALSE,
+  );
+
+  $form['submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit Changes'),
+    '#submit' => array('publication_mod_orgs_form_submit')
+  );
+
+  return $form;
+}
+
+function publication_mod_orgs_form_submit($form, $form_state){
+  db_merge('publication_mod')
+    ->key(array('pm_key' => 'blazegraph_orgs'))
+    ->fields(array(
+      'pm_value' => $form_state['values']['publication_mod_org_configuration']
+    ))
+    ->execute();
+}
+
 function _publication_mod_create_page_body($pub_uri){
   global $base_url;
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -583,7 +653,7 @@ function _publication_mod_create_page_body($pub_uri){
  */
 function publication_mod_import_submit_callback($form, $form_state){
   global $base_url;
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -681,7 +751,7 @@ function publication_mod_import_progress(){
 function publication_mod_add_project(){
   _add_presslib_library();
 
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -835,7 +905,7 @@ function publication_mod_add_publication(){
   global $user;
   global $base_url;
   
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -878,7 +948,7 @@ function publication_mod_add_publication(){
 function publication_mod_all_publications(){
   global $base_url;
 
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -952,7 +1022,7 @@ function publication_mod_author_publications($author_uri){
   echo 'test1';
   echo print_r(func_get_args(), true);
   echo 'test2';
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -992,7 +1062,7 @@ function publication_mod_search_publication(){
   global $user;
   global $base_url;
 
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -1040,7 +1110,7 @@ function publication_mod_search_publication(){
 function publication_mod_edit_publication(){
   global $base_url;
 
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
@@ -1096,7 +1166,7 @@ function publication_mod_edit_publication(){
  * Creates the publication_mod Configuration Page
  */
 function publication_mod_settings_form($form, &$form_state){
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 
   $form['publication_mod_blazegraph_url'] = array(
     '#type' => 'textfield',
@@ -1420,6 +1490,10 @@ function publication_mod_ajax_callback_get_path(){
 
 
 // Custom Laboratory Field Type
+/**
+ * Impllements hook_field_info().
+ * @return array
+ */
 
 function publication_mod_field_info(){
   return array(
@@ -1436,10 +1510,21 @@ function publication_mod_field_info(){
   );
 }
 
+
+/**
+ * Implements hook_field_is_empty().
+ * 
+ */
 function publication_mod_field_is_empty($item, $field) {
   return empty($item['option']);
 }
 
+
+/**
+ * Implements hook_field_widget_info_alter
+ * @param type &$info 
+ * @return type
+ */
 function publication_mod_field_widget_info_alter(&$info){
   $widgets = array(
     'options_select' => array('publication_mod_organization'),
@@ -1465,8 +1550,8 @@ function publication_mod_field_validate($entity_type, $entity, $field, $instance
 
 function publication_mod_options_list($field, $instance, $entity_type, $entity){
 
-  $blazegraph_info = _publication_mod_get_blazegraph_info();
-  $dbURL = $blazegraph_info['blazegraph_url'];
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+  /*$dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $query = 'prefix press:<' . $ontologyPrefix .'>'.
@@ -1488,10 +1573,23 @@ function publication_mod_options_list($field, $instance, $entity_type, $entity){
   $result = drupal_http_request($dbURL, $options);
 
   $data = json_decode($result->data);
+  $options = array();*/
+
+  // foreach($data->results->bindings as $org){
+  //   $options[$org->org->value] = $org->org->value;  //TODO CHANGE
+  // }
+
+  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $options = array();
-  foreach($data->results->bindings as $org){
-    $options[$org->org->value] = $org->org->value;  //TODO CHANGE
+  foreach ($orgs as $org) {
+    $org_info = explode('|', $org);
+    $key = trim($org_info[0]);
+    $bg_value = trim($org_info[1]);
+    $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+
+    $options[$key] = $bg_value;
   }
+
 
   return $options;
 }
@@ -1524,4 +1622,37 @@ function publication_mod_field_formatter_view($entity_type, $entity, $field, $in
     default:
   }
   return $element;
+}
+
+
+function publication_mod_feeds_processor_targets_alter(&$targets, $entity_type, $bundle){
+  if ($entity_type == 'user' && $bundle == 'user'){
+    foreach(field_info_instances($entity_type, $bundle) as $name => $instance){
+      $info = field_info_field($name);
+      unset($callback);
+
+      if ($info['type'] == 'publication_mod_organization'){
+        $callback = 'publication_mod_target_setter';
+      }
+
+      if(isset($callback)){
+        $targets[$name] = array(
+          'name' => check_plain($instance['label']),
+          'callback' => $callback,
+          'description' => t('The @label field of the node.', array('@label' => $instance['label'])),
+        );
+      }
+    }
+  }
+}
+
+function publication_mod_target_setter($source, $entity_type, $target, $values, $mapping){
+  watchdog('publication_mod', 'target_setter: %value', array('%value' => print_r($values, true)), WATCHDOG_DEBUG);
+  if(empty($values)){
+    return;
+  }
+
+  if(!is_array($values)){
+    $value = array($values);
+  }
 }
