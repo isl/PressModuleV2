@@ -1,5 +1,6 @@
 <?php
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
+// -*- mode: php;-*-
 
 function publication_mod_help($path, $arg) {
   switch ($path) {
