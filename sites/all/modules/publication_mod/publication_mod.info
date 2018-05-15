@@ -3,6 +3,7 @@ name = PRESS Publication Module
 description = A module for publication management
 core = 7.x
 package = Publications
+dependencies[] = field
 dependencies[] = entity
 dependencies[] = libraries
 dependencies[] = jquery_update

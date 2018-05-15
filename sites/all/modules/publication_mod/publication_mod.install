@@ -148,13 +148,13 @@ function publication_mod_install(){
   $nid = db_insert('publication_mod')
     ->fields(array(
       'pm_key' => 'blazegraph_url',
-      'pm_value' => 'http://139.91.183.97:19999/blazegraph/namespace/kb/sparql'
+      'pm_value' => 'http://139.91.183.97:28001/blazegraph/namespace/press_v3_copy2/sparql'
     ))
     ->execute();
   $nid = db_insert('publication_mod')
     ->fields(array(
       'pm_key' => 'blazegraph_prefix',
-      'pm_value' => 'http://www.ics.forth.gr/PRESSOntology#'
+      'pm_value' => 'http://www.ics.forth.gr/Press#'
     ))
     ->execute();
 }
@@ -388,14 +388,10 @@ function publication_mod_enable() {
 // Custom Laboratory Field Type
 
 function publication_mod_field_schema($field){
-  $schema = array(
-    'columns' => array(
-      'option' => array(
-        'type' => 'varchar',
-        'length' => 25,
-        'not null' => TRUE
-      )
-    )
+  $schema['columns']['option'] = array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE
   );
 
   return $schema;

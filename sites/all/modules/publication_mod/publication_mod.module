@@ -1423,7 +1423,7 @@ function publication_mod_ajax_callback_get_path(){
 
 function publication_mod_field_info(){
   return array(
-    'my_field_name' => array(
+    'publication_mod_organization' => array(
       'label' => t('My Field'),
       'description' => t('Description of My Field'),
       'settings' => array('max_length' => 255),
@@ -1431,14 +1431,18 @@ function publication_mod_field_info(){
         'text_processing' => 0,
       ),
       'default_widget' => 'options_select',
-      'default_formater' => 'states_field_options',
+      'default_formatter' => 'my_field_default',
     )
   );
 }
 
+function publication_mod_field_is_empty($item, $field) {
+  return empty($item['option']);
+}
+
 function publication_mod_field_widget_info_alter(&$info){
   $widgets = array(
-    'options_select' => array('my_field_type'),
+    'options_select' => array('publication_mod_organization'),
   );
 
   foreach($widgets as $widget => $field_types){
@@ -1450,10 +1454,10 @@ function publication_mod_field_validate($entity_type, $entity, $field, $instance
   foreach ($items as $delta => $item) {
     if(!empty($item['option'])){
       if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
-        $errors[$field['my_field_name']][$langcode][$delta][] = array(
-          'error' => 'publication_mod_field_invalid',
-          'message' => t('Lab Value must be one word and contain letters, numbers and _')
-        );
+        // $errors[$field['field_name']][$langcode][$delta][] = array(
+        //   'error' => 'publication_mod_field_invalid',
+        //   'message' => t('Lab Value must be one word and contain letters, numbers and _')
+        // );
       }
     }
   }
@@ -1465,12 +1469,11 @@ function publication_mod_options_list($field, $instance, $entity_type, $entity){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  $query = `prefix press:<` . $ontologyPrefix .`>
-
-select ?org ?org_name where{
-  ?org rdf:type press:Organization;
-       press:Organization_Name ?org_name.
-}`;
+  $query = 'prefix press:<' . $ontologyPrefix .'>'.
+'select ?org ?org_name where{'.
+  '?org rdf:type press:Organization;'.
+       'press:Organization_Name ?org_name.'.
+'}';
 
   $q = http_build_query(array('query' => $query));
 
@@ -1496,8 +1499,8 @@ select ?org ?org_name where{
 function publication_mod_field_formatter_info(){
   return array(
     'my_field_default' => array(
-      'label' => t('Default'),
-      'field types' => array('my_field_name')
+      'label' => t('Default Formatter'),
+      'field types' => array('publication_mod_organization')
     )
   );
 }
