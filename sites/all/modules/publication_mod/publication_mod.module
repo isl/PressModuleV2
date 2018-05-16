@@ -880,12 +880,7 @@ function publication_mod_field_info(){
  * 
  */
 function publication_mod_field_is_empty($item, $field) {
-  watchdog('publication_mod', 'item: %item <br>field: %field', array('%item' => print_r($item, true), '%field' => print_r($field, true)), WATCHDOG_DEBUG);
   return (empty($item['option'])) ;
-}
-
-function publication_mod_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items){
-  watchdog('publication_mod', 'items: %item', array('%item' => print_r($items, true)), WATCHDOG_DEBUG);
 }
 
 /**
@@ -978,9 +973,21 @@ function publication_mod_field_formatter_view($entity_type, $entity, $field, $in
   //to prepare for future options.
   switch ($display['type']) {
     case 'pub_mod_organization_formatter':
+      $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+      $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+      $options = array();
+      foreach ($orgs as $org) {
+        if($org != ""){
+          $org_info = explode('|', $org);
+          $key = trim($org_info[0]);
+          $bg_value = trim($org_info[1]);
+
+          $options[$bg_value] = $key;
+        }
+      }
       foreach ($items as $delta => $item) {
         if (isset($item['option'])) {
-          $output = field_filter_xss($item['option']);
+          $output = field_filter_xss($options[$item['option']]);
         }
         else {
           $output = "Not Supplied";
@@ -1034,12 +1041,14 @@ function publication_mod_target_setter($source, $entity, $target, $values, $mapp
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $options = array();
   foreach ($orgs as $org) {
-    $org_info = explode('|', $org);
-    $key = trim($org_info[0]);
-    $bg_value = trim($org_info[1]);
-    $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
-    foreach ($accepted_values as $a_value) {
-      $options[$a_value] = array('key' => $key, 'value' => $bg_value);
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
+      $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+      foreach ($accepted_values as $a_value) {
+        $options[$a_value] = array('key' => $key, 'value' => $bg_value);
+      }
     }
   }
   watchdog('publication_mod', 'a_value: "%a_value"', 
