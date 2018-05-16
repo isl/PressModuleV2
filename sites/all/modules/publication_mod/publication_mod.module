@@ -61,6 +61,7 @@ function publication_mod_menu(){
     'page callback' => 'drupal_get_form',
     'page arguments' => array('publication_mod_settings_form'),
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
     // 'type' => MENU_NORMAL_ITEM,
   );
 
@@ -77,6 +78,7 @@ function publication_mod_menu(){
     'weight' => 2,
     'page callback' => '_external_authors_edit',
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/projects'] = array(
@@ -85,6 +87,7 @@ function publication_mod_menu(){
     'weight' => 3,
     'page callback' => '_projects_edit',
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/tags'] = array(
@@ -93,6 +96,7 @@ function publication_mod_menu(){
     'weight' => 4,
     'page callback' => '_tags_edit',
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/import_pubs'] = array(
@@ -102,6 +106,7 @@ function publication_mod_menu(){
     'page callback' => 'drupal_get_form',
     'page arguments' => array('publication_mod_import_pubs_form'),
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/edit_orgs'] = array(
@@ -111,6 +116,7 @@ function publication_mod_menu(){
     'page callback' => 'drupal_get_form',
     'page arguments' => array('publication_mod_edit_orgs_form'),
     'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/import_pubs/progress'] = array(
@@ -118,6 +124,7 @@ function publication_mod_menu(){
     'page callback' => 'publication_mod_import_progress',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
+    'file' => 'publication_mod.admin.inc',
   );
 
 
@@ -150,7 +157,8 @@ function publication_mod_menu(){
     'description' => 'Edit a Publication',
     'page callback' => 'publication_mod_edit_publication',
     'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('authenticated user')
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu['publication/add-pub'] = array(
@@ -159,13 +167,15 @@ function publication_mod_menu(){
     'page callback' => 'publication_mod_add_publication',
     'access callback' => 'publication_mod_user_has_role',
     'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu['publication/all'] = array(
     'title' => 'All Publications',
     'description' => 'All Publications',
     'page callback' => 'publication_mod_all_publications',
-    'access callback' => TRUE
+    'access callback' => TRUE,
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu['publication/author/%'] = array(
@@ -173,7 +183,8 @@ function publication_mod_menu(){
     'description' => 'Publications of an Author',
     'page callback' => 'publication_mod_author_publications',
     'page arguments' => array(),
-    'access callback' => TRUE
+    'access callback' => TRUE,
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu_links[0] = array(
@@ -189,6 +200,7 @@ function publication_mod_menu(){
     'description' => 'Search for Publications',
     'page callback' => 'publication_mod_search_publication',
     'access callback' => TRUE,
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu_links[1] = array(
@@ -204,7 +216,8 @@ function publication_mod_menu(){
     'description' => 'Add Project',
     'page callback' => 'publication_mod_add_project',
     'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('Power User')
+    'access arguments' => array('Power User'),
+    'file' => 'publication_mod.pages.inc',
   );
 
   $menu_links[2] = array(
@@ -285,169 +298,6 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
       }
     }
   }
-}
-
-function _external_authors_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  _add_presslib_library();
-
-  drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
-  drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/select/1.2.3/js/dataTables.select.js", 'external');
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#search-external-author').pressExternalAuthors({ \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="search-external-author"></div>';
-  return $html;
-}
-
-function _projects_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  _add_presslib_library();
-  drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
-  drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/select/1.2.3/js/dataTables.select.js", 'external');
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#search-project').pressEditProjects({ \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="search-project"></div>';
-  return $html;
-}
-
-function _tags_edit(){
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  _add_presslib_library();
-  drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
-  drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
-  drupal_add_js("https://cdn.datatables.net/select/1.2.3/js/dataTables.select.js", 'external');
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#search-tag').pressEditTags({ \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="search-tag"></div>';
-  return $html;
-}
-
-function publication_mod_import_pubs_form($form, &$form_state){
-  // $form['price'] = array(
-  //   '#type' => 'textfield', //you can find a list of available types in the form api
-  //   '#title' => 'What is Your Price?',
-  //   '#size' => 10,
-  //   '#maxlength' => 10,
-  //   '#required' => TRUE, //make this field required
-  // );
-
-  $form['submit_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Import from Blazegraph'),
-
-    '#ajax' => array(
-      'callback' => 'publication_mod_import_submit_callback',
-      'wrapper' => 'import-wrapper',
-      'progress' => array(
-          'type' => 'bar',
-          'message' => t('Starting import...'),
-          'url' => 'import_pubs/progress', //url to fetch current progress percentage
-          'interval' => '1000' //progress bar will refresh in 1 second
-      )
-    )
-  );
-  $form['checkboxes_fieldset'] = array(
-    '#title' => t("Result"),
-    // The prefix/suffix provide the div that we're replacing, named by
-    // #ajax['wrapper'] above.
-    '#prefix' => '<div id="import-wrapper">',
-    '#suffix' => '</div>',
-    '#type' => 'fieldset',
-    '#description' => t('This is where we get automatically generated checkboxes'),
-  );
-  return $form;
-}
-
-function publication_mod_edit_orgs_form($form, &$form_state){
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
-
-//   $query = 'prefix press:<' . $ontologyPrefix .'>'.
-// 'select ?org ?org_name where{'.
-//   '?org rdf:type press:Organization;'.
-//        'press:Organization_Name ?org_name.'.
-// '}';
-
-//   $q = http_build_query(array('query' => $query));
-
-//   $options = array(
-//     'headers' => array(
-//       'Accept'=>'application/sparql-results+json',
-//       'content-type'=> 'application/x-www-form-urlencoded'),
-//     'method' => 'POST',
-//     'data' => $q
-//   );
-
-//   $result = drupal_http_request($dbURL, $options);
-
-//   $data = json_decode($result->data);
-//   $default_value = '';
-//   foreach ($data->results->bindings as $org) {
-//     $blazegraph_value = substr($org->org->value, strlen($ontologyPrefix . 'Organization/'));
-//     $default_value .= $org->org_name->value . ' | ' . $blazegraph_value . ' | [' . $org->org_name->value . ']&#13;&#10;'; 
-//   }
-
-
-
-  $form['publication_mod_org_configuration'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Organizations Format'),
-    '#default_value' => $blazegraph_info['blazegraph_orgs'],
-    '#description' => t('Above you can see the organizations that already exist.<br/>You can add an organization in each line in the format "[Label] | [Blazegraph_value] | [array of possible values for LDAP]"<br/>e.g. "ISL | ISL | [ISL, ISLGRP]"'),
-    '#required' => FALSE,
-  );
-
-  $form['submit_button'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit Changes'),
-    '#submit' => array('publication_mod_orgs_form_submit')
-  );
-
-  return $form;
-}
-
-function publication_mod_orgs_form_submit($form, $form_state){
-  db_merge('publication_mod')
-    ->key(array('pm_key' => 'blazegraph_orgs'))
-    ->fields(array(
-      'pm_value' => $form_state['values']['publication_mod_org_configuration']
-    ))
-    ->execute();
 }
 
 function _publication_mod_create_page_body($pub_uri){
@@ -647,178 +497,6 @@ function _publication_mod_create_page_body($pub_uri){
 }
 
 /**
- * Create Pages for each publication callback
- * @param type $form 
- * @param type $form_state 
- * @return type
- */
-function publication_mod_import_submit_callback($form, $form_state){
-  global $base_url;
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  //Get all pubs without a Publication_URL
-
-  $query = 'prefix press: <'. $ontologyPrefix. '>
-            select * where{
-              ?pub rdf:type [rdfs:subClassOf* press:Publication].
-              FILTER NOT EXISTS{?pub press:Publication_URL ?Publication_URL}.
-              ?pub rdf:type ?type.
-            }';
-
-  $q = http_build_query(array('query' => $query));
-
-  $options = array(
-    'headers' => array(
-      'Accept'=>'application/sparql-results+json',
-      'content-type'=> 'application/x-www-form-urlencoded'),
-    'method' => 'POST',
-    'data' => $q
-  );
-
-  $result = drupal_http_request($dbURL, $options);
-
-  $obj = json_decode($result->data);
-  $pub_count = count($obj->results->bindings);
-  $count = 0;
-  
-
-  foreach($obj->results->bindings as $pub){
-    $pub_uri = $pub->pub->value;
-    $pub_type = explode("#", $pub->type->value)[1];
-
-    $pub_page = _publication_mod_create_page_body($pub_uri);
-
-    $new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri);
-
-    //Add Publication_URL to created publication.
-    $update = 'prefix press: <'. $ontologyPrefix. '>
-            delete{
-              ?pub press:Publication_URL ?old_url.
-            }
-            insert{
-              ?pub press:Publication_URL "'.$new_node_info['path'].'".
-            }
-            where{
-              BIND (<'. $pub_uri .'> as ?pub).
-              OPTIONAL {?pub press:Publication_URL ?old_url}.
-            }';
-
-    $q = http_build_query(array('update' => $update));
-
-    $options = array(
-      'headers' => array(
-        'Accept'=>'application/sparql-results+json',
-        'content-type'=> 'application/x-www-form-urlencoded'),
-      'method' => 'POST',
-      'data' => $q
-    );
-
-    $update_results = drupal_http_request($dbURL, $options);
-
-    //Update status bar
-    variable_set('publication_mod_import_status', round((++$count/$pub_count)*100));
-  }
-
-  variable_set('publication_mod_import_status', 0);
-  return 'Insertion Completed';
-}
-
-/**
- * Get progress of importing
- * @return type
- */
-function publication_mod_import_progress(){
-  $progress = array(
-      'message' => t('Starting import...'),
-      'percentage' => -1,
-  );
-
-  $completed_percentage = variable_get('publication_mod_import_status', 0); // calculate progress percentage here
-
-  if($completed_percentage){
-      $progress['message'] = t('Importing...');
-      $progress['percentage'] = $completed_percentage ;
-  }
-
-  drupal_json_output($progress);
-}
-
-/**
- * Creates page for Project Addition.
- * @return type
- */
-function publication_mod_add_project(){
-  _add_presslib_library();
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $inlineJS = 'jQuery(document).ready(function($){';
-  $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "'. $dbURL .'");'; 
-  $inlineJS .= '}); ';
-  drupal_add_js($inlineJS, 'inline');
-
-  $html = '';
-  $html .= '<div class="modal fade" id="responseModal" tabindex="-1" role="responseDialog">';
-  $html .= '  <div class="modal-dialog" >';
-  $html .= '    <div class="modal-content">';
-  $html .= '      <div class="modal-header">';
-  $html .= '        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
-  $html .= '        <h4 class="modal-title" id="myModalLabel">Project Insertion Completed</h4>';
-  $html .= '      </div>';
-  $html .= '      <div class="modal-body">';
-  $html .= '      </div>';
-  $html .= '      <div class="modal-footer">';
-  $html .= '        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
-  $html .= '      </div>';
-  $html .= '    </div>';
-  $html .= '  </div>';
-  $html .= '</div>';
-  $html .= '<form class="form-horizontal">';
-  $html .= '<div class="form-group">';
-  $html .= '<label class="control-label col-sm-2" for="projectName"><span style="color:red">*</span>Project Name:</label>';
-  $html .= '<div class="col-sm-10">';
-  $html .= '<input class="form-control input-sm" id="projectName" type="text"/>';
-  $html .= '</div>';
-  $html .= '</div>';
-  $html .= '';
-  $html .= '<div class="form-group">';
-  $html .= '<label class="control-label col-sm-2" for="projectId"><span style="color:red">*</span>Project ID:</label>';
-  $html .= '<div class="col-sm-10">';
-  $html .= '<input class="form-control input-sm" id="projectId" type="text"/>';
-  $html .= '</div>';
-  $html .= '</div>';
-  $html .= '';
-  $html .= '<div class="form-group">';
-  $html .= '<label class="control-label col-sm-2"><span style="color:red">*</span>Project Status:</label>';
-  $html .= '<div class="col-sm-4">';
-  $html .= '<label class="radio-inline"><input type="radio" name="optradio" value="Active">Active</label>';
-  $html .= '<label class="radio-inline"><input type="radio" name="optradio" value="Completed">Completed</label>';
-  $html .= '</div>';
-  $html .= '</div>';
-  $html .= '';
-  $html .= '<div class="form-group">';
-  $html .= '<label class="col-sm-2 control-label"><span style="color:red">*</span>Project Start Date:</label>';
-  $html .= '<div class="col-sm-4">';
-  $html .= '<input id="startDate" class="form-control input-sm" type="text" value="">';
-  $html .= '</div>';
-  $html .= '<label class="col-sm-2"><span style="color:red">*</span>Project End Date:</label>';
-  $html .= '<div class="col-sm-4">';
-  $html .= '<input id="endDate" class="form-control input-sm" type="text" value="">';
-  $html .= '</div>';
-  $html .= '</div>';
-  $html .= '<div class="form-group">';
-  $html .= '</div>';
-  $html .= '<div class="col-sm-10"></div><div class="col-sm-2"><input id="project-submit" class="btn btn-primary" type="button" value="Submit" /></div>';
-  $html .= '</form>';
-
-  return $html;
-}
-
-/**
  * Checks if use has one of the roles in arguments
  * @return type
  */
@@ -898,321 +576,6 @@ function _add_presslib_library(){
   drupal_add_css($module_path . "/css/daterangepicker.css");
 }
 
-/**
- * Creates Add Publication page
- * @return type
- */
-function publication_mod_add_publication(){
-  global $user;
-  global $base_url;
-  
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  _add_presslib_library();
-
-  $current_user = _get_user_info_to_json();
-  $labs = _get_labs_to_json();
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#add-publication').press({ \n" .
-      "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-      "authorGroups: { \n".
-        "FORTH_ICS_Author: { \n".
-          "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;', \n".
-          "priority: 0 \n".
-        "}, \n".
-        "External_Author: { \n".
-          "label: 'External Authors', \n".
-          "priority: 1 \n".
-        "} \n".
-      "}, \n".
-      "current_user: " . $current_user .", \n".
-      "labs: " . $labs .", \n".
-      "organization_label: 'Laboratory' \n".
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="add-publication"></div>';
-
-  return $html;
-}
-
-/*
- * Creates a page of the pages of all the publications
- */
-function publication_mod_all_publications(){
-  global $base_url;
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $query = 'prefix press:<' . $ontologyPrefix .'>
-            select ?pub ?url (group_concat(?concat; separator="") as ?authors) where {
-            {
-                select ?pub ?slot ?auth where{
-                  ?pub rdf:type [rdfs:subClassOf* press:Publication].
-                  optional{?pub press:hasContributor ?slot.
-                  ?slot ?p ?con.
-                  ?p rdfs:subPropertyOf press:contributorType.
-                  ?slot press:list_index ?index.
-                  optional{?con foaf:givenName ?givenName.}
-                  optional{?con foaf:familyName ?familyName.}
-                  bind(substr(str(?p), 31) as ?type).
-                           }
-                  bind(concat(?type, "|", ?index, "|", str(?con), "|", ?givenName, " ", ?familyName) as ?auth).
-                }
-             }
-             bind(concat("[", ?auth, "]") as ?concat).
-             ?pub press:Publication_URL ?url.
-            }group by ?pub ?url';
-  $q = http_build_query(array('query' => $query));
-
-  $options = array(
-    'headers' => array(
-      'Accept'=>'application/sparql-results+json',
-      'content-type'=> 'application/x-www-form-urlencoded'),
-    'method' => 'POST',
-    'data' => $q
-  );
-  $h = "";
-  $result = drupal_http_request($dbURL, $options);
-  $results = json_decode($result->data);
-  //echo '<pre>' . print_r($result, true) . '</pre>';
-  foreach ($results->results->bindings as $pub => $info) {
-    $offset = 0;
-    $pub_authors = array();
-    while ($offset < strlen($info->authors->value)){
-      $start = strpos($info->authors->value, '[', $offset);
-      $end = strpos($info->authors->value, ']', $offset);
-      $author = substr($info->authors->value, $start+1, $end - $offset-1);
-      // echo $author;
-      // echo '<br>';
-      $offset = $end+1;
-
-      $author_info = explode("|", $author);
-      if(!array_key_exists($author_info[0], $pub_authors)){
-        $pub_authors[$author_info[0]] = array();
-      }
-      $pub_authors[$author_info[0]][$author_info[1]] = array(
-        'uri' => $author_info[2],
-        'name' => $author_info[3]
-      );
-    }
-    foreach ($pub_authors as $con_type => $cons) {
-      ksort($cons);
-      foreach ($cons as $key => $value) {
-        echo $key . '. ' . $value['name'] . ' ';
-      }
-    }
-    echo $info->pub->value;
-    echo '<br>';
-  }
-}
-
-function publication_mod_author_publications($author_uri){
-  if(!isset($author_uri) || empty($author_uri)){
-    return;
-  }
-  echo 'test1';
-  echo print_r(func_get_args(), true);
-  echo 'test2';
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $query = 'prefix press: <'. $ontologyPrefix. '>
-          select ?Publication_URL ?English_Title ?Chapter_Title ?Book_Title ?type where{
-            ?con0 rdfs:subPropertyOf* press:contributorType. 
-            ?slot0 ?con0 <'. $author_uri .'>.
-            ?pub press:hasContributor ?slot0.
-            ?pub rdf:type ?type.
-            ?type rdfs:subClassOf* press:Publication. 
-            ?pub press:Publication_URL ?Publication_URL.
-            OPTIONAL{?pub press:English_Title ?English_Title}.
-            OPTIONAL{?pub press:Chapter_Title ?Chapter_Title}.
-            OPTIONAL{?pub press:Book_Title ?Book_Title}.
-          }';
-
-  $q = http_build_query(array('query' => $query));
-
-  $options = array(
-    'headers' => array(
-      'Accept'=>'application/sparql-results+json',
-      'content-type'=> 'application/x-www-form-urlencoded'),
-    'method' => 'POST',
-    'data' => $q
-  );
-
-  $result = drupal_http_request($dbURL, $options);
-
-  echo '<pre>' . $query . '</pre>';
-  echo '<pre>' . print_r($result, true) . '</pre>';
-}
-
-/*
- * Creates Search Publication Page
- */
-function publication_mod_search_publication(){
-  global $user;
-  global $base_url;
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $JSONGet = json_encode($_GET);
-  // echo $JSONGet;
-
-  _add_presslib_library();
-
-  $current_user = _get_user_info_to_json();
-
-  $labs = _get_labs_to_json();
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#search-publication').pressSearch({ \n" .
-      "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-      "authorGroups: { \n".
-        "FORTH_ICS_Author: { \n".
-          "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
-        "}, \n".
-        "External_Author: { \n".
-          "label: 'External Authors', \n".
-        "} \n".
-      "}, \n".
-      "current_user: " . $current_user .", \n".
-      "labs: " . $labs .", \n".
-      "organizations: { \n".
-        "org: " . $labs .", \n".
-        "label: 'Laboratory' \n".
-      "}, \n".
-      "parameters: ". $JSONGet . ", \n".
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="search-publication"></div>';
-  return $html;
-}
-
-/*
- * Creates Edit Publication page
- */
-function publication_mod_edit_publication(){
-  global $base_url;
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  if (empty($_GET['uuid']) && empty($_GET['category'])){
-    return "You didn't specify a Publication and/or it's Category";
-  }
-  $uuid = $_GET['uuid'];
-  if (substr($uuid, 0, 9) !== 'urn:uuid:'){
-    if (uuid_is_valid($uuid)){
-      $uuid = 'urn:uuid:'. $uuid;
-    }
-  }
-  $category = $_GET['category'];
-  
-  _add_presslib_library();
-
-  global $user;
-  $current_user = _get_user_info_to_json();
-
-  $labs = _get_labs_to_json();
-
-  $internalJS = "jQuery(document).ready(function($){ \n" .
-    "$('#add-publication').press({ \n" .
-      "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
-      "prefix: '" . $ontologyPrefix . "', \n" .
-      "authorGroups: { \n".
-        "FORTH_ICS_Author: { \n".
-          "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
-        "}, \n".
-        "External_Author: { \n".
-          "label: 'External Authors', \n".
-        "} \n".
-      "}, \n".
-      "current_user: " . $current_user .", \n".
-      "labs: " . $labs .", \n".
-      "organization_label: 'Laboratory', \n".
-      "editMode: true, \n".
-      "editPublication: { \n".
-        "uuid:'". $uuid ."', \n".
-        "category: '". $category . "' \n".
-      "} \n".
-    "}); \n".
-  "}); \n";
-  drupal_add_js($internalJS, 'inline');
-
-  $html = '<div class="form-horizontal" id="add-publication"></div>';
-  return $html;
-}
-
-/*
- * Creates the publication_mod Configuration Page
- */
-function publication_mod_settings_form($form, &$form_state){
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-
-  $form['publication_mod_blazegraph_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Blazegraph URL'),
-    '#default_value' => $blazegraph_info['blazegraph_url'],
-    '#size' => 50,
-    '#maxlength' => 200,
-    '#description' => t('The sparql REST API URL of Blazegraph'),
-    '#required' => TRUE,
-  );
-
-  $form['publication_mod_blazegraph_prefix'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Ontology Prefix'),
-    '#default_value' => $blazegraph_info['blazegraph_prefix'],
-    '#size' => 50,
-    '#maxlength' => 50,
-    '#description' => t('The Ontology Prefix that will be used'),
-    '#required' => TRUE,
-  );
-
-  $form['save'] = array(
-    '#type' => 'submit',
-    '#value' => 'Save',
-    '#submit' => array('publication_mod_settings_form_submit')
-  );
-
-  return $form;
-}
-
-function publication_mod_settings_form_submit($form, $form_state){
-  db_merge('publication_mod')
-    ->key(array('pm_key' => 'blazegraph_url'))
-    ->fields(array(
-      'pm_value' => $form_state['values']['publication_mod_blazegraph_url']
-    ))
-    ->execute();
-
-  db_merge('publication_mod')
-    ->key(array('pm_key' => 'blazegraph_prefix'))
-    ->fields(array(
-      'pm_value' => $form_state['values']['publication_mod_blazegraph_prefix']
-    ))
-    ->execute();
-}
 
 /*
  * Handles the new publication addition.
