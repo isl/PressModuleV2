@@ -880,9 +880,13 @@ function publication_mod_field_info(){
  * 
  */
 function publication_mod_field_is_empty($item, $field) {
-  return (empty($item['key']) || empty($item['value'])) ;
+  watchdog('publication_mod', 'item: %item <br>field: %field', array('%item' => print_r($item, true), '%field' => print_r($field, true)), WATCHDOG_DEBUG);
+  return (empty($item['option'])) ;
 }
 
+function publication_mod_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items){
+  watchdog('publication_mod', 'items: %item', array('%item' => print_r($items, true)), WATCHDOG_DEBUG);
+}
 
 /**
  * Implements hook_field_widget_info_alter
@@ -901,7 +905,7 @@ function publication_mod_field_widget_info_alter(&$info){
 
 function publication_mod_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   foreach ($items as $delta => $item) {
-    if(!(empty($item['key']) || empty($item['value']))){
+    if(!(empty($item['option']))){
       // if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
         // $errors[$field['field_name']][$langcode][$delta][] = array(
         //   'error' => 'pub_mod_field_invalid',
@@ -946,12 +950,13 @@ function publication_mod_options_list($field, $instance, $entity_type, $entity){
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $options = array();
   foreach ($orgs as $org) {
-    $org_info = explode('|', $org);
-    $key = trim($org_info[0]);
-    $bg_value = trim($org_info[1]);
-    $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
 
-    $options[$key] = $bg_value;
+      $options[$bg_value] = $key;
+    }
   }
 
 
@@ -974,8 +979,8 @@ function publication_mod_field_formatter_view($entity_type, $entity, $field, $in
   switch ($display['type']) {
     case 'pub_mod_organization_formatter':
       foreach ($items as $delta => $item) {
-        if (isset($options[$item['option']]['option'])) {
-          $output = field_filter_xss($options[$item['option']]['option']);
+        if (isset($item['option'])) {
+          $output = field_filter_xss($item['option']);
         }
         else {
           $output = "Not Supplied";
@@ -1042,6 +1047,5 @@ function publication_mod_target_setter($source, $entity, $target, $values, $mapp
       '%a_value' => print_r($options[$values[0]], true),
     ), WATCHDOG_DEBUG);
 
-  $entity->{$target}['und'][0]['key'] = $options[$values[0]]['key'];
-  $entity->{$target}['und'][0]['value'] = $options[$values[0]]['value'];
+  $entity->{$target}['und'][0]['option'] = $options[$values[0]]['value'];
 }

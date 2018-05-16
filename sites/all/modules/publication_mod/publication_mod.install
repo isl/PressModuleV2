@@ -372,12 +372,7 @@ function publication_mod_enable() {
 
 function publication_mod_field_schema($field){
   $schema['columns'] = array(
-    'key' => array(
-      'type' => 'varchar',
-      'length' => 255,
-      'not null' => TRUE
-    ),
-    'value' => array(
+    'option' => array(
       'type' => 'varchar',
       'length' => 255,
       'not null' => TRUE
