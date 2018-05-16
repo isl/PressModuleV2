@@ -546,10 +546,10 @@
 
             this.element.append($labgroup);
 
-            var labValues = [];
-            for (key in labs) {
-                labValues.push(labs[key]);
-            }
+            var labValues = Object.keys(labs);
+            // for (key in labs) {
+            //     labValues.push(labs[key]);
+            // }
             var labsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
@@ -607,7 +607,7 @@
                     }
                 });
                 if (valid) {
-                    var $li = $('<li id="' + suggestion + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + labs[suggestion] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
                     $li.html(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
@@ -1534,7 +1534,7 @@
 
 
                     $('#lab-editable li').each(function() {
-                        query = query + "<" + prefix + "belongsTo> <" + prefix + $(this).attr('id') + ">; \n";
+                        query = query + "<" + prefix + "belongsTo> <" + prefix + 'Organization/' + $(this).attr('id') + ">; \n";
                     })
 
                     function traverseFields(field) {

@@ -619,14 +619,11 @@
             var label = organization.label;
             var org = organization.org;
 
-            var orgValues = [];
-            for (var key in org) {
-                orgValues.push(org[key]);
-            }
+            var orgKeys = Object.keys(org);
             var orgsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: orgValues
+                local: orgKeys
             });
 
             function orgWithDefaults(q, sync) {
@@ -671,7 +668,7 @@
                     }
                 });
                 if (valid) {
-                    var $li = $('<li id="' + suggestion + '" class="extra-org-item org-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + org[suggestion] + '" class="extra-org-item org-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
                     $li.html(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);

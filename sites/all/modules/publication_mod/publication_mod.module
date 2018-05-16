@@ -264,7 +264,7 @@ function _publication_mod_get_blazegraph_info($keys){
 function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
   if (substr($root_path, 0, 5) === 'node/'){
     foreach ($router_item['page_arguments'] as $key => $argument) {
-      if (is_object($argument) && array_key_exists('type', $argument) && $argument->type == 'publications') {
+      if (is_object($argument) && array_key_exists('type', $argument) && $argument->type == 'publication_mod_publications') {
         foreach ($data['tabs'][0]['output'] as $key => $value) {
           if (!publication_mod_user_has_role('administrator') && $value['#link']['path'] === 'node/%/edit') {
             unset($data['tabs'][0]['output'][$key]);
@@ -525,7 +525,7 @@ function _get_user_info_to_json(){
           $user_data->pub_mod_field_first_name['und'][0]['value'] . " " .
           $user_data->pub_mod_field_last_name['und'][0]['value'] . "', mail:'" .
           $user_data->mail . "', lab: '" .
-          $user_data->pub_mod_field_organization['und'][0]['value'] ."', roles: ";
+          $user_data->pub_mod_field_organization['und'][0]['option'] ."', roles: ";
     $current_user = $current_user . "[";
     foreach($user->roles as $value){
       $current_user = $current_user . "'". $value . "',";
@@ -544,10 +544,19 @@ function _get_user_info_to_json(){
 function _get_labs_to_json(){
   $labs = '';
   $labs = $labs . "{";
-  $all_fields = field_info_fields();
-  $lab_allowed_values = list_allowed_values($all_fields["pub_mod_field_organization"]);
-  foreach(array_keys($lab_allowed_values) as $key){
-    $labs = $labs . "'". $key . "':'" . $lab_allowed_values[$key] . "',";
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+  $orgs = array();
+  $blazegraph_orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+  foreach ($blazegraph_orgs as $org) {
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
+      $orgs[$bg_value] = $key;
+    }
+  }
+  foreach($orgs as $key => $value){
+    $labs = $labs . "'". $value . "':'" . $key . "',";
   }
   $labs = $labs . "}";
 
@@ -607,7 +616,7 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
   // entity_create replaces the procedural steps in the first example of
   // creating a new object $node and setting its 'type' and uid property
   $values = array(
-    'type' => 'publications',
+    'type' => 'publication_mod_publications',
     'uid' => $user->uid,
     'status' => 1,
     'comment' => 0,
@@ -708,7 +717,7 @@ function publication_mod_update_pubs($blazegraph_uris = array()){
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', 'publications')
+    ->entityCondition('bundle', 'publication_mod_publications')
     ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $blazegraph_uris, 'IN');
 
   $result = $query->execute();
@@ -758,7 +767,7 @@ function publication_mod_ajax_callback_edit_pub(){
 
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', 'publications')
+    ->entityCondition('bundle', 'publication_mod_publications')
     ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
 
   $result = $query->execute();
@@ -1058,3 +1067,8 @@ function publication_mod_target_setter($source, $entity, $target, $values, $mapp
 
   $entity->{$target}['und'][0]['option'] = $options[$values[0]]['value'];
 }
+
+
+// On user insert & update
+
+// function publication_mod
