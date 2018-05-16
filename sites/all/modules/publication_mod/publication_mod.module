@@ -1539,12 +1539,12 @@ function publication_mod_field_widget_info_alter(&$info){
 function publication_mod_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   foreach ($items as $delta => $item) {
     if(!empty($item['option'])){
-      if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
+      // if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
         // $errors[$field['field_name']][$langcode][$delta][] = array(
         //   'error' => 'publication_mod_field_invalid',
         //   'message' => t('Lab Value must be one word and contain letters, numbers and _')
         // );
-      }
+      // }
     }
   }
 }
@@ -1640,20 +1640,44 @@ function publication_mod_feeds_processor_targets_alter(&$targets, $entity_type, 
         $targets[$name] = array(
           'name' => check_plain($instance['label']),
           'callback' => $callback,
-          'description' => t('The @label field of the node.', array('@label' => $instance['label'])),
+          'description' => t('The @label field of the node.', array('@label' => $instance['label']))
         );
       }
     }
   }
 }
 
-function publication_mod_target_setter($source, $entity_type, $target, $values, $mapping){
-  watchdog('publication_mod', 'target_setter: %value', array('%value' => print_r($values, true)), WATCHDOG_DEBUG);
+function publication_mod_target_setter($source, $entity, $target, $values, $mapping){
+  watchdog('publication_mod', 'target: %target <br> value: %value<br>mapping: %mapping', 
+    array(
+      '%target' => print_r($target, true),
+      '%value' => print_r($values, true), 
+      '%mapping' => print_r($mapping, true)
+    ), WATCHDOG_DEBUG);
+
   if(empty($values)){
     return;
   }
 
   if(!is_array($values)){
-    $value = array($values);
+    $values = array($values);
   }
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+  $options = array();
+  foreach ($orgs as $org) {
+    $org_info = explode('|', $org);
+    $key = trim($org_info[0]);
+    $bg_value = trim($org_info[1]);
+    $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+    foreach ($accepted_values as $a_value) {
+      $options[$a_value] = $bg_value;
+    }
+  }
+  watchdog('publication_mod', 'a_value: "%a_value"', 
+    array(
+      '%a_value' => $options[$values[0]],
+    ), WATCHDOG_DEBUG);
+
+  $entity->{$target}['und'][0]['option'] = $options[$values[0]];
 }
