@@ -1919,7 +1919,7 @@
                 $icons.append($info_icon);
 
                 var addEdit = false;
-                if (!this.current_user.anonymous && $.inArray('Power User', this.current_user.roles) > -1) {
+                if (!this.current_user.anonymous && $.inArray('Publication Mod Power User', this.current_user.roles) > -1) {
                     addEdit = true;
                 }
 

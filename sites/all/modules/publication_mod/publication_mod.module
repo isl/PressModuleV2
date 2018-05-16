@@ -216,7 +216,7 @@ function publication_mod_menu(){
     'description' => 'Add Project',
     'page callback' => 'publication_mod_add_project',
     'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('Power User'),
+    'access arguments' => array('Publication Mod Power User'),
     'file' => 'publication_mod.pages.inc',
   );
 
@@ -271,9 +271,9 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
           }
         }
 
-        if (publication_mod_user_has_role('authenticated user') && $argument->field_category){
-          if($argument->field_blazegraph_uuid){
-            $uuid = $argument->field_blazegraph_uuid['und'][0]['value'];
+        if (publication_mod_user_has_role('authenticated user') && $argument->pub_mod_field_category){
+          if($argument->pub_mod_field_blazegraph_uuid){
+            $uuid = $argument->pub_mod_field_blazegraph_uuid['und'][0]['value'];
           }else{
             $uuid = $argument->uuid;
           }
@@ -287,7 +287,7 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
               'localized_options' => array(
                 'query' => array(
                   'uuid' => $uuid,
-                  'category' => $argument->field_category['und'][0]['value']
+                  'category' => $argument->pub_mod_field_category['und'][0]['value']
                 ),
                 'html' => TRUE
               )
@@ -522,10 +522,10 @@ function _get_user_info_to_json(){
   if (!user_is_anonymous()){
     $user_data = user_load($user->uid); //TODO Fix Anonymous
     $current_user = $current_user . "{uuid: '". $user_data->uuid . "', name:'" .
-          $user_data->field_first_name['und'][0]['value'] . " " .
-          $user_data->field_last_name['und'][0]['value'] . "', mail:'" .
+          $user_data->pub_mod_field_first_name['und'][0]['value'] . " " .
+          $user_data->pub_mod_field_last_name['und'][0]['value'] . "', mail:'" .
           $user_data->mail . "', lab: '" .
-          $user_data->field_laboratory['und'][0]['value'] ."', roles: ";
+          $user_data->pub_mod_field_organization['und'][0]['value'] ."', roles: ";
     $current_user = $current_user . "[";
     foreach($user->roles as $value){
       $current_user = $current_user . "'". $value . "',";
@@ -545,7 +545,7 @@ function _get_labs_to_json(){
   $labs = '';
   $labs = $labs . "{";
   $all_fields = field_info_fields();
-  $lab_allowed_values = list_allowed_values($all_fields["field_laboratory"]);
+  $lab_allowed_values = list_allowed_values($all_fields["pub_mod_field_organization"]);
   foreach(array_keys($lab_allowed_values) as $key){
     $labs = $labs . "'". $key . "':'" . $lab_allowed_values[$key] . "',";
   }
@@ -626,10 +626,10 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
 
   $ewrapper->title->set($title);
 
-  $ewrapper->field_category->set($category);
+  $ewrapper->pub_mod_field_category->set($category);
 
   if(isset($uuid)){
-    $ewrapper->field_blazegraph_uuid->set($uuid);
+    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
   }
   // Setting the body is a bit different from other properties or fields
   // because the body can have both its complete value and its
@@ -659,7 +659,7 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
 
     $file_temp = file_get_contents($path);
 
-    $file_temp = file_save_data($file_temp, 'public://publications/' . $filename, FILE_EXISTS_RENAME);
+    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
 
     $entity->field_file = array(
       'und' => array(
@@ -682,7 +682,7 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
   }
   $ewrapper->save();
   header('Content-Type: application/json');
-  $ewrapper->field_blazegraph_uuid->set($ewrapper->value()->uuid);
+  $ewrapper->pub_mod_field_blazegraph_uuid->set($ewrapper->value()->uuid);
   $ewrapper->save();
   $result = array(
     'uuid' => $ewrapper->value()->uuid,
@@ -709,7 +709,7 @@ function publication_mod_update_pubs($blazegraph_uris = array()){
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', 'publications')
-    ->fieldCondition('field_blazegraph_uuid', 'value', $blazegraph_uris, 'IN');
+    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $blazegraph_uris, 'IN');
 
   $result = $query->execute();
 
@@ -721,12 +721,12 @@ function publication_mod_update_pubs($blazegraph_uris = array()){
 
   foreach($ids as $id){
     $entity = node_load($id);
-    $pub_page = _publication_mod_create_page_body($entity->field_blazegraph_uuid['und'][0]['value']);
+    $pub_page = _publication_mod_create_page_body($entity->pub_mod_field_blazegraph_uuid['und'][0]['value']);
 
     $entity->title= $pub_page['title'];
     $entity->body['und'][0]['value'] = $pub_page['html'];
     $entity->body['und'][0]['summary'] = $pub_page['summary'];
-    $entity->field_category['und'][0]['value'] = $pub_page['category'];
+    $entity->pub_mod_field_category['und'][0]['value'] = $pub_page['category'];
     node_save($entity);
   }
   http_response_code(200);
@@ -759,7 +759,7 @@ function publication_mod_ajax_callback_edit_pub(){
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
     ->entityCondition('bundle', 'publications')
-    ->fieldCondition('field_blazegraph_uuid', 'value', $uuid, '=');
+    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
 
   $result = $query->execute();
 
@@ -782,7 +782,7 @@ function publication_mod_ajax_callback_edit_pub(){
   $entity->title= $title;
   $entity->body['und'][0]['value'] = $body_content;
   $entity->body['und'][0]['summary'] = $summary;
-  $entity->field_category['und'][0]['value'] = $category;
+  $entity->pub_mod_field_category['und'][0]['value'] = $category;
   // echo print_r($ewrapper);
 
   if (array_key_exists("myfile", $_FILES) &&    //If file exists, update it
@@ -794,7 +794,7 @@ function publication_mod_ajax_callback_edit_pub(){
 
     $file_temp = file_get_contents($path);
 
-    $file_temp = file_save_data($file_temp, 'public://publications/' . $filename, FILE_EXISTS_RENAME);
+    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
 
     $entity->field_file = array(
       'und' => array(
@@ -861,15 +861,15 @@ function publication_mod_ajax_callback_get_path(){
 
 function publication_mod_field_info(){
   return array(
-    'publication_mod_organization' => array(
-      'label' => t('My Field'),
-      'description' => t('Description of My Field'),
+    'pub_mod_organization' => array(
+      'label' => t('Publication Mod Organization'),
+      'description' => t('User Organization Field'),
       'settings' => array('max_length' => 255),
       'instance_settings' => array(
         'text_processing' => 0,
       ),
       'default_widget' => 'options_select',
-      'default_formatter' => 'my_field_default',
+      'default_formatter' => 'pub_mod_organization_formatter',
     )
   );
 }
@@ -880,7 +880,7 @@ function publication_mod_field_info(){
  * 
  */
 function publication_mod_field_is_empty($item, $field) {
-  return empty($item['option']);
+  return (empty($item['key']) || empty($item['value'])) ;
 }
 
 
@@ -891,7 +891,7 @@ function publication_mod_field_is_empty($item, $field) {
  */
 function publication_mod_field_widget_info_alter(&$info){
   $widgets = array(
-    'options_select' => array('publication_mod_organization'),
+    'options_select' => array('pub_mod_organization'),
   );
 
   foreach($widgets as $widget => $field_types){
@@ -901,10 +901,10 @@ function publication_mod_field_widget_info_alter(&$info){
 
 function publication_mod_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
   foreach ($items as $delta => $item) {
-    if(!empty($item['option'])){
+    if(!(empty($item['key']) || empty($item['value']))){
       // if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
         // $errors[$field['field_name']][$langcode][$delta][] = array(
-        //   'error' => 'publication_mod_field_invalid',
+        //   'error' => 'pub_mod_field_invalid',
         //   'message' => t('Lab Value must be one word and contain letters, numbers and _')
         // );
       // }
@@ -960,9 +960,9 @@ function publication_mod_options_list($field, $instance, $entity_type, $entity){
 
 function publication_mod_field_formatter_info(){
   return array(
-    'my_field_default' => array(
+    'pub_mod_organization_formatter' => array(
       'label' => t('Default Formatter'),
-      'field types' => array('publication_mod_organization')
+      'field types' => array('pub_mod_organization')
     )
   );
 }
@@ -972,7 +972,7 @@ function publication_mod_field_formatter_view($entity_type, $entity, $field, $in
   //Currently we only have one display option, use switch
   //to prepare for future options.
   switch ($display['type']) {
-    case 'my_field_default':
+    case 'pub_mod_organization_formatter':
       foreach ($items as $delta => $item) {
         if (isset($options[$item['option']]['option'])) {
           $output = field_filter_xss($options[$item['option']]['option']);
@@ -995,7 +995,7 @@ function publication_mod_feeds_processor_targets_alter(&$targets, $entity_type, 
       $info = field_info_field($name);
       unset($callback);
 
-      if ($info['type'] == 'publication_mod_organization'){
+      if ($info['type'] == 'pub_mod_organization'){
         $callback = 'publication_mod_target_setter';
       }
 
@@ -1034,13 +1034,14 @@ function publication_mod_target_setter($source, $entity, $target, $values, $mapp
     $bg_value = trim($org_info[1]);
     $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
     foreach ($accepted_values as $a_value) {
-      $options[$a_value] = $bg_value;
+      $options[$a_value] = array('key' => $key, 'value' => $bg_value);
     }
   }
   watchdog('publication_mod', 'a_value: "%a_value"', 
     array(
-      '%a_value' => $options[$values[0]],
+      '%a_value' => print_r($options[$values[0]], true),
     ), WATCHDOG_DEBUG);
 
-  $entity->{$target}['und'][0]['option'] = $options[$values[0]];
+  $entity->{$target}['und'][0]['key'] = $options[$values[0]]['key'];
+  $entity->{$target}['und'][0]['value'] = $options[$values[0]]['value'];
 }

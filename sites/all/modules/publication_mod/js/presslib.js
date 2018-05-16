@@ -319,7 +319,7 @@
             for (var i = 0; i < results.length; i++) {
                 if ('org' in results[i]) {
                     var $ul = $('#lab-editable', this.element);
-                    if ($.inArray('Power User', this.current_user.roles) === -1 &&
+                    if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1 &&
                         results[i].org.value.split('#')[1] === this.labs[this.current_user.lab]) {
                         var valid = true;
                         $('.lab-item').each($.proxy(function(index, element) {
@@ -589,7 +589,7 @@
             });
 
             if (!this.editMode) {
-                if ($.inArray('Power User', this.current_user.roles) === -1) {
+                if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1) {
                     $ul.append($('<li id="' + labs[this.current_user.lab] + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labs[this.current_user.lab] + '</li>'));
                     $ul.show();
                 } else {
@@ -1430,7 +1430,7 @@
 
             //Validate if current user is contributor or if Power User
             var power_user = false;
-            if ($.inArray('Power User', this.current_user.roles) >= 0) {
+            if ($.inArray('Publication Mod Power User', this.current_user.roles) >= 0) {
                 power_user = true;
             }
             var current_user_added = false
