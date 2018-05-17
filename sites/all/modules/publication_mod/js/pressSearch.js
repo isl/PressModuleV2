@@ -989,7 +989,7 @@
                 if (searchLabel !== '')
                     searchLabel += ', ';
 
-                orgQuery = '?pub press:belongsTo press:' + orgs.attr('id') + '. \n';
+                orgQuery = '?pub press:belongsTo <' + this.prefix + 'Organization/' + orgs.attr('id') + '>. \n';
                 searchLabel += 'Organization: ' + orgs.contents().not(orgs.children()).text() + ', ';
                 orgIds.push(orgs.attr('id'));
             } else {
@@ -2194,7 +2194,7 @@
                 var orgDiv = $('<div class="search-filter search-filter-org" data-p="press:belongsTo" ' +
                     'data-o="?org" data-oVal ="<' + orgs[i].val + '>"></div>');
                 var org = $('<a  class="col-xs-12" style="display:block;">' +
-                    orgs[i].val.split('#')[1] + ' <i style="color:grey">[' + orgs[i].count + ']</i></a>');
+                    orgs[i].val.split('#Organization/')[1] + ' <i style="color:grey">[' + orgs[i].count + ']</i></a>');
                 orgDiv.append(org);
                 orgsDiv.append(orgDiv);
 
