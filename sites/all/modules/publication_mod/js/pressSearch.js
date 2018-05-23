@@ -150,6 +150,8 @@
             }).bind(this));
             $('#searchByFields', this.element).on('click', (function() {
                 this.searchByFields();
+                $('#category_list_button', this.element).css('visibility', '');
+                $('#advanced_search_button', this.element).css('visibility', '');
             }).bind(this));
 
             var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
@@ -215,6 +217,8 @@
 
             if (!$.isEmptyObject(this.parameters) && !window.location.hash.startsWith('#overlay=')) {
                 if (this.parameters.type) {
+                    $('#category_list_button', this.element).css('visibility', '');
+                    $('#advanced_search_button', this.element).css('visibility', '');
                     if (this.parameters.type === 'browse') {
                         this.searchByCategory(this.parameters.category, this.parameters.offset);
                     } else if (this.parameters.type === 'advanced') {
@@ -808,6 +812,8 @@
                     // that.category_list.hide();
                     that.clearSearchInput();
                     that.clearAdvancedSearch();
+                    $('#category_list_button', that.element).css('visibility', '');
+                    $('#advanced_search_button', that.element).css('visibility', '');
                     that.searchByCategory($(this).attr('id'));
                 };
             })(this));
