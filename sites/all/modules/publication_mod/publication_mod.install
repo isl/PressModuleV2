@@ -352,6 +352,10 @@ function publication_mod_enable() {
         'type' => 'textfield',
         'weight' => '4'
       ),
+      'display' => array(
+        'label' => 'hidden',
+        'type' => 'hidden',
+      ),
     );
     field_create_instance($instance);
   }

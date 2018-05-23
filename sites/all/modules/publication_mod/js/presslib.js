@@ -148,16 +148,14 @@
         if (typeof options.editPublication === 'object')
             this.editPublication = options.editPublication;
 
+        console.log(this.current_user);
 
         this.loader = $('<div id="loader"></div>');
         this.loader.hide();
-        console.log(this.loader);
-        console.log(typeof this.loader);
-        console.log(this.element);
-        console.log(typeof this.element);
+        
         this.loader.show();
         this.element.append(this.loader);
-        console.log(5);
+        
         $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
             if (!(a1[1] === "success" && a2[1] === "success" && a3[1] === "success")) {
                 console.error('GET was unsuccesfull');
@@ -547,9 +545,10 @@
             this.element.append($labgroup);
 
             var labValues = Object.keys(labs);
-            // for (key in labs) {
-            //     labValues.push(labs[key]);
-            // }
+            var labValueToKey = {};
+            for (key in labs) {
+                labValueToKey[labs[key]] = key;
+            }
             var labsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
@@ -587,13 +586,13 @@
                     }
                 }
             });
-
+            console.log(labs);
             if (!this.editMode) {
                 if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1) {
-                    $ul.append($('<li id="' + labs[this.current_user.lab] + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labs[this.current_user.lab] + '</li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '</li>'));
                     $ul.show();
                 } else {
-                    $ul.append($('<li id="' + labs[this.current_user.lab] + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labs[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
                     $ul.show();
                 }
             }
