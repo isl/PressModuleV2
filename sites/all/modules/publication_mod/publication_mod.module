@@ -297,8 +297,9 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
         $data['tabs'][0]['count'] = count($data['tabs'][0]['output']);
       }
     }
-  }else if(substr($root_path, 0, 5) === 'user/'){
+  }else if($root_path === 'user/%'){
     watchdog('publication_mod', 'local_tasks: root_path: %root_path <br/> $data: <pre> %data </pre><br/> router_item: <pre> %router_item </pre>', array('%root_path' => $root_path, '%data'=>print_r($data, true), '%router_item' => print_r($router_item, true)), WATCHDOG_DEBUG);
+
     $uuid = $router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid['und'][0]['value'];
     if(uuid_is_valid($uuid)){
       $uuid = "urn:uuid:" . $uuid;
