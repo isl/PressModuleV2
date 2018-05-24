@@ -50,7 +50,7 @@ var JSONfields = {
 		},
 	},
 	"Book": {
-		"Chapter_in_book": ["hasChapterAuthors", "chapterTitle", "bookTitle","bookSeries", "hasBookEditors", ["year", "edition"],
+		"Chapter_In_Book": ["hasChapterAuthors", "chapterTitle", "bookTitle","bookSeries", "hasBookEditors", ["year", "edition"],
 			["volume", "pages"],
 			["publisher", "publisherLocation"],
 			["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
@@ -149,7 +149,7 @@ var JSONrequiredFields = {
 		},
   },
   "Book": {
-    "Chapter_in_book": ['hasChapterAuthors', 'chapterTitle', 'bookTitle', 'year'],
+    "Chapter_In_Book": ['hasChapterAuthors', 'chapterTitle', 'bookTitle', 'year'],
     "Editor": ['hasAuthors', 'bookTitle', 'year'],
     "Whole_Book": ['hasAuthors', 'bookTitle', 'year'],
     "Monograph": ['hasAuthors', 'bookTitle', 'year']
@@ -198,7 +198,7 @@ var JSONContributorOrder= {
     "Edited_Proceeding": ['hasBookEditors'],
     "Invited_Paper": ['hasAuthors', 'hasBookEditors'],
 
-    "Chapter_in_book": ['hasChapterAuthors', 'hasBookEditors'],
+    "Chapter_In_Book": ['hasChapterAuthors', 'hasBookEditors'],
     "Editor": ['hasAuthors', 'hasBookEditors'],
     "Whole_Book": ['hasAuthors', 'hasBookEditors'],
     "Monograph": ['hasAuthors', 'hasBookEditors'],
@@ -236,7 +236,7 @@ var titleFields = {
     "Invited_Paper": 'englishTitle'
   },
   "Book": {
-    "Chapter_in_book": 'chapterTitle',
+    "Chapter_In_Book": 'chapterTitle',
     "Editor": 'bookTitle',
     "Whole_Book": 'bookTitle',
     "Monograph": 'bookTitle'
@@ -266,15 +266,15 @@ var titleFields = {
 
 //DOI Category to PRESS Convertion
 var doiCategoriesToPRESS = {
-  'book-section':['Book', 'Chapter_in_book'],
+  'book-section':['Book', 'Chapter_In_Book'],
   'monograph': ['Book', 'Monograph'],
   'report': ['Other', 'Other_Tech_Report'],
   'journal-article': ['Journal', 'Journal_Article'],
-  'book-part': ['Book', 'Chapter_in_book'],
+  'book-part': ['Book', 'Chapter_In_Book'],
   'other': ['Other', 'Miscellaneous'],
   'book': ['Book', 'Whole_Book'],
   'proceedings-article': ['Conference_Workshop', 'Paper_In_Proceedings_Full_Paper_Reviewed'],
-  'book-chapter': ['Book', 'Chapter_in_book'],
+  'book-chapter': ['Book', 'Chapter_In_Book'],
   'report-series': ['Other', 'Other_Tech_Report'],
   'proceedings': ['Conference_Workshop', 'Paper_In_Proceedings_Full_Paper_Reviewed'],
   'journal-issue': ['Journal', 'Other_Journal'],

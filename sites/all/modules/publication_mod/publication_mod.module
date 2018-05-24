@@ -473,7 +473,7 @@ function _publication_mod_create_page_body($pub_uri){
             $title = $d->o->value;
           }
           break;
-        case 'Chapter_in_book':
+        case 'Chapter_In_Book':
           if($title_type == 'chapterTitle'){
             $title = $d->o->value;
           }
@@ -1146,4 +1146,13 @@ function publication_mod_user_presave(&$edit, $account, $category){
 
 
   watchdog("Blazegraph Person Creation", print_r($result, true), array(), WATCHDOG_NOTICE);
+}
+
+function publication_mod_user_cancel($edit, $account, $method){
+  watchdog('publication_mod', '$edit <pre>%edit</pre><br/>$account <pre>%account</pre><br/>$method <pre>%method</pre>',
+    array(
+      '%edit' => print_r($edit, true),
+      '%account' => print_r($account, true),
+      '%method' => print_r($method, true),
+    ), WATCHDOG_DEBUG);
 }
