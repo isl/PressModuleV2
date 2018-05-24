@@ -336,7 +336,7 @@ function _publication_mod_create_page_body($pub_uri){
   //             BIND (<'. $pub_uri .'> as ?pub).
   //             ?pub ?p ?o.
   //             ?p rdf:type owl:DatatypeProperty.
-  //             FILTER(?p != press:CreationDate && ?p != press:ModifiedDate && ?p != press:Publication_UUID).
+  //             FILTER(?p != press:creationDate && ?p != press:modifiedDate && ?p != press:publicationUuid).
   //             ?p rdfs:label ?plabel.
   //           }';
 
@@ -345,7 +345,7 @@ function _publication_mod_create_page_body($pub_uri){
               BIND (<'. $pub_uri .'> as ?pub).
               ?pub ?p ?o.
               optional{?p rdf:type ?type}.
-              FILTER(?p = rdf:type || (?p != press:CreationDate && ?p != press:ModifiedDate && ?p != press:Publication_UUID && ?type = owl:DatatypeProperty)).
+              FILTER(?p = rdf:type || (?p != press:creationDate && ?p != press:modifiedDate && ?p != press:publicationUuid && ?type = owl:DatatypeProperty)).
               OPTIONAL{?p rdfs:label ?plabel}.
             }';
 
@@ -366,7 +366,7 @@ function _publication_mod_create_page_body($pub_uri){
           select * where{
             BIND (<'. $pub_uri .'> as ?pub).
             ?pub press:hasContributor ?slot.
-            ?slot press:list_index ?index.
+            ?slot press:listIndex ?index.
             ?con_type rdfs:subPropertyOf* press:contributorType.
             ?slot ?con_type ?con.
             ?con foaf:givenName ?givenName.
@@ -455,7 +455,7 @@ function _publication_mod_create_page_body($pub_uri){
       if(filter_var($d->o->value, FILTER_VALIDATE_URL)){
         $oValue = '<a href="'. $d->o->value . '" target="_blank">' . $d->o->value . '</a>';
       }else{
-        if($d->plabel->value == 'DOI'){
+        if($d->plabel->value == 'doi'){
           $oValue = '<a href="https://doi.org/'. $d->o->value . '" target="_blank">' . $d->o->value . '</a>';
         }
       }
@@ -465,21 +465,21 @@ function _publication_mod_create_page_body($pub_uri){
     if (strpos($d->plabel->value, 'Title') !== false) {
       $title_type = explode("#", $d->p->value)[1];
       switch ($pub_type) {
-        case 'Edited_proceeding':
+        case 'Edited_Proceeding':
         case 'Editor':
-        case 'Whole_book':
+        case 'Whole_Book':
         case 'Monograph':
-          if($title_type == 'Book_Title'){
+          if($title_type == 'bookTitle'){
             $title = $d->o->value;
           }
           break;
         case 'Chapter_in_book':
-          if($title_type == 'Chapter_Title'){
+          if($title_type == 'chapterTitle'){
             $title = $d->o->value;
           }
           break;
         default:
-          if($title_type == 'English_Title'){
+          if($title_type == 'englishTitle'){
             $title = $d->o->value;
           }
           break;
@@ -954,7 +954,7 @@ function publication_mod_options_list($field, $instance, $entity_type, $entity){
   $query = 'prefix press:<' . $ontologyPrefix .'>'.
 'select ?org ?org_name where{'.
   '?org rdf:type press:Organization;'.
-       'press:Organization_Name ?org_name.'.
+       'press:organizationName ?org_name.'.
 '}';
 
   $q = http_build_query(array('query' => $query));
@@ -1122,10 +1122,10 @@ function publication_mod_user_presave(&$edit, $account, $category){
   "};".
   "INSERT DATA{".
     "<urn:uuid:". $account->uuid."> rdf:type foaf:Person;".
-    "<". $prefix ."Person_UUID> \u0022urn:uuid:" . $account->uuid. "\u0022;".
+    "<". $prefix ."personUuid> \u0022urn:uuid:" . $account->uuid. "\u0022;".
     "foaf:familyName \u0022". $account->pub_mod_field_last_name['und'][0]['value'] ."\u0022;" .
     "foaf:givenName \u0022" . $account->pub_mod_field_first_name['und'][0]['value'] ."\u0022;".
-    "<". $prefix ."Person_Group> \u0022FORTH_ICS_Author\u0022;".
+    "<". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022;".
     "foaf:mbox \u0022mailto:". $account->mail . "\u0022;".
     "<". $prefix ."memberOf> <". $prefix . "Organization/" .$account->pub_mod_field_organization['und'][0]['option'] .">." .
   "}";

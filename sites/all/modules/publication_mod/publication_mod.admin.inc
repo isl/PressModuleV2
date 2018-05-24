@@ -172,12 +172,12 @@ function publication_mod_import_submit_callback($form, $form_state){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  //Get all pubs without a Publication_URL
+  //Get all pubs without a publicationUrl
 
   $query = 'prefix press: <'. $ontologyPrefix. '>
 			select * where{
 			  ?pub rdf:type [rdfs:subClassOf* press:Publication].
-			  FILTER NOT EXISTS{?pub press:Publication_URL ?Publication_URL}.
+			  FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
 			  ?pub rdf:type ?type.
 			}';
 
@@ -206,17 +206,17 @@ function publication_mod_import_submit_callback($form, $form_state){
 
 	$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri);
 
-	//Add Publication_URL to created publication.
+	//Add publicationUrl to created publication.
 	$update = 'prefix press: <'. $ontologyPrefix. '>
 			delete{
-			  ?pub press:Publication_URL ?old_url.
+			  ?pub press:publicationUrl ?old_url.
 			}
 			insert{
-			  ?pub press:Publication_URL "'.$new_node_info['path'].'".
+			  ?pub press:publicationUrl "'.$new_node_info['path'].'".
 			}
 			where{
 			  BIND (<'. $pub_uri .'> as ?pub).
-			  OPTIONAL {?pub press:Publication_URL ?old_url}.
+			  OPTIONAL {?pub press:publicationUrl ?old_url}.
 			}';
 
 	$q = http_build_query(array('update' => $update));
@@ -266,7 +266,7 @@ function publication_mod_edit_orgs_form($form, &$form_state){
 //   $query = 'prefix press:<' . $ontologyPrefix .'>'.
 // 'select ?org ?org_name where{'.
 //   '?org rdf:type press:Organization;'.
-//        'press:Organization_Name ?org_name.'.
+//        'press:organizationName ?org_name.'.
 // '}';
 
 //   $q = http_build_query(array('query' => $query));
@@ -355,7 +355,7 @@ function publication_mod_orgs_form_submit($form, $form_state){
 	    $bg_value = trim($org_info[1]);
 	    $new_orgs[$bg_value] = $key;
 	    $update_query[] = '<'. $blazegraph_info['blazegraph_prefix']. 'Organization/' . $bg_value . '> rdf:type press:Organization; ';
-	    $update_query[] = 'press:Organization_Name "'. $key .'";';
+	    $update_query[] = 'press:organizationName "'. $key .'";';
 	    $update_query[] = 'rdfs:label "'. $key .'".';
 	}
   }
@@ -393,7 +393,7 @@ function publication_mod_import_orgs($form, $form_state){
   $query = 'prefix press:<' . $ontologyPrefix .'> '.
 	'select ?org ?org_name where{ '.
 	'?org rdf:type press:Organization; '.
-	   'press:Organization_Name ?org_name. '.
+	   'press:organizationName ?org_name. '.
 	'}';
 
   $q = http_build_query(array('query' => $query));

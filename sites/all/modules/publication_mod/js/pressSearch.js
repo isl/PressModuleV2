@@ -339,7 +339,7 @@
                     data: {
                         query: 'prefix press: <' + this.prefix + '> ' +
                             'SELECT distinct ?tag WHERE { ' +
-                            '?pub press:Tag ?tag} '
+                            '?pub press:tag ?tag} '
                     }
                 })
                 .done($.proxy(function(response) {
@@ -350,7 +350,7 @@
                     console.error(response);
                 });
         },
-        //Get Tag Field using typeahead.js and sortable.js
+        //Get tag Field using typeahead.js and sortable.js
         getTagField: function(response) {
             var tags = [];
             for (var i = 0; i < response.results.bindings.length; i++) {
@@ -462,7 +462,7 @@
                                     BDSquery += '?uuid foaf:familyName ?familyName. \n' +
                                         '?uuid foaf:givenName ?givenName. \n' +
                                         'optional{?uuid foaf:mbox ?mbox}. \n' +
-                                        '?uuid press:Person_Group "' + groupKey + '". }';
+                                        '?uuid press:personGroup "' + groupKey + '". }';
 
                                     settings.data = {
                                         query: BDSquery,
@@ -601,7 +601,7 @@
 
             return $group;
         },
-        //Get Tag Field
+        //Get tag Field
         getYearField: function() {
             return $('<div class="form-group"><div>' +
                 '<label class="col-sm-2 control-label" for="year-from">Year From:</label>' +
@@ -836,7 +836,7 @@
             query += '?uuid foaf:familyName ?familyName. \n';
             query += 'optional{?uuid foaf:givenName ?givenName.} \n';
             query += 'optional{?uuid foaf:mbox ?mbox}. \n';
-            query += '?uuid press:Person_Group ?group. }';
+            query += '?uuid press:personGroup ?group. }';
             return this.getQuery(query);
         },
         //Back Button utility, return to state
@@ -906,9 +906,9 @@
         searchByFields: function(offset, filters, pushState, stateObj) {
             var prefixes = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' + //Constructing Query
                 'prefix press: <' + this.prefix + '> \n';
-            var select = 'SELECT ?pub (SUM(?score) as ?sumScore) ?year ?English_Title ' +
-                '?order ?type ?External_Link ?Book_Title ?Chapter_Title ' +
-                '?typeID ?Publication_URL ?Local_Link WHERE{ \n';
+            var select = 'SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ' +
+                '?order ?type ?externalLink ?bookTitle ?chapterTitle ' +
+                '?typeID ?publicationUrl ?localLink WHERE{ \n';
 
             var field = $('#free-text', this.element).val();
             var yearFrom = $('#year-from', this.element).val();
@@ -1025,13 +1025,13 @@
                 }
 
                 if (tags.length === 1) {
-                    searchLabel += 'Tag: ';
+                    searchLabel += 'tag: ';
                 } else {
                     searchLabel += 'Tags: ';
                 }
 
                 for (var i = 0; i < tags.length; i++) {
-                    tagQuery += '?pub press:Tag "' + $(tags[i]).attr('id') + '". \n';
+                    tagQuery += '?pub press:tag "' + $(tags[i]).attr('id') + '". \n';
                     tagIds.push($(tags[i]).attr('id'));
                     searchLabel += $(tags[i]).attr('id');
                     if (i < tags.length - 1)
@@ -1097,7 +1097,7 @@
                     searchLabel += ', ';
 
                 searchLabel += 'Year: ';
-                yearQuery = '?pub press:Year ?year. \n';
+                yearQuery = '?pub press:year ?year. \n';
                 yearQuery += 'FILTER (';
                 var yearAnd = '';
                 var sameYear = false;
@@ -1144,7 +1144,7 @@
 
                 reviewedQuery = '?pub rdf:type ?type. \n';
                 reviewedQuery += '?type rdfs:subClassOf* ?ancClass. \n';
-                reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_reviewed || ?ancClass = press:Conf_Peer_reviewed). \n';
+                reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed). \n';
                 searchLabel += ' Peer Reviewed Only';
             } else if (category !== '') {
                 if (searchLabel !== '')
@@ -1168,7 +1168,7 @@
                         reviewedQuery += '?pub rdf:type ?type. \n';
                         reviewedQuery += '?type rdfs:subClassOf* press:' + category + '. \n';
                         reviewedQuery += '?type rdfs:subClassOf* ?ancClass. \n';
-                        reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_reviewed || ?ancClass = press:Conf_Peer_reviewed). \n';
+                        reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed). \n';
                         searchLabel += this.category_labels[category] + ', Peer Reviewed Only';
                     }
                 }
@@ -1183,16 +1183,16 @@
                 // fieldQuery += '?pub ?predicate ?searchField. \n';
                 // fieldQuery += '?pub rdf:type [rdfs:subClassOf* press:Publication]. \n';
                 // fieldQuery += 'BIND(concat(str(?score), str(?pub)) as ?scoreOrder). \n';
-                // fieldQuery += 'MINUS {?pub press:English_Abstract ?searchField}. \n';
-                // fieldQuery += 'MINUS {?pub press:Publication_URL ?searchField}. \n';
+                // fieldQuery += 'MINUS {?pub press:englishAbstract ?searchField}. \n';
+                // fieldQuery += 'MINUS {?pub press:publicationUrl ?searchField}. \n';
 
                 fieldQuery += '    { \n' + //NOTE: PRESS V3
                     '       ?searchField bds:search "' + field + '". \n' +
                     '       ?searchField bds:relevance ?score. \n' +
                     '       ?pub ?predicate ?searchField. \n' +
                     '       ?pub rdf:type [rdfs:subClassOf* press:Publication]. \n' +
-                    '       MINUS {?pub press:English_Abstract ?searchField}. \n' +
-                    '       MINUS {?pub press:Publication_URL ?searchField}. \n' +
+                    '       MINUS {?pub press:englishAbstract ?searchField}. \n' +
+                    '       MINUS {?pub press:publicationUrl ?searchField}. \n' +
                     '     }UNION{\n' +
                     '       ?personSearchField bds:search "' + field + '". \n' +
                     '       ?personSearchField bds:relevance ?score. \n' +
@@ -1207,8 +1207,8 @@
                     '?searchField bds:relevance ?score. \n' +
                     '?pub ?predicate ?searchField. \n' +
                     '?pub rdf:type [rdfs:subClassOf* press:Publication]. \n' +
-                    'MINUS {?pub press:English_Abstract ?searchField}. \n' +
-                    'MINUS {?pub press:Publication_URL ?searchField}. \n';
+                    'MINUS {?pub press:englishAbstract ?searchField}. \n' +
+                    'MINUS {?pub press:publicationUrl ?searchField}. \n';
                 authorFieldsQuery = '     }UNION{\n' +
                     '       ?personSearchField bds:search "' + field + '". \n' +
                     '       ?personSearchField bds:relevance ?score. \n' +
@@ -1223,29 +1223,29 @@
                 restFields += '?pub rdf:type ?type. \n';
             }
             if (yearQuery === '') {
-                restFields += '?pub press:Year ?year. \n';
+                restFields += '?pub press:year ?year. \n';
             }
             if (field === '') {
                 restFields += 'BIND(concat(str(?year), str(?pub)) as ?order). \n';
             }
             restFields += '?type rdfs:subClassOf* press:Publication. \n' +
                 'BIND(strafter(str(?type), "#") AS ?typeID). \n' +
-                'OPTIONAL{?pub press:External_Link ?External_Link}. \n' +
-                'OPTIONAL{?pub press:Book_Title ?Book_Title}. \n' +
-                'OPTIONAL{?pub press:Chapter_Title ?Chapter_Title}. \n' +
-                'OPTIONAL{?pub press:English_Title ?English_Title}. \n' +
-                'OPTIONAL{?pub press:Local_Link ?Local_Link}. \n' +
-                'OPTIONAL{?pub press:Publication_URL ?Publication_URL}. \n';
+                'OPTIONAL{?pub press:externalLink ?externalLink}. \n' +
+                'OPTIONAL{?pub press:bookTitle ?bookTitle}. \n' +
+                'OPTIONAL{?pub press:chapterTitle ?chapterTitle}. \n' +
+                'OPTIONAL{?pub press:englishTitle ?englishTitle}. \n' +
+                'OPTIONAL{?pub press:localLink ?localLink}. \n' +
+                'OPTIONAL{?pub press:publicationUrl ?publicationUrl}. \n';
 
             var closure = '';
             if (field !== '') {
-                closure += '}group by ?pub ?year ?English_Title ?order ?type ' +
-                    '?External_Link ?Book_Title ?Chapter_Title ?typeID ?Publication_URL ' +
-                    '?Local_Link order by desc(?sumScore)';
+                closure += '}group by ?pub ?year ?englishTitle ?order ?type ' +
+                    '?externalLink ?bookTitle ?chapterTitle ?typeID ?publicationUrl ' +
+                    '?localLink order by desc(?sumScore)';
             } else {
-                closure += '}group by ?pub ?year ?English_Title ?order ?type ' +
-                    '?External_Link ?Book_Title ?Chapter_Title ?typeID ?Publication_URL ' +
-                    '?Local_Link order by desc(?order)';
+                closure += '}group by ?pub ?year ?englishTitle ?order ?type ' +
+                    '?externalLink ?bookTitle ?chapterTitle ?typeID ?publicationUrl ' +
+                    '?localLink order by desc(?order)';
             }
 
             var searchQuery = '';
@@ -1468,16 +1468,16 @@
                     }
                 }
             }
-            var fieldQuery = '?pub press:Year ?year. \n' +
+            var fieldQuery = '?pub press:year ?year. \n' +
                 'BIND(concat(str(?year), str(?pub)) as ?order). \n' +
                 //  '?pub press:belongsTo ?org. \n'+
-                //  '?org press:Organization_Name ?orgName. \n'+
-                'OPTIONAL{?pub press:External_Link ?External_Link}. \n' +
-                'OPTIONAL{?pub press:Book_Title ?Book_Title}. \n' +
-                'OPTIONAL{?pub press:Chapter_Title ?Chapter_Title}. \n' +
-                'OPTIONAL{?pub press:English_Title ?English_Title}. \n' +
-                'OPTIONAL{?pub press:Local_Link ?Local_Link}. \n' +
-                'OPTIONAL{?pub press:Publication_URL ?Publication_URL}. \n';
+                //  '?org press:organizationName ?orgName. \n'+
+                'OPTIONAL{?pub press:externalLink ?externalLink}. \n' +
+                'OPTIONAL{?pub press:bookTitle ?bookTitle}. \n' +
+                'OPTIONAL{?pub press:chapterTitle ?chapterTitle}. \n' +
+                'OPTIONAL{?pub press:englishTitle ?englishTitle}. \n' +
+                'OPTIONAL{?pub press:localLink ?localLink}. \n' +
+                'OPTIONAL{?pub press:publicationUrl ?publicationUrl}. \n';
 
             var closure = '} order by desc(?order)';
 
@@ -1583,12 +1583,12 @@
                 query += '?pub = <' + publications[i] + '> ';
             }
             query += '). \n';
-            query += '?pub press:Year ?year. \n';
+            query += '?pub press:year ?year. \n';
             query += 'BIND(concat(str(?year), str(?pub)) as ?order). \n';
             query += '?con rdfs:subPropertyOf* press:contributorType. \n';
             query += '?slot ?con ?person. \n';
             query += 'BIND(strafter(str(?con), "#") AS ?type). \n';
-            query += '?slot press:list_index ?personIndex. \n';
+            query += '?slot press:listIndex ?personIndex. \n';
             query += 'OPTIONAL{?person foaf:givenName ?givenName}. \n';
             query += '?person foaf:familyName ?familyName. \n';
 
@@ -1609,9 +1609,9 @@
             //   query += '?pub = <'+ publications[i] + '> ';
             // }
             // query += '). \n';
-            // query += '?org press:Organization_Name ?orgName. \n';
+            // query += '?org press:organizationName ?orgName. \n';
             // query += '}UNION{ \n';
-            query += '?pub press:Tag ?Tag. \n';
+            query += '?pub press:tag ?tag. \n';
             query += 'FILTER (';
             for (var i = 0; i < publications.length; i++) {
                 if (i > 0) query += '||';
@@ -1685,7 +1685,7 @@
                 'WHERE {\n' +
                 'INCLUDE %filterSet. \n' +
                 '?pub ?p ?o. \n' +
-                'FILTER (?p = press:Year || ?p = press:belongsTo || ?p = rdf:type)\n' +
+                'FILTER (?p = press:year || ?p = press:belongsTo || ?p = rdf:type)\n' +
                 '}group by ?p ?o order by desc(?oCount)';
             return this.getQuery(completeQuery);
         },
@@ -1730,7 +1730,7 @@
                 '} as %projectFilterSet WHERE{ \n' +
                 'INCLUDE %projectFilterSet. \n' +
                 '?pub press:appearsIn ?projectUUID. \n' +
-                '?projectUUID press:Project_Name ?projectName. \n'+
+                '?projectUUID press:projectName ?projectName. \n'+
                 '}group by ?projectUUID ?projectName order by desc(?pubcount) limit 15';
 
             if (offset > 0) {
@@ -1749,12 +1749,12 @@
                 completeQuery += 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
             }
 
-            completeQuery += 'SELECT ?Tag (count(?Tag) as ?Tagcount) WITH {\n'+
+            completeQuery += 'SELECT ?tag (count(?tag) as ?Tagcount) WITH {\n'+
                 searchQuery +
                 '} as %tagFilterSet WHERE{ \n' +
                 'INCLUDE %tagFilterSet. \n'+
-                '?pub press:Tag ?Tag. \n'+
-                '} group by ?Tag order by desc(?Tagcount) limit 15';
+                '?pub press:tag ?tag. \n'+
+                '} group by ?tag order by desc(?Tagcount) limit 15';
 
             if (offset >0){
                 completeQuery += ' offset ' + offset;
@@ -1840,8 +1840,8 @@
                 var type = '';
                 if ('orgName' in field) {
                     type = 'orgName';
-                } else if ('Tag' in field) {
-                    type = 'Tag';
+                } else if ('tag' in field) {
+                    type = 'tag';
                 }
                 if (!($.isArray(multipleFields[field.pub.value][type]))) {
                     multipleFields[field.pub.value][type] = [];
@@ -1861,10 +1861,10 @@
                     title = results[i][titleField].value;
                 }
                 if (!title || title === '') {
-                    if ('English_Title' in results[i]) {
-                        title = results[i].English_Title.value;
-                    } else if ('Book_Title' in results[i]) {
-                        title = results[i].Book_Title.value;
+                    if ('englishTitle' in results[i]) {
+                        title = results[i].englishTitle.value;
+                    } else if ('bookTitle' in results[i]) {
+                        title = results[i].bookTitle.value;
                     }
                 }
 
@@ -1877,8 +1877,8 @@
                     'data-placement="top" data-container="body" title="Download the PDF of ' +
                     'this Publication" style="color:inherit; visibility:hidden">' +
                     '<i class="fa fa-download" style="font-size:17px;"></i></a>');
-                if ('Local_Link' in current_pub && !this.current_user.anonymous) {
-                    $download_icon.attr('href', '../' + current_pub.Local_Link.value);
+                if ('localLink' in current_pub && !this.current_user.anonymous) {
+                    $download_icon.attr('href', '../' + current_pub.localLink.value);
                     $download_icon.mouseover(function(e) { $(this).tooltip(); });
                     $download_icon.mouseover();
                     // if (){
@@ -1903,14 +1903,14 @@
                 var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="fa fa-share-alt" style="font-size:17px;"></i></a>');
                 var $share_icon_div = this.createShareButton('', title + ' | PRESS Publication System');
                 $share_icon_div.prepend($share_icon);
-                if ('Publication_URL' in current_pub) {
-                    var $share_icon_div = this.createShareButton(window.location.origin + '/' + current_pub.Publication_URL.value, title + ' | PRESS Publication System');
+                if ('publicationUrl' in current_pub) {
+                    var $share_icon_div = this.createShareButton(window.location.origin + '/' + current_pub.publicationUrl.value, title + ' | PRESS Publication System');
                     $share_icon_div.prepend($share_icon);
                     $share_icon.css('visibility', 'visible');
                 }
-                var External_Link = '';
-                if ('External_Link' in current_pub) {
-                    $info_icon.attr('href', current_pub.External_Link.value);
+                var externalLink = '';
+                if ('externalLink' in current_pub) {
+                    $info_icon.attr('href', current_pub.externalLink.value);
                     $info_icon.attr('target', 'target="_blank"');
                 }
                 $icons.append($share_icon_div);
@@ -1977,8 +1977,8 @@
                     $icons.append($edit_icon);
                 }
 
-                if ('Publication_URL' in current_pub) {
-                    $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.Publication_URL.value + '" target="_blank"><h5><strong>' + title + '</strong></h5></a>'));
+                if ('publicationUrl' in current_pub) {
+                    $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.publicationUrl.value + '" target="_blank"><h5><strong>' + title + '</strong></h5></a>'));
                 } else {
                     $pub_info.append($('<h5><strong>' + title + '</strong></h5>'));
                 }
@@ -1990,11 +1990,11 @@
                 // }
                 $pub_info.append(results[i].year.value);
 
-                if (multipleFields[current_pub.pub.value] && 'Tag' in multipleFields[current_pub.pub.value]) {
+                if (multipleFields[current_pub.pub.value] && 'tag' in multipleFields[current_pub.pub.value]) {
                     var $tagDiv = $('<div class="col-xs-12 pub-tags">Tags: </div>');
                     var $tagsMore = $('<div class="results-more-tags"></div>').hide();
-                    for (var r = 0; r < multipleFields[current_pub.pub.value].Tag.length; r++) {
-                        var $span = $('<span class="pub-tag-item">' + multipleFields[current_pub.pub.value].Tag[r] + '</span>');
+                    for (var r = 0; r < multipleFields[current_pub.pub.value].tag.length; r++) {
+                        var $span = $('<span class="pub-tag-item">' + multipleFields[current_pub.pub.value].tag[r] + '</span>');
                         $span.click((function(that) {
                             return function() {
                                 that.clearSearchInput();
@@ -2129,7 +2129,7 @@
 
             for (var i = 0; i < results.length; i++) {
                 switch (results[i].p.value) {
-                    case this.prefix + 'Year':
+                    case this.prefix + 'year':
                         years.push({ val: parseInt(results[i].o.value), count: parseInt(results[i].oCount.value) });
                         break;
                     case this.prefix + 'belongsTo':
@@ -2159,9 +2159,9 @@
             function insertTags(tags, div) {
                 var $tagsMore = div.find('#filters-show-more-tags');
                 for (var i = 0; i < tags.length; i++) {
-                    var tagDiv = $('<div class="search-filter search-filter-tags" data-p="press:Tag" ' +
-                        'data-o="?Tag" data-oVal="&quot;' + tags[i].Tag.value + '&quot;"></div>');
-                    var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].Tag.value + ' <i style="color:grey">[' + tags[i].Tagcount.value + ']</i></a>');
+                    var tagDiv = $('<div class="search-filter search-filter-tags" data-p="press:tag" ' +
+                        'data-o="?tag" data-oVal="&quot;' + tags[i].tag.value + '&quot;"></div>');
+                    var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].tag.value + ' <i style="color:grey">[' + tags[i].Tagcount.value + ']</i></a>');
                     tagDiv.append(tag);
                     if ($tagsMore.length > 0) {
                         $tagsMore.before(tagDiv);
@@ -2204,7 +2204,7 @@
             this.filters.append('<h4 class="col-xs-12">Year</h4>');
             var yearsDiv = $('<div class="col-xs-12"></div>');
             for (var i = 0; i < years.length; i++) {
-                var yearDiv = $('<div class="search-filter search-filter-year" data-p="press:Year" ' +
+                var yearDiv = $('<div class="search-filter search-filter-year" data-p="press:year" ' +
                     'data-o="?year" data-oVal="&quot;' + years[i].val + '&quot;" style="width:40%"></div>');
 
                 var year = $('<a >' + years[i].val + ' <i style="color:grey">[' + years[i].count + ']</i></a>');

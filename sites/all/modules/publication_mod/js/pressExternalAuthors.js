@@ -88,7 +88,7 @@
               }
 
               BDSquery += 'OPTIONAL { \n' +
-              '?uuid press:Person_Group ?group. \n' +
+              '?uuid press:personGroup ?group. \n' +
               '} \n' +
               'FILTER(?group != "FORTH_ICS_Author") \n'+
               '?uuid foaf:familyName ?familyName. \n'+
@@ -191,7 +191,7 @@
         }
 
         BDSquery += 'OPTIONAL { \n' +
-        '?uuid press:Person_Group ?group. \n' +
+        '?uuid press:personGroup ?group. \n' +
         '} \n' +
         'FILTER(?group != "FORTH_ICS_Author") \n'+
         '?uuid foaf:familyName ?familyName. \n'+

@@ -57,7 +57,7 @@
         this.externalAuthorModal;
         this.tags = [];
 
-        this.CreationDate = '';
+        this.creationDate = '';
 
         this.editMode = false;
         this.editPublication = {};
@@ -216,13 +216,13 @@
 
                 var except = Object.keys(this.personFields);
                 except.push('project');
-                except.push('Tag');
+                except.push('tag');
 
                 var query = 'prefix press: <' + this.prefix + '>'; //NOTE: PRESS V3
                 query += 'SELECT * WHERE{ \n';
-                query += '{?pub press:Publication_UUID "' + this.editPublication.uuid + '". \n';
-                query += 'OPTIONAL {?pub press:CreationDate ?CreationDate.}. \n';
-                query += 'OPTIONAL {?pub press:ModifiedDate ?ModifiedDate.}. \n';
+                query += '{?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
+                query += 'OPTIONAL {?pub press:creationDate ?creationDate.}. \n';
+                query += 'OPTIONAL {?pub press:modifiedDate ?modifiedDate.}. \n';
                 for (var i = 0; i < pubFields.length; i++) {
                     if (typeof pubFields[i] === 'string') {
                         if (!except.includes(pubFields[i]))
@@ -239,27 +239,27 @@
 
                 query += '}UNION{';
 
-                query += '?pub press:Publication_UUID "' + this.editPublication.uuid + '". \n';
+                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
                 query += '?pub press:appearsIn ?project. \n';
-                query += '?project press:Project_Name ?projectName. \n';
+                query += '?project press:projectName ?projectName. \n';
                 query += '}UNION{ \n';
-                query += '?pub press:Publication_UUID "' + this.editPublication.uuid + '". \n';
+                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
                 query += '?pub press:hasContributor ?conSlot. \n';
                 // query += '?conList press:slot ?conSlot. \n';
                 query += '?con rdfs:subPropertyOf* press:contributorType. \n';
                 query += '?conSlot ?con ?person. \n';
-                query += '?conSlot press:list_index ?personIndex. \n';
+                query += '?conSlot press:listIndex ?personIndex. \n';
                 query += '?person foaf:familyName ?familyName. \n';
-                query += '?person press:Person_Group ?group. \n';
+                query += '?person press:personGroup ?group. \n';
                 query += 'OPTIONAL {?person foaf:givenName ?givenName.}. \n';
                 query += 'OPTIONAL {?person foaf:mbox ?mbox.}. \n';
                 query += '}UNION{ \n';
-                query += '?pub press:Publication_UUID "' + this.editPublication.uuid + '". \n';
+                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
                 query += '?pub press:belongsTo ?org. \n';
-                query += '?org press:Organization_Name ?orgName. \n';
+                query += '?org press:organizationName ?orgName. \n';
                 query += '} UNION {\n';
-                query += '?pub press:Publication_UUID "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:Tag ?Tag. \n';
+                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
+                query += '?pub press:tag ?tag. \n';
                 query += '} \n';
                 query += '} \n';
 
@@ -377,27 +377,27 @@
                     $li.html(results[i].projectName.value);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
-                } else if ('Tag' in results[i]) {
+                } else if ('tag' in results[i]) {
                     var $list = $('#tag-editable', this.element);
-                    var $li = $('<li id="' + results[i].Tag.value + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + results[i].tag.value + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
 
                     $list.append($li);
-                    $li.html(results[i].Tag.value);
+                    $li.html(results[i].tag.value);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
                 } else {
                     for (key in results[i]) {
-                        if ('CreationDate' === key) {
-                            this.CreationDate = results[i].CreationDate.value;
-                        } else if ('ModifiedDate' !== key && key.indexOf('Date') > -1) {
+                        if ('creationDate' === key) {
+                            this.creationDate = results[i].creationDate.value;
+                        } else if ('modifiedDate' !== key && key.indexOf('Date') > -1) {
                             $('#' + key, this.element).data('daterangepicker').setStartDate(results[i][key].value);
                             $('#' + key, this.element).data('daterangepicker').setEndDate(results[i][key].value);
-                        } else if (key === 'Local_Link') {
+                        } else if (key === 'localLink') {
                             $('#' + key, this.element).parent().parent().append('<div><div class="col-sm-2"></div>' +
                                 '<small class="col-sm-10"><a href="' + this.base_url + '/' + results[i][key].value + '" target="_blank">Current File</a>' +
                                 '. Leave blank to keep the same file</small></div>');
                         } else {
-                            $('#' + key, this.element).val(results[i][key].value); //TODO: FIX Local_Link, pdf edit
+                            $('#' + key, this.element).val(results[i][key].value); //TODO: FIX localLink, pdf edit
                         }
                     }
                 }
@@ -470,7 +470,7 @@
                     data: {
                         query: 'prefix press: <' + this.prefix + '> ' +
                             'SELECT distinct ?tag WHERE { ' +
-                            '?pub press:Tag ?tag} '
+                            '?pub press:tag ?tag} '
                     }
                 })
                 .done($.proxy(function(response) {
@@ -750,7 +750,7 @@
                                     BDSquery += '?uuid foaf:familyName ?familyName. \n' +
                                         '?uuid foaf:givenName ?givenName. \n' +
                                         'optional{?uuid foaf:mbox ?mbox}. \n' +
-                                        '?uuid press:Person_Group "' + groupKey + '". }';
+                                        '?uuid press:personGroup "' + groupKey + '". }';
 
                                     settings.data = {
                                         query: BDSquery,
@@ -886,11 +886,11 @@
                                 var lastName = $('#externalLastName').val();
                                 query += 'INSERT{ \n';
                                 query += '?uuid rdf:type foaf:Person; \n';
-                                query += '<' + this.prefix + 'Person_Group> "External_Author"; \n';
+                                query += '<' + this.prefix + 'personGroup> "External_Author"; \n';
                                 query += 'foaf:familyName "' + lastName + '"; \n';
                                 query += 'foaf:givenName "' + firstName + '"; \n';
                                 query += 'foaf:mbox "mailto:' + $('#externalAuthorMail').val() + '"; \n';
-                                query += '<' + this.prefix + 'Person_UUID> ?struuid . \n';
+                                query += '<' + this.prefix + 'personUuid> ?struuid . \n';
                                 query += '}WHERE{\n';
                                 query += 'SELECT ?uuid ?struuid WHERE {BIND(<' + uuid + '> as ?uuid). BIND(str(?uuid) as ?struuid)} \n';
                                 query += '}';
@@ -1081,7 +1081,7 @@
                                 'SELECT ?projectID ?name WHERE { \n' +
                                 '?name bds:search "' + queries + '*". \n' +
                                 '?name bds:matchAllTerms "true". \n' +
-                                '?projectID press:Project_Name ?name. \n' +
+                                '?projectID press:projectName ?name. \n' +
                                 '} ';
 
                             settings.data = {
@@ -1150,7 +1150,7 @@
 
             return $group;
         },
-        //Insert Tag field using typeahead.js and sortable.js
+        //Insert tag field using typeahead.js and sortable.js
         insertTagField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1347,7 +1347,7 @@
                             fieldDiv = this.insertPersonField(this.fields[field[i]], required);
                         } else if (field[i].indexOf('Abstract') !== -1) {
                             fieldDiv = this.insertLongField(this.fields[field[i]], size, required);
-                        } else if (field[i] === 'Tag') {
+                        } else if (field[i] === 'tag') {
                             fieldDiv = this.insertTagField(field[i], size, required);
                         } else if (field[i] !== 'project' && field[i].indexOf('Date') === -1) {
                             switch (this.fields[field[i]].range) {
@@ -1355,7 +1355,7 @@
                                     fieldDiv = this.insertPersonField(this.fields[field[i]], required);
                                     break;
                                 case 'http://www.w3.org/2000/01/rdf-schema#Literal':
-                                    if (this.fields[field[i]].id === 'Local_Link') {
+                                    if (this.fields[field[i]].id === 'localLink') {
                                         fieldDiv = this.insertLocalField(this.fields[field[i]], size, required);
                                     } else {
                                         fieldDiv = this.insertLiteralField(this.fields[field[i]], size, required);
@@ -1466,7 +1466,7 @@
                             console.error('Person validation Error!');
                         }
                         break;
-                    case 'Local_Link':
+                    case 'localLink':
                         if (!this.editMode) {
                             if (!$('#' + required[i]).val()) {
                                 $('#' + required[i]).parent().parent().addClass('has-error');
@@ -1509,7 +1509,7 @@
                     query += '?conSlot ?y ?z. \n';
                     query += '}\n';
                     query += 'WHERE{ \n';
-                    query += '?pub <' + this.prefix + 'Publication_UUID> "' + this.editPublication.uuid + '". \n';
+                    query += '?pub <' + this.prefix + 'publicationUuid> "' + this.editPublication.uuid + '". \n';
                     query += '?pub ?p ?o. \n';
                     query += 'OPTIONAL{?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
                     query += 'OPTIONAL{?conSlot ?y ?z.}} \n';
@@ -1523,13 +1523,13 @@
                     query += "INSERT DATA { \n";
                     query += "<urn:uuid:" + response.uuid + "> rdf:type <" + this.prefix + this.subcat.val() + ">; \n";
                     if (this.editMode) {
-                        query += '<' + prefix + 'CreationDate> "' + this.CreationDate + '"^^xsd:dateTime; \n';
+                        query += '<' + prefix + 'creationDate> "' + this.creationDate + '"^^xsd:dateTime; \n';
                     } else {
-                        query += '<' + prefix + 'CreationDate> "' + formattedDate + '"^^xsd:dateTime; \n';
+                        query += '<' + prefix + 'creationDate> "' + formattedDate + '"^^xsd:dateTime; \n';
                     }
-                    query += '<' + prefix + 'ModifiedDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    query += '<' + prefix + 'Publication_UUID> "urn:uuid:' + response.uuid + '"; \n';
-                    query += '<' + prefix + 'Publication_URL> "' + response.path + '"; \n';
+                    query += '<' + prefix + 'modifiedDate> "' + formattedDate + '"^^xsd:dateTime; \n';
+                    query += '<' + prefix + 'publicationUuid> "urn:uuid:' + response.uuid + '"; \n';
+                    query += '<' + prefix + 'publicationUrl> "' + response.path + '"; \n';
 
 
                     $('#lab-editable li').each(function() {
@@ -1545,19 +1545,19 @@
                                     $('.' + field[i] + '-contributor-name').each(function() {
                                         query += '<' + prefix + 'hasContributor> [ rdf:type <' + prefix + 'Contributor_Slot>; \n';
                                         query += '<' + prefix + field[i] + '> <' + $(this).attr('data-uuid') + '>; \n' +
-                                            '<' + prefix + 'list_index> ' + ++length + '; \n' +
+                                            '<' + prefix + 'listIndex> ' + ++length + '; \n' +
                                             ']; \n';
                                     });
                                 } else if (field[i] === 'project') {
                                     $('.project-item').each(function() {
                                         query = query + '<' + prefix + 'appearsIn> <' + $(this).attr('id') + '>; \n';
                                     });
-                                } else if (field[i] === 'Local_Link' && $('#' + field[i]).val().trim() !== '' &&
+                                } else if (field[i] === 'localLink' && $('#' + field[i]).val().trim() !== '' &&
                                     response.file_url !== '') {
-                                    query += '<' + this.prefix + 'Local_Link> "' + response.file_url + '"; \n';
-                                } else if (field[i] === 'Tag') {
+                                    query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
+                                } else if (field[i] === 'tag') {
                                     $('.tag-item').each(function() {
-                                        query = query + '<' + prefix + 'Tag> "' + $(this).attr('id') + '"; \n';
+                                        query = query + '<' + prefix + 'tag> "' + $(this).attr('id') + '"; \n';
                                     });
                                 } else if ($('#' + field[i]).val().trim() !== '') {
                                     query = query + '<' + prefix + field[i] + '> "' + $('#' + field[i]).val().escapeSpecialChars() + '"; \n';
@@ -1652,7 +1652,7 @@
                             var abstract = $('<div class="col-sm-12"><h3>' + fields[$(this).attr('id')].label + '</h3></div>');
                             abstract.append('<p>' + $(this).val().trim() + '</p>');
                             $abstracts.append(abstract);
-                            if ($(this).attr('id') === 'English_Abstract') {
+                            if ($(this).attr('id') === 'englishAbstract') {
                                 $summary.append('<br/>');
                                 var abstractSummary = $(this).val().trim().split(' ', 40);
                                 $summary.append('<br/>' + abstractSummary.join(' ') + '...');
@@ -1664,11 +1664,11 @@
 
                     var $restOfFields = $('<div class="col-xs-12"><p>&nbsp;</p></div>');
                     var fieldLabel = $('<table class="table table-hover"></table>')
-                    $('input.press-field:not(.typeahead, [id$=Abstract], #English_Title, #Local_Link)').each((function(that) {
+                    $('input.press-field:not(.typeahead, [id$=Abstract], #englishTitle, #localLink)').each((function(that) {
                         return function() {
                             if ($(this).val() !== '') {
                                 var val = $(this).val();
-                                if($(this).attr('id') === 'DOI'){
+                                if($(this).attr('id') === 'doi'){
                                     val = '<a href="https://doi.org/'+val+'" target="_blank">'+val+'</a>';
                                 }
                                 fieldLabel.append('<tr><td>' + $(this).attr('data-label') + '</td><td>' + val + '</td>');
@@ -1704,8 +1704,8 @@
                     $body.append(div);
 
 
-                    if ($('#Local_Link', this.element)[0].files[0]) {
-                        pkg.append('myfile', $('#Local_Link', this.element)[0].files[0]);
+                    if ($('#localLink', this.element)[0].files[0]) {
+                        pkg.append('myfile', $('#localLink', this.element)[0].files[0]);
                     }
 
                     pkg.append('title', $('#' + this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
@@ -1936,7 +1936,7 @@
                 query += '?uuid' + i + ' foaf:givenName ?oGivenName' + i + '. \n';
                 query += '?oFamilyName' + i + ' bds:search "' + authors[i].family + '*". \n';
                 query += '?uuid' + i + ' foaf:familyName ?oFamilyName' + i + '. \n';
-                query += '?uuid' + i + ' press:Person_Group ?group' + i + '. \n';
+                query += '?uuid' + i + ' press:personGroup ?group' + i + '. \n';
                 query += 'BIND ("' + i + '" AS ?index)\n';
                 query += 'BIND (CONCAT(?oGivenName' + i + ', \" \", ?oFamilyName' + i + ') AS ?fullName' + i + '). \n';
                 query += 'OPTIONAL{?uuid' + i + ' foaf:mbox ?mbox' + i + '}. \n';
@@ -2057,35 +2057,35 @@
 
             $('#' + this.titleFields[categories[0]][categories[1]]).val(title);
 
-            //Year Field
-            $('#Year').val(item.issued['date-parts'][0][0]);
+            //year Field
+            $('#year').val(item.issued['date-parts'][0][0]);
 
             //Event Fields
             if (item.event) {
-                $('#Conference_Title').val(item.event.name);
-                $('#Conference_Location').val(item.event.location);
+                $('#conferenceTitle').val(item.event.name);
+                $('#conferenceLocation').val(item.event.location);
                 var start = item.event.start['date-parts'][0];
                 start = start[0] + '-' + start[1] + '-' + start[2]
                 var end = item.event.end['date-parts'][0];
                 end = end[0] + '-' + end[1] + '-' + end[2];
-                $('#Conference_Date_Start').data('daterangepicker').setStartDate(start);
-                $('#Conference_Date_Start').data('daterangepicker').setEndDate(start);
-                $('#Conference_Date_End').data('daterangepicker').setStartDate(end);
-                $('#Conference_Date_End').data('daterangepicker').setEndDate(end);
+                $('#conferenceDateStart').data('daterangepicker').setStartDate(start);
+                $('#conferenceDateStart').data('daterangepicker').setEndDate(start);
+                $('#conferenceDateEnd').data('daterangepicker').setStartDate(end);
+                $('#conferenceDateEnd').data('daterangepicker').setEndDate(end);
             }
 
             //Journal Title
             if (item.type.includes('journal')) {
-                $('#Journal_Title').val(item['container-title'][0]);
+                $('#journalTitle').val(item['container-title'][0]);
             }
 
             //URL
-            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['DOI'])
+            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['doi'])
                 .done(function(data) {
                     // $('#external').val()
                     for (var i = 0; i < data.values.length; i++) {
                         if (data.values[i].type === "URL") {
-                            $('#External_Link').val(data.values[i].data.value);
+                            $('#externalLink').val(data.values[i].data.value);
                         }
                     }
                 })

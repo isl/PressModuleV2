@@ -247,7 +247,7 @@ function publication_mod_all_publications(){
                   optional{?pub press:hasContributor ?slot.
                   ?slot ?p ?con.
                   ?p rdfs:subPropertyOf press:contributorType.
-                  ?slot press:list_index ?index.
+                  ?slot press:listIndex ?index.
                   optional{?con foaf:givenName ?givenName.}
                   optional{?con foaf:familyName ?familyName.}
                   bind(substr(str(?p), 31) as ?type).
@@ -256,7 +256,7 @@ function publication_mod_all_publications(){
                 }
              }
              bind(concat("[", ?auth, "]") as ?concat).
-             ?pub press:Publication_URL ?url.
+             ?pub press:publicationUrl ?url.
             }group by ?pub ?url';
   $q = http_build_query(array('query' => $query));
 
@@ -314,16 +314,16 @@ function publication_mod_author_publications($author_uri){
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $query = 'prefix press: <'. $ontologyPrefix. '>
-          select ?Publication_URL ?English_Title ?Chapter_Title ?Book_Title ?type where{
+          select ?publicationUrl ?englishTitle ?chapterTitle ?bookTitle ?type where{
             ?con0 rdfs:subPropertyOf* press:contributorType. 
             ?slot0 ?con0 <'. $author_uri .'>.
             ?pub press:hasContributor ?slot0.
             ?pub rdf:type ?type.
             ?type rdfs:subClassOf* press:Publication. 
-            ?pub press:Publication_URL ?Publication_URL.
-            OPTIONAL{?pub press:English_Title ?English_Title}.
-            OPTIONAL{?pub press:Chapter_Title ?Chapter_Title}.
-            OPTIONAL{?pub press:Book_Title ?Book_Title}.
+            ?pub press:publicationUrl ?publicationUrl.
+            OPTIONAL{?pub press:englishTitle ?englishTitle}.
+            OPTIONAL{?pub press:chapterTitle ?chapterTitle}.
+            OPTIONAL{?pub press:bookTitle ?bookTitle}.
           }';
 
   $q = http_build_query(array('query' => $query));

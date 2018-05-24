@@ -66,7 +66,7 @@
         $group.append($d);
         var bloodhound = new Bloodhound({
           queryTokenizer: Bloodhound.tokenizers.whitespace,
-          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('Project_Name'),
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('projectName'),
           sufficient: 500,
           remote: {
             url: this.dbURL,
@@ -78,18 +78,18 @@
 
               BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n'+
                         'prefix press: <'+prefix+'> \n' +
-                        'SELECT ?uuid ?Project_Name ?Project_Date_End ?Project_Date_Start ?Project_ID ?Project_Status WHERE { \n';
+                        'SELECT ?uuid ?projectName ?projectDateEnd ?projectDateStart ?projectId ?projectStatus WHERE { \n';
               for(var i=0; i<queries.length; i++){
                 if (queries[i].length < 3) return false;
                 BDSquery += '?o'+i+' bds:search "'+queries[i]+'*". \n'+
-                  '?uuid press:Project_Name ?o'+i+' . \n';
+                  '?uuid press:projectName ?o'+i+' . \n';
               }
 
-              BDSquery += '?uuid press:Project_Name ?Project_Name. \n'+
-              '?uuid press:Project_ID ?Project_ID. \n'+
-              '?uuid press:Project_Date_Start ?Project_Date_Start. \n'+
-              '?uuid press:Project_Date_End ?Project_Date_End. \n'+
-              '?uuid press:Project_Status ?Project_Status. }';
+              BDSquery += '?uuid press:projectName ?projectName. \n'+
+              '?uuid press:projectId ?projectId. \n'+
+              '?uuid press:projectDateStart ?projectDateStart. \n'+
+              '?uuid press:projectDateEnd ?projectDateEnd. \n'+
+              '?uuid press:projectStatus ?projectStatus. }';
 
               settings.data = {
                 query : BDSquery,
@@ -105,11 +105,11 @@
                 for(var i=0; i<results.length; i++){
                   tr[i] = {
                     uuid: results[i].uuid.value,
-                    Project_Name: results[i].Project_Name.value,
-                    Project_Status: results[i].Project_Status.value,
-                    Project_Date_Start: results[i].Project_Date_Start.value,
-                    Project_Date_End: results[i].Project_Date_End.value,
-                    Project_ID: results[i].Project_ID.value
+                    projectName: results[i].projectName.value,
+                    projectStatus: results[i].projectStatus.value,
+                    projectDateStart: results[i].projectDateStart.value,
+                    projectDateEnd: results[i].projectDateEnd.value,
+                    projectId: results[i].projectId.value
                   };
                 }
                 console.log(tr);
@@ -152,11 +152,11 @@
             }
             console.log(suggestion);
             var sug = {
-              Project_Name: {value: suggestion.Project_Name},
-              Project_ID: {value: suggestion.Project_ID},
-              Project_Status: {value: suggestion.Project_Status},
-              Project_Date_End: {value: suggestion.Project_Date_End},
-              Project_Date_Start: {value: suggestion.Project_Date_Start},
+              projectName: {value: suggestion.projectName},
+              projectId: {value: suggestion.projectId},
+              projectStatus: {value: suggestion.projectStatus},
+              projectDateEnd: {value: suggestion.projectDateEnd},
+              projectDateStart: {value: suggestion.projectDateStart},
               uuid: {value: suggestion.uuid}
             }
             console.log(sug);
@@ -176,18 +176,18 @@
 
         BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n'+
                     'prefix press: <'+this.prefix+'> \n' +
-                    'SELECT ?uuid ?Project_Name ?Project_Date_End ?Project_Date_Start ?Project_ID ?Project_Status WHERE { \n';
+                    'SELECT ?uuid ?projectName ?projectDateEnd ?projectDateStart ?projectId ?projectStatus WHERE { \n';
         for(var i=0; i<queries.length; i++){
           if (queries[i].length < 3) return false;
           BDSquery += '?o'+i+' bds:search "'+queries[i]+'*". \n'+
-            '?uuid press:Project_Name ?o'+i+' . \n';
+            '?uuid press:projectName ?o'+i+' . \n';
         }
 
-        BDSquery += '?uuid press:Project_Name ?Project_Name. \n'+
-        '?uuid press:Project_ID ?Project_ID. \n'+
-        '?uuid press:Project_Date_Start ?Project_Date_Start. \n'+
-        '?uuid press:Project_Date_End ?Project_Date_End. \n'+
-        '?uuid press:Project_Status ?Project_Status. }';
+        BDSquery += '?uuid press:projectName ?projectName. \n'+
+        '?uuid press:projectId ?projectId. \n'+
+        '?uuid press:projectDateStart ?projectDateStart. \n'+
+        '?uuid press:projectDateEnd ?projectDateEnd. \n'+
+        '?uuid press:projectStatus ?projectStatus. }';
 
         $.when(this.getQuery(BDSquery)).done((function(a){
           this.getProjectsTable(a.results.bindings);
@@ -219,7 +219,7 @@
                   selected = dt.rows('.selected');
                   for(i=0; i<selected.data().length; i++){
                     var row = selected.data()[i];
-                    items += '  • '+row.Project_Name.value+', '+row.Project_ID.value+'\n';
+                    items += '  • '+row.projectName.value+', '+row.projectId.value+'\n';
                     uuids.push(row.uuid.value);
                   }
                   if (uuids.length === 0){
@@ -237,11 +237,11 @@
             ],
             data:response,
             columns:[
-              {data:'Project_Name.value'},
-              {data:'Project_ID.value'},
-              {data:'Project_Status.value'},
-              {data:'Project_Date_Start.value'},
-              {data:'Project_Date_End.value'},
+              {data:'projectName.value'},
+              {data:'projectId.value'},
+              {data:'projectStatus.value'},
+              {data:'projectDateStart.value'},
+              {data:'projectDateEnd.value'},
               {data:'uuid.value'}
             ],
             select: {

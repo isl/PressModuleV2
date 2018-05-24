@@ -27,7 +27,7 @@ function initProjects(ontologyPrefix, dbURL){
         // data: { 
         // query: "prefix press: <'. $ontologyPrefix .'>"+ 
         // " SELECT ?s ?p WHERE {"+ 
-        // " ?s press:Project_Name ?p}" 
+        // " ?s press:projectName ?p}" 
         // } 
         // }) 
         // .done(function(response){ 
@@ -53,11 +53,11 @@ function initProjects(ontologyPrefix, dbURL){
                 "prefix press: <" + ontologyPrefix +">",
                 "INSERT DATA {",
                 "<"+ontologyPrefix + encodeURI($("#projectId").val()) + "> rdf:type press:Project ;",
-                "press:Project_Date_Start \'" + $("#startDate").val() + "\';",
-                "press:Project_Date_End \'" + $("#endDate").val() + "\';",
-                "press:Project_Status \'" + $("input[name=\'optradio\']:checked").val() + "\';",
-                "press:Project_Name \'" + $("#projectName").val() + "\';",
-                "press:Project_ID \'" + $("#projectId").val() + "\'. ",
+                "press:projectDateStart \'" + $("#startDate").val() + "\';",
+                "press:projectDateEnd \'" + $("#endDate").val() + "\';",
+                "press:projectStatus \'" + $("input[name=\'optradio\']:checked").val() + "\';",
+                "press:projectName \'" + $("#projectName").val() + "\';",
+                "press:projectId \'" + $("#projectId").val() + "\'. ",
                 "}"
             ].join("");
             $.ajax({

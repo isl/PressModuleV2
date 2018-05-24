@@ -12,255 +12,255 @@ var categoryColor = {
 //Fields for each category
 var JSONfields = {
 	"Conference_Workshop": {
-		"Conf_Peer_reviewed":{
-			"Paper_in_proceedings_full_paper_reviewed": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Conf_Peer_Reviewed":{
+			"Paper_In_Proceedings_Full_Paper_Reviewed": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Paper_in_proceedings_abstract_reviewed": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Paper_In_Proceedings_Abstract_Reviewed": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Poster_in_proceedings_full_paper_reviewed": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Poster_In_Proceedings_Full_Paper_Reviewed": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Poster_in_proceedings_abstract_reviewed": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Poster_In_Proceedings_Abstract_Reviewed": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Demo": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Demo_URL", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Demo": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "demoUrl", "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Tutorial": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Demo_URL", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Tutorial": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "demoUrl", "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
 		},
-		"Conf_Non_Peer_reviewed": {
-			"Edited_proceeding": ["hasBookEditors", "Book_Title","Book_Series", ["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"],
-				["Volume", "Pages"], "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Conf_Non_Peer_Reviewed": {
+			"Edited_Proceeding": ["hasBookEditors", "bookTitle","bookSeries", ["publisher", "publisherLocation"],
+				["isbn", "doi"],
+				["volume", "pages"], "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Invited_paper": ["hasAuthors", "English_Title", "Conference_Title", ["Conference_Date_Start", "Conference_Date_End"], ["Conference_Location", "Year"], "Book_Title","Book_Series", "hasBookEditors", ["Volume", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Invited_Paper": ["hasAuthors", "englishTitle", "conferenceTitle", ["conferenceDateStart", "conferenceDateEnd"], ["conferenceLocation", "year"], "bookTitle","bookSeries", "hasBookEditors", ["volume", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			]
 		},
 	},
 	"Book": {
-		"Chapter_in_book": ["hasChapterAuthors", "Chapter_Title", "Book_Title","Book_Series", "hasBookEditors", ["Year", "Edition"],
-			["Volume", "Pages"],
-			["Publisher", "Publisher_Location"],
-			["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Chapter_in_book": ["hasChapterAuthors", "chapterTitle", "bookTitle","bookSeries", "hasBookEditors", ["year", "edition"],
+			["volume", "pages"],
+			["publisher", "publisherLocation"],
+			["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 		],
-		"Editor": ["hasAuthors", "hasBookEditors", "Book_Title","Book_Series", ["Year", "Pages"],
-			["Publisher", "Publisher_Location"],
-			["Volume", "Edition"],
-			["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Editor": ["hasAuthors", "hasBookEditors", "bookTitle","bookSeries", ["year", "pages"],
+			["publisher", "publisherLocation"],
+			["volume", "edition"],
+			["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 		],
-		"Whole_book": ["hasAuthors", "hasBookEditors", "Book_Title","Book_Series", ["Year", "Pages"],
-			["Publisher", "Publisher_Location"],
-			["Volume", "Edition"],
-			["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Whole_Book": ["hasAuthors", "hasBookEditors", "bookTitle","bookSeries", ["year", "pages"],
+			["publisher", "publisherLocation"],
+			["volume", "edition"],
+			["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 		],
-		"Monograph": ["hasAuthors", "hasBookEditors", "Book_Title","Book_Series", ["Year", "Pages"],
-			["Publisher", "Publisher_Location"],
-			["Volume", "Edition"],
-			["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Monograph": ["hasAuthors", "hasBookEditors", "bookTitle","bookSeries", ["year", "pages"],
+			["publisher", "publisherLocation"],
+			["volume", "edition"],
+			["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 		]
 	},
 	"Journal": {
-		"Journal_Peer_reviewed": {
-			"Journal_article": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Journal_Peer_Reviewed": {
+			"Journal_Article": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Scientific_newsletter": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Scientific_Newsletter": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
 		},
-		"Journal_Non_Peer_reviewed": {
-			"Foreword": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+		"Journal_Non_Peer_Reviewed": {
+			"Foreword": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Journal_editorial": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Journal_Editorial": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Magazine_editorial": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Magazine_Editorial": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
-			"Other_journal": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"Other_Journal": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			],
 		},
 		"Magazine":{
-			"ERCIM_News": ["hasAuthors", "English_Title", "Journal_Title", ["Volume", "Journal_Number"],
-				["Year", "Pages"],
-				["Publisher", "Publisher_Location"],
-				["ISBN", "DOI"], "Local_Link", "project", "External_Link", "English_Abstract", "Tag"
+			"ERCIM_News": ["hasAuthors", "englishTitle", "journalTitle", ["volume", "journalNumber"],
+				["year", "pages"],
+				["publisher", "publisherLocation"],
+				["isbn", "doi"], "localLink", "project", "externalLink", "englishAbstract", "tag"
 			]
 		}
 	},
 	"Other": {
-		"FORTH_ICS_Tech_report": ["hasAuthors", "English_Title", "Year", "Report_Number", "Local_Link", "project", "English_Abstract", "Tag"],
-		"Other_tech_report": ["hasAuthors", "English_Title", "Year", "DOI", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
+		"FORTH_ICS_Tech_Report": ["hasAuthors", "englishTitle", "year", "reportNumber", "localLink", "project", "englishAbstract", "tag"],
+		"Other_Tech_Report": ["hasAuthors", "englishTitle", "year", "doi", "localLink", "project", "externalLink", "englishAbstract", "tag"],
 		"Thesis": {
-			"Master_thesis": ["hasAuthors", "Greek_Title", "English_Title", "Year", "DOI", "Greek_Abstract", "English_Abstract", "hasSupervisors", "Local_Link", "project", "External_Link", "Tag"],
-			"Phd_thesis": ["hasAuthors", "Greek_Title", "English_Title", "Year", "DOI", "Greek_Abstract", "English_Abstract", "hasSupervisors", "Local_Link", "project", "External_Link", "Tag"],
+			"Master_Thesis": ["hasAuthors", "greekTitle", "englishTitle", "year", "doi", "greekAbstract", "englishAbstract", "hasSupervisors", "localLink", "project", "externalLink", "tag"],
+			"Phd_Thesis": ["hasAuthors", "greekTitle", "englishTitle", "year", "doi", "greekAbstract", "englishAbstract", "hasSupervisors", "localLink", "project", "externalLink", "tag"],
 		},
 		"Event": {
-			"Talk": ["hasAuthors", "English_Title", "Year", "Event_Title", "Event_Location", "Other_Details", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
-			"Seminar": ["hasAuthors", "English_Title", "Year", "Event_Title", "Event_Location", "Other_Details", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
-			"Distinguished_lecture": ["hasAuthors", "English_Title", "Year", "Event_Title", "Event_Location", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
+			"Talk": ["hasAuthors", "englishTitle", "year", "eventTitle", "eventLocation", "otherDetails", "localLink", "project", "externalLink", "englishAbstract", "tag"],
+			"Seminar": ["hasAuthors", "englishTitle", "year", "eventTitle", "eventLocation", "otherDetails", "localLink", "project", "externalLink", "englishAbstract", "tag"],
+			"Distinguished_Lecture": ["hasAuthors", "englishTitle", "year", "eventTitle", "eventLocation", "localLink", "project", "externalLink", "englishAbstract", "tag"],
 		},
-		"Multimedia_material": ["hasAuthors", "English_Title", "Year", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
-		"White_paper": ["hasAuthors", "English_Title", "Year", "DOI", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"],
-		"Miscellaneous": ["hasAuthors", "English_Title", "Year", "Location", "DOI", "Other_Details", "Local_Link", "project", "External_Link", "English_Abstract", "Tag"]
+		"Multimedia_Material": ["hasAuthors", "englishTitle", "year", "localLink", "project", "externalLink", "englishAbstract", "tag"],
+		"White_Paper": ["hasAuthors", "englishTitle", "year", "doi", "localLink", "project", "externalLink", "englishAbstract", "tag"],
+		"Miscellaneous": ["hasAuthors", "englishTitle", "year", "location", "doi", "otherDetails", "localLink", "project", "externalLink", "englishAbstract", "tag"]
 	}
 };
 
 //Required fields of each category
 var JSONrequiredFields = {
   "Conference_Workshop": {
-		"Conf_Peer_reviewed": {
-	    "Paper_in_proceedings_full_paper_reviewed": ['hasAuthors', 'English_Title', 'Year', 'Local_Link'],
-	    "Paper_in_proceedings_abstract_reviewed": ['hasAuthors', 'English_Title', 'Year', 'Local_Link'],
-	    "Poster_in_proceedings_full_paper_reviewed": ['hasAuthors', 'English_Title', 'Year', 'Local_Link'],
-	    "Poster_in_proceedings_abstract_reviewed": ['hasAuthors', 'English_Title', 'Year', 'Local_Link'],
-	    "Demo": ['hasAuthors', 'English_Title', 'Year'],
-	    "Tutorial": ['hasAuthors', 'English_Title', 'Year'],
+		"Conf_Peer_Reviewed": {
+	    "Paper_In_Proceedings_Full_Paper_Reviewed": ['hasAuthors', 'englishTitle', 'year', 'localLink'],
+	    "Paper_In_Proceedings_Abstract_Reviewed": ['hasAuthors', 'englishTitle', 'year', 'localLink'],
+	    "Poster_In_Proceedings_Full_Paper_Reviewed": ['hasAuthors', 'englishTitle', 'year', 'localLink'],
+	    "Poster_In_Proceedings_Abstract_Reviewed": ['hasAuthors', 'englishTitle', 'year', 'localLink'],
+	    "Demo": ['hasAuthors', 'englishTitle', 'year'],
+	    "Tutorial": ['hasAuthors', 'englishTitle', 'year'],
 		},
-		"Conf_Non_Peer_reviewed": {
-	    "Edited_proceeding": ['hasBookEditors', 'Book_Title', 'Book_Series', 'Year', 'Publisher', 'Publisher_Location'],
-	    "Invited_paper": ['hasAuthors', 'English_Title', 'Year', 'Local_Link'],
+		"Conf_Non_Peer_Reviewed": {
+	    "Edited_Proceeding": ['hasBookEditors', 'bookTitle', 'bookSeries', 'year', 'publisher', 'publisherLocation'],
+	    "Invited_Paper": ['hasAuthors', 'englishTitle', 'year', 'localLink'],
 		},
   },
   "Book": {
-    "Chapter_in_book": ['hasChapterAuthors', 'Chapter_Title', 'Book_Title', 'Year'],
-    "Editor": ['hasAuthors', 'Book_Title', 'Year'],
-    "Whole_book": ['hasAuthors', 'Book_Title', 'Year'],
-    "Monograph": ['hasAuthors', 'Book_Title', 'Year']
+    "Chapter_in_book": ['hasChapterAuthors', 'chapterTitle', 'bookTitle', 'year'],
+    "Editor": ['hasAuthors', 'bookTitle', 'year'],
+    "Whole_Book": ['hasAuthors', 'bookTitle', 'year'],
+    "Monograph": ['hasAuthors', 'bookTitle', 'year']
   },
   "Journal": {
-		"Journal_Peer_reviewed": {
-			'Journal_article': ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
-	    'Scientific_newsletter': ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
+		"Journal_Peer_Reviewed": {
+			'Journal_Article': ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
+	    'Scientific_Newsletter': ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
 		},
-		"Journal_Non_Peer_reviewed": {
-	    "Foreword": ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
-	    "Journal_editorial": ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
-	    'Magazine_editorial': ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
-	    'Other_journal': ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link'],
+		"Journal_Non_Peer_Reviewed": {
+	    "Foreword": ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
+	    "Journal_Editorial": ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
+	    'Magazine_Editorial': ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
+	    'Other_Journal': ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink'],
 		},
 		"Magazine": {
-	    'ERCIM_News': ['hasAuthors', 'English_Title', 'Journal_Title', 'Year', 'Local_Link']
+	    'ERCIM_News': ['hasAuthors', 'englishTitle', 'journalTitle', 'year', 'localLink']
 		},
   },
   "Other": {
-    "FORTH_ICS_Tech_report": ['hasAuthors', 'English_Title', 'Year', 'Report_Number', 'Local_Link'],
-    "Other_tech_report": ['hasAuthors', 'English_Title', 'Year'],
+    "FORTH_ICS_Tech_Report": ['hasAuthors', 'englishTitle', 'year', 'reportNumber', 'localLink'],
+    "Other_Tech_Report": ['hasAuthors', 'englishTitle', 'year'],
 		"Thesis": {
-			"Master_thesis": ['hasAuthors', 'Greek_Title', 'English_Title', 'Year', 'Greek_Abstract', 'English_Abstract', 'hasSupervisors'],
-	    "Phd_thesis": ['hasAuthors', 'Greek_Title', 'English_Title', 'Year', 'Greek_Abstract', 'English_Abstract', 'hasSupervisors'],
+			"Master_Thesis": ['hasAuthors', 'greekTitle', 'englishTitle', 'year', 'greekAbstract', 'englishAbstract', 'hasSupervisors'],
+	    "Phd_Thesis": ['hasAuthors', 'greekTitle', 'englishTitle', 'year', 'greekAbstract', 'englishAbstract', 'hasSupervisors'],
 		},
 		"Event": {
-			"Talk": ['hasAuthors', 'English_Title', 'Year', 'Event_Title', 'Event_Location', 'Local_Link'],
-	    "Seminar": ['hasAuthors', 'English_Title', 'Year', 'Event_Title', 'Event_Location'],
-			"Distinguished_lecture": ['hasAuthors', 'English_Title', 'Year'],
+			"Talk": ['hasAuthors', 'englishTitle', 'year', 'eventTitle', 'eventLocation', 'localLink'],
+	    "Seminar": ['hasAuthors', 'englishTitle', 'year', 'eventTitle', 'eventLocation'],
+			"Distinguished_Lecture": ['hasAuthors', 'englishTitle', 'year'],
 		},
-    "Multimedia_material": ['hasAuthors', 'English_Title', 'Year', 'External_Link'],
-    "White_paper": ['hasAuthors', 'English_Title', 'Year'],
-    "Miscellaneous": ['hasAuthors', 'English_Title', 'Year']
+    "Multimedia_Material": ['hasAuthors', 'englishTitle', 'year', 'externalLink'],
+    "White_Paper": ['hasAuthors', 'englishTitle', 'year'],
+    "Miscellaneous": ['hasAuthors', 'englishTitle', 'year']
   }
 }
 
 //Order of Contributor types for each Category
 var JSONContributorOrder= {
-    "Paper_in_proceedings_full_paper_reviewed": ['hasAuthors', 'hasBookEditors'],
-    "Paper_in_proceedings_abstract_reviewed": ['hasAuthors', 'hasBookEditors'],
-    "Poster_in_proceedings_full_paper_reviewed": ['hasAuthors', 'hasBookEditors'],
-    "Poster_in_proceedings_abstract_reviewed": ['hasAuthors', 'hasBookEditors'],
+    "Paper_In_Proceedings_Full_Paper_Reviewed": ['hasAuthors', 'hasBookEditors'],
+    "Paper_In_Proceedings_Abstract_Reviewed": ['hasAuthors', 'hasBookEditors'],
+    "Poster_In_Proceedings_Full_Paper_Reviewed": ['hasAuthors', 'hasBookEditors'],
+    "Poster_In_Proceedings_Abstract_Reviewed": ['hasAuthors', 'hasBookEditors'],
     "Demo": ['hasAuthors', 'hasBookEditors'],
     "Tutorial": ['hasAuthors', 'hasBookEditors'],
-    "Edited_proceeding": ['hasBookEditors'],
-    "Invited_paper": ['hasAuthors', 'hasBookEditors'],
+    "Edited_Proceeding": ['hasBookEditors'],
+    "Invited_Paper": ['hasAuthors', 'hasBookEditors'],
 
     "Chapter_in_book": ['hasChapterAuthors', 'hasBookEditors'],
     "Editor": ['hasAuthors', 'hasBookEditors'],
-    "Whole_book": ['hasAuthors', 'hasBookEditors'],
+    "Whole_Book": ['hasAuthors', 'hasBookEditors'],
     "Monograph": ['hasAuthors', 'hasBookEditors'],
 
-    'Journal_article': ['hasAuthors'],
-    'Scientific_newsletter': ['hasAuthors'],
+    'Journal_Article': ['hasAuthors'],
+    'Scientific_Newsletter': ['hasAuthors'],
     "Foreword": ['hasAuthors'],
-    "Journal_editorial": ['hasAuthors'],
-    'Magazine_editorial': ['hasAuthors'],
-    'Other_journal': ['hasAuthors'],
+    "Journal_Editorial": ['hasAuthors'],
+    'Magazine_Editorial': ['hasAuthors'],
+    'Other_Journal': ['hasAuthors'],
     'ERCIM_News': ['hasAuthors'],
 
-    "FORTH_ICS_Tech_report": ['hasAuthors'],
-    "Other_tech_report": ['hasAuthors'],
-		"Distinguished_lecture": ['hasAuthors'],
+    "FORTH_ICS_Tech_Report": ['hasAuthors'],
+    "Other_Tech_Report": ['hasAuthors'],
+		"Distinguished_Lecture": ['hasAuthors'],
     "Talk": ['hasAuthors'],
-    "Master_thesis": ['hasAuthors', 'hasSupervisors'],
-    "Phd_thesis": ['hasAuthors', 'hasSupervisors'],
+    "Master_Thesis": ['hasAuthors', 'hasSupervisors'],
+    "Phd_Thesis": ['hasAuthors', 'hasSupervisors'],
     "Seminar": ['hasAuthors'],
-    "Multimedia_material": ['hasAuthors'],
-    "White_paper": ['hasAuthors'],
+    "Multimedia_Material": ['hasAuthors'],
+    "White_Paper": ['hasAuthors'],
     "Miscellaneous": ['hasAuthors'],
 };
 
 //The default title of each category
 var titleFields = {
   "Conference_Workshop": {
-    "Paper_in_proceedings_full_paper_reviewed": 'English_Title',
-    "Paper_in_proceedings_abstract_reviewed": 'English_Title',
-    "Poster_in_proceedings_full_paper_reviewed": 'English_Title',
-    "Poster_in_proceedings_abstract_reviewed": 'English_Title',
-    "Demo": 'English_Title',
-    "Tutorial": 'English_Title',
-    "Edited_proceeding": 'Book_Title',
-    "Invited_paper": 'English_Title'
+    "Paper_In_Proceedings_Full_Paper_Reviewed": 'englishTitle',
+    "Paper_In_Proceedings_Abstract_Reviewed": 'englishTitle',
+    "Poster_In_Proceedings_Full_Paper_Reviewed": 'englishTitle',
+    "Poster_In_Proceedings_Abstract_Reviewed": 'englishTitle',
+    "Demo": 'englishTitle',
+    "Tutorial": 'englishTitle',
+    "Edited_Proceeding": 'bookTitle',
+    "Invited_Paper": 'englishTitle'
   },
   "Book": {
-    "Chapter_in_book": 'Chapter_Title',
-    "Editor": 'Book_Title',
-    "Whole_book": 'Book_Title',
-    "Monograph": 'Book_Title'
+    "Chapter_in_book": 'chapterTitle',
+    "Editor": 'bookTitle',
+    "Whole_Book": 'bookTitle',
+    "Monograph": 'bookTitle'
   },
   "Journal": {
-    'Journal_article': 'English_Title',
-    'Scientific_newsletter': 'English_Title',
-    "Foreword": 'English_Title',
-    "Journal_editorial": 'English_Title',
-    'Magazine_editorial': 'English_Title',
-    'Other_journal': 'English_Title',
-    'ERCIM_News': 'English_Title'
+    'Journal_Article': 'englishTitle',
+    'Scientific_Newsletter': 'englishTitle',
+    "Foreword": 'englishTitle',
+    "Journal_Editorial": 'englishTitle',
+    'Magazine_Editorial': 'englishTitle',
+    'Other_Journal': 'englishTitle',
+    'ERCIM_News': 'englishTitle'
   },
   "Other": {
-    "FORTH_ICS_Tech_report": 'English_Title',
-    "Other_tech_report": 'English_Title',
-		"Distinguished_lecture": 'English_Title',
-    "Talk": 'English_Title',
-    "Master_thesis": 'English_Title',
-    "Phd_thesis": 'English_Title',
-    "Seminar": 'English_Title',
-    "Multimedia_material": 'English_Title',
-    "White_paper": 'English_Title',
-    "Miscellaneous": 'English_Title',
+    "FORTH_ICS_Tech_Report": 'englishTitle',
+    "Other_Tech_Report": 'englishTitle',
+		"Distinguished_Lecture": 'englishTitle',
+    "Talk": 'englishTitle',
+    "Master_Thesis": 'englishTitle',
+    "Phd_Thesis": 'englishTitle',
+    "Seminar": 'englishTitle',
+    "Multimedia_Material": 'englishTitle',
+    "White_Paper": 'englishTitle',
+    "Miscellaneous": 'englishTitle',
   }
 }
 
@@ -268,30 +268,30 @@ var titleFields = {
 var doiCategoriesToPRESS = {
   'book-section':['Book', 'Chapter_in_book'],
   'monograph': ['Book', 'Monograph'],
-  'report': ['Other', 'Other_tech_report'],
-  'journal-article': ['Journal', 'Journal_article'],
+  'report': ['Other', 'Other_Tech_Report'],
+  'journal-article': ['Journal', 'Journal_Article'],
   'book-part': ['Book', 'Chapter_in_book'],
   'other': ['Other', 'Miscellaneous'],
-  'book': ['Book', 'Whole_book'],
-  'proceedings-article': ['Conference_Workshop', 'Paper_in_proceedings_full_paper_reviewed'],
+  'book': ['Book', 'Whole_Book'],
+  'proceedings-article': ['Conference_Workshop', 'Paper_In_Proceedings_Full_Paper_Reviewed'],
   'book-chapter': ['Book', 'Chapter_in_book'],
-  'report-series': ['Other', 'Other_tech_report'],
-  'proceedings': ['Conference_Workshop', 'Paper_in_proceedings_full_paper_reviewed'],
-  'journal-issue': ['Journal', 'Other_journal'],
-  'book-series': ['Book', 'Whole_book'],
+  'report-series': ['Other', 'Other_Tech_Report'],
+  'proceedings': ['Conference_Workshop', 'Paper_In_Proceedings_Full_Paper_Reviewed'],
+  'journal-issue': ['Journal', 'Other_Journal'],
+  'book-series': ['Book', 'Whole_Book'],
   'edited-book': ['Book', 'Editor'],
-  'journal': ['Journal', 'Other_journal']
+  'journal': ['Journal', 'Other_Journal']
 }
 
 //Convertion of DOI String data to PRESS Data
 var doiFieldsToPRESS = {
-  'DOI': 'DOI',
-  'page': 'Pages',
-  'publisher': 'Publisher',
-  'publisher-location': 'Publisher_Location',
+  'DOI': 'doi',
+  'page': 'pages',
+  'publisher': 'publisher',
+  'publisher-location': 'publisherLocation',
   //'URL': 'external',
-  'abstract': 'English_Abstract',
-  'volume': 'Volume'
+  'abstract': 'englishAbstract',
+  'volume': 'volume'
 }
 
 //Object Properties of the Ontology
@@ -317,10 +317,10 @@ var filterFields = {
 		intro: '?filterCon rdfs:subPropertyOf* press:hasContributors. \n'
 	},
 	tags: {
-		p: 'press:Tag'
+		p: 'press:tag'
 	},
 	year: {
-		p: 'press:Year'
+		p: 'press:year'
 	},
 	org: {
 		p: 'press:belongsTo'

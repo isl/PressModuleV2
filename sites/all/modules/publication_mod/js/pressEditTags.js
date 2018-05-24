@@ -66,7 +66,7 @@
         $group.append($d);
         var bloodhound = new Bloodhound({
           queryTokenizer: Bloodhound.tokenizers.whitespace,
-          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('Tag'),
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tag'),
           sufficient: 500,
           remote: {
             url: this.dbURL,
@@ -78,16 +78,12 @@
 
               BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n'+
                         'prefix press: <'+prefix+'> \n' +
-                        'SELECT ?Tag (count(?pub) as ?Tag_Uses) WHERE { \n';
-              // for(var i=0; i<queries.length; i++){
-              //   if (queries[i].length < 3) return false;
-              //   BDSquery += '?o'+i+' bds:search "'+queries[i]+'*". \n'+
-              //     '?uuid press:Project_Name ?o'+i+' . \n';
-              // }
-              BDSquery += '?Tag bds:search "'+ queries +'". \n';
+                        'SELECT ?tag (count(?pub) as ?Tag_Uses) WHERE { \n';
 
-              BDSquery += '?pub press:Tag ?Tag. \n'+
-              '}group by ?Tag';
+              BDSquery += '?tag bds:search "'+ queries +'". \n';
+
+              BDSquery += '?pub press:tag ?tag. \n'+
+              '}group by ?tag';
 
               settings.data = {
                 query : BDSquery,
@@ -102,7 +98,7 @@
                 var results = response.results.bindings;
                 for(var i=0; i<results.length; i++){
                   tr[i] = {
-                    Tag: results[i].Tag.value,
+                    tag: results[i].tag.value,
                     Tag_Uses: results[i].Tag_Uses.value
                   };
                 }
@@ -118,11 +114,11 @@
         var dataset = {
           source: bloodhound,
           name: 'Tags',
-          display: 'Tag',
+          display: 'tag',
           templates: {
             header: '<h4 class="author-category">Tags</h4>',
             suggestion: function(data) {
-              return '<p><strong>' + data.Tag + '</strong> - ' + data.Tag_Uses + '</p>';
+              return '<p><strong>' + data.tag + '</strong> - ' + data.Tag_Uses + '</p>';
             }
           },
           limit: 300
@@ -141,7 +137,7 @@
             }
             console.log(suggestion);
             var sug = {
-              Tag: {value: suggestion.Tag},
+              tag: {value: suggestion.tag},
               Tag_Uses: {value: suggestion.Tag_Uses}
             }
             console.log(sug);
@@ -161,16 +157,11 @@
 
         BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n'+
                     'prefix press: <'+this.prefix+'> \n' +
-                    'SELECT ?Tag (count(?pub) as ?Tag_Uses) WHERE { \n';
-        // for(var i=0; i<queries.length; i++){
-        //   if (queries[i].length < 3) return false;
-        //   BDSquery += '?o'+i+' bds:search "'+queries[i]+'*". \n'+
-        //     '?uuid press:Project_Name ?o'+i+' . \n';
-        // }
+                    'SELECT ?tag (count(?pub) as ?Tag_Uses) WHERE { \n';
 
-        BDSquery += '?Tag bds:search "'+ queries +'". \n';
-        BDSquery += '?pub press:Tag ?Tag. \n'+
-        '}group by ?Tag';
+        BDSquery += '?tag bds:search "'+ queries +'". \n';
+        BDSquery += '?pub press:tag ?tag. \n'+
+        '}group by ?tag';
 
         $.when(this.getQuery(BDSquery)).done((function(a){
           this.getTagsTable(a.results.bindings);
@@ -202,8 +193,8 @@
                   selected = dt.rows('.selected');
                   for(i=0; i<selected.data().length; i++){
                     var row = selected.data()[i];
-                    items += '  • '+row.Tag.value+', '+row.Tag_Uses.value+'\n';
-                    tags.push(row.Tag.value);
+                    items += '  • '+row.tag.value+', '+row.Tag_Uses.value+'\n';
+                    tags.push(row.tag.value);
                   }
                   if (tags.length === 0){
                     alert('No Tags Selected!');
@@ -240,7 +231,7 @@
             ],
             data:response,
             columns:[
-              {data:'Tag.value'},
+              {data:'tag.value'},
               {data:'Tag_Uses.value'}
             ],
             select: {
@@ -286,7 +277,7 @@
         var query = 'prefix press: <'+prefix+'> \n';
 
         query += 'SELECT ?pub WHERE{\n';
-        query += '?pub press:Tag ?tag.\n';
+        query += '?pub press:tag ?tag.\n';
         query += 'FILTER('
         for (var i = 0; i < tags.length; i++) {
           if(i>0){
@@ -319,17 +310,17 @@
         var query = 'prefix press: <'+prefix+'> \n';
 
         query += 'DELETE { \n';
-        query += '?pub press:Tag ?Tag. \n';
+        query += '?pub press:tag ?tag. \n';
         query += '}\n';
         query += 'WHERE{ \n';
-        query += '?pub press:Tag ?Tag. \n';
+        query += '?pub press:tag ?tag. \n';
         query += 'filter(';
         var i=0;
         for(i=0; i<tags.length; i++){
           if (i > 0){
             query += ' || '
           }
-          query+= '?Tag = "'+ tags[i] +'"';
+          query+= '?tag = "'+ tags[i] +'"';
         }
         query += '). \n';
         query += '}';
