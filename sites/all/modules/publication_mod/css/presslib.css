@@ -215,7 +215,7 @@ a.result-icons:-webkit-any-link{
   animation: spin 2s linear infinite;
 }
 
-#filterLoader {
+.filterLoader {
   position: relative;
   left: 50%;
   top: 50%;

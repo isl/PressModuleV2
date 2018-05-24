@@ -120,7 +120,7 @@
         console.log(this.parameters);
 
         this.loader = $('<div id="loader">');
-        this.filterLoader = $('<div id="filterLoader">');
+        this.filterLoader = $('<div class="filterLoader">');
         element.append(this.loader);
         $.when(this.getCategories(), this.getTags()).always($.proxy(function(a1, a2) {
             if (!(a1) || !a2) {
@@ -1992,6 +1992,7 @@
 
                 if (multipleFields[current_pub.pub.value] && 'Tag' in multipleFields[current_pub.pub.value]) {
                     var $tagDiv = $('<div class="col-xs-12 pub-tags">Tags: </div>');
+                    var $tagsMore = $('<div class="results-more-tags"></div>').hide();
                     for (var r = 0; r < multipleFields[current_pub.pub.value].Tag.length; r++) {
                         var $span = $('<span class="pub-tag-item">' + multipleFields[current_pub.pub.value].Tag[r] + '</span>');
                         $span.click((function(that) {
@@ -2003,8 +2004,23 @@
                                 that.clearAdvancedSearch();
                             };
                         })(this));
-                        $tagDiv.append($span);
+                        if(r<5){
+                            $tagDiv.append($span);
+                        }else{
+                            $tagsMore.append($span);
+                        }
                     }
+                    $tagDiv.append($tagsMore);
+                    $resultsShowMoreTags = $('<a class="results-show-more-tags">More</a>');
+                    $resultsShowMoreTags.click(function(){
+                        $(this).prev('.results-more-tags').toggle();
+                        if($(this).text() === 'Less'){
+                            $(this).text('More');
+                        }else{
+                            $(this).text('Less');
+                        }
+                    })
+                    $tagDiv.append($resultsShowMoreTags);
                     $pub_info.append($tagDiv);
                 }
                 $row.append($icons);
@@ -2024,6 +2040,7 @@
             this.filters.append('<h3>FILTERS</h3><hr/>');
             this.filterLoader.hide();
             this.filters.append(this.filterLoader);
+            var filterLoader = this.filterLoader;
 
             var contributorResults = contributorResponse.results.bindings;
 
@@ -2031,6 +2048,24 @@
 
             this.filters.append('<h4 class="col-xs-12">Authors</h4>');
             var contributorsDiv = $('<div class="col-xs-12"></div>');
+
+            function onFilterClick(that) {
+                return function() {
+                    that.filterLoader.show();
+                    if ($(this).attr('data-selected') === 'selected') {
+                        $(this).removeAttr('data-selected');
+                        $(this).siblings().show();
+                    } else {
+                        $(this).attr('data-selected', 'selected');
+                    }
+
+                    if (that.currentSearchMode === 'browse') {
+                        that.searchByCategory();
+                    } else if (that.currentSearchMode === 'advanced') {
+                        that.searchByFields();
+                    }
+                };
+            }
 
             function insertAuthors(contributors, div) {
                 var $authorsMore = div.find('#show-more-authors');
@@ -2056,6 +2091,7 @@
                         }
                     }
                 }
+                
             }
             if (contributorResults.length === 15) {
                 var authorsShowMore = $('<a id="show-more-authors" class="search-filter-more" ' +
@@ -2064,12 +2100,16 @@
                 authorsShowMore.click(function(that) {
                     return function() {
                         $this = $(this);
+                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
                         $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
                         $.when(that.getAuthorFilters(prefixes, query, $this.attr('data-offset'))).done(function(a) {
                             insertAuthors(a.results.bindings, contributorsDiv);
                             if (a.results.bindings.length < 15) {
                                 contributorsDiv.find('#show-more-authors').remove();
                             }
+                            contributorsDiv.find('.search-filter').off('click');
+                            contributorsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                            $this.siblings('.filterLoader').remove();
                         });
                     }
                 }(this));
@@ -2117,7 +2157,7 @@
             var tagResults = tagResponse.results.bindings;
 
             function insertTags(tags, div) {
-                var $tagsMore = div.find('#show-more-tags');
+                var $tagsMore = div.find('#filters-show-more-tags');
                 for (var i = 0; i < tags.length; i++) {
                     var tagDiv = $('<div class="search-filter search-filter-tags" data-p="press:Tag" ' +
                         'data-o="?Tag" data-oVal="&quot;' + tags[i].Tag.value + '&quot;"></div>');
@@ -2137,18 +2177,21 @@
                 }
             }
             if (tagResults.length === 15) {
-                var tagsShowMore = $('<a id="show-more-tags" class="search-filter-more" ' +
+                var tagsShowMore = $('<a id="filters-show-more-tags" class="search-filter-more" ' +
                     'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
                 tagsDiv.append(tagsShowMore);
                 tagsShowMore.click(function(that) {
                     return function() {
                         $this = $(this);
+                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
                         $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
                         $.when(that.getTagFilters(prefixes, query, $this.attr('data-offset'))).done(function(a) {
                             insertTags(a.results.bindings, tagsDiv);
                             if (a.results.bindings.length < 15) {
-                                tagsDiv.find('#show-more-tags').remove();
+                                tagsDiv.find('#filters-show-more-tags').remove();
                             }
+                            $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                            $this.siblings('.filterLoader').remove();
                         });
                     }
                 }(this));
@@ -2233,23 +2276,6 @@
             }
 
             this.filters.append(projectsDiv);
-            function onFilterClick(that) {
-                return function() {
-                    that.filterLoader.show();
-                    if ($(this).attr('data-selected') === 'selected') {
-                        $(this).removeAttr('data-selected');
-                        $(this).siblings().show();
-                    } else {
-                        $(this).attr('data-selected', 'selected');
-                    }
-
-                    if (that.currentSearchMode === 'browse') {
-                        that.searchByCategory();
-                    } else if (that.currentSearchMode === 'advanced') {
-                        that.searchByFields();
-                    }
-                };
-            }
 
             this.filters.append($('<button>', {
                 text: 'Clear',
