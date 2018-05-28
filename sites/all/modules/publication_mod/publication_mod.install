@@ -131,7 +131,7 @@ function publication_mod_install(){
   $nid = db_insert('publication_mod')
     ->fields(array(
       'pm_key' => 'blazegraph_url',
-      'pm_value' => 'http://139.91.183.97:28001/blazegraph/namespace/press_v3_copy2/sparql'
+      'pm_value' => 'http://139.91.183.97:28001/blazegraph/namespace/press_v3_3/sparql'
     ))
     ->execute();
   $nid = db_insert('publication_mod')
@@ -170,7 +170,8 @@ function publication_mod_uninstall() {
   $fields = array(
     'pub_mod_field_category',
     'pub_mod_field_blazegraph_uuid',
-    'pub_mod_field_file'
+    'pub_mod_field_file',
+    'pub_mod_field_organization'
   );
 
   foreach($fields as $field){
@@ -319,6 +320,8 @@ function publication_mod_enable() {
     field_create_field($field);
 
     // Create the instance on the bundle.
+
+  // if(!field_info_instance('pub_mod_field_organization')){
     $instance = array(
       'field_name' => 'pub_mod_field_organization',
       'entity_type' => 'user',
@@ -353,11 +356,14 @@ function publication_mod_enable() {
         'weight' => '4'
       ),
       'display' => array(
-        'label' => 'hidden',
-        'type' => 'hidden',
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'hidden',
+        ),
       ),
     );
     field_create_instance($instance);
+    user_save($user);
   }
 
   if (empty(user_role_load_by_name('Publication Mod Power User'))){
@@ -374,14 +380,14 @@ function publication_mod_enable() {
 
 // Custom Laboratory Field Type
 
-function publication_mod_field_schema($field){
-  $schema['columns'] = array(
-    'option' => array(
-      'type' => 'varchar',
-      'length' => 255,
-      'not null' => TRUE
-    ),
-  );
+// function publication_mod_field_schema($field){
+//   $schema['columns'] = array(
+//     'option' => array(
+//       'type' => 'varchar',
+//       'length' => 255,
+//       'not null' => TRUE
+//     ),
+//   );
 
-  return $schema;
-}
+//   return $schema;
+// }

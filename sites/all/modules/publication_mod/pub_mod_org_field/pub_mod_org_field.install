@@ -1,0 +1,15 @@
+<?php
+// Copyright FORTH-ICS, Emmanouil Dermitzakis
+
+// Custom Laboratory Field Type
+
+function pub_mod_org_field_field_schema($field){
+  $schema['columns'] = array(
+    'option' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE
+    ),
+  );
+  return $schema;
+}

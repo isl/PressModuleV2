@@ -1,0 +1,208 @@
+<?php
+
+// Custom Laboratory Field Type
+/**
+ * Impllements hook_field_info().
+ * @return array
+ */
+
+function pub_mod_org_field_field_info(){
+  
+  return array(
+    'pub_mod_organization' => array(
+      'label' => t('Publication Mod Organization'),
+      'description' => t('User Organization Field'),
+      'settings' => array('max_length' => 255),
+      'instance_settings' => array(
+        'text_processing' => 0,
+      ),
+      'default_widget' => 'options_select',
+      'default_formatter' => 'pub_mod_organization_formatter',
+    )
+  );
+}
+
+
+/**
+ * Implements hook_field_is_empty().
+ * 
+ */
+function pub_mod_org_field_field_is_empty($item, $field) {
+  return (empty($item['option'])) ;
+}
+
+/**
+ * Implements hook_field_widget_info_alter
+ * @param type &$info 
+ * @return type
+ */
+function pub_mod_org_field_field_widget_info_alter(&$info){
+  $widgets = array(
+    'options_select' => array('pub_mod_organization'),
+  );
+
+  foreach($widgets as $widget => $field_types){
+    $info[$widget]['field types'] = array_merge($info[$widget]['field types'], $field_types);
+  }
+}
+
+function pub_mod_org_field_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
+  foreach ($items as $delta => $item) {
+    if(!(empty($item['option']))){
+      // if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
+        // $errors[$field['field_name']][$langcode][$delta][] = array(
+        //   'error' => 'pub_mod_field_invalid',
+        //   'message' => t('Lab Value must be one word and contain letters, numbers and _')
+        // );
+      // }
+    }
+  }
+}
+
+function pub_mod_org_field_options_list($field, $instance, $entity_type, $entity){
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+  /*$dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  $query = 'prefix press:<' . $ontologyPrefix .'>'.
+'select ?org ?org_name where{'.
+  '?org rdf:type press:Organization;'.
+       'press:organizationName ?org_name.'.
+'}';
+
+  $q = http_build_query(array('query' => $query));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($dbURL, $options);
+
+  $data = json_decode($result->data);
+  $options = array();*/
+
+  // foreach($data->results->bindings as $org){
+  //   $options[$org->org->value] = $org->org->value;  //TODO CHANGE
+  // }
+
+  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+  $options = array();
+  foreach ($orgs as $org) {
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
+
+      $options[$bg_value] = $key;
+    }
+  }
+
+
+  return $options;
+}
+
+function pub_mod_org_field_field_formatter_info(){
+  return array(
+    'pub_mod_organization_formatter' => array(
+      'label' => t('Default Formatter'),
+      'field types' => array('pub_mod_organization')
+    )
+  );
+}
+
+function pub_mod_org_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  //Currently we only have one display option, use switch
+  //to prepare for future options.
+  switch ($display['type']) {
+    case 'pub_mod_organization_formatter':
+      $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+      $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+      $options = array();
+      foreach ($orgs as $org) {
+        if($org != ""){
+          $org_info = explode('|', $org);
+          $key = trim($org_info[0]);
+          $bg_value = trim($org_info[1]);
+
+          $options[$bg_value] = $key;
+        }
+      }
+      foreach ($items as $delta => $item) {
+        if (isset($item['option'])) {
+          $output = field_filter_xss($options[$item['option']]);
+        }
+        else {
+          $output = "Not Supplied";
+        }
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+    default:
+  }
+  return $element;
+}
+
+
+function pub_mod_org_field_feeds_processor_targets_alter(&$targets, $entity_type, $bundle){
+  if ($entity_type == 'user' && $bundle == 'user'){
+    foreach(field_info_instances($entity_type, $bundle) as $name => $instance){
+      $info = field_info_field($name);
+      unset($callback);
+
+      if ($info['type'] == 'pub_mod_organization'){
+        $callback = 'pub_mod_org_field_target_setter';
+      }
+
+      if(isset($callback)){
+        $targets[$name] = array(
+          'name' => check_plain($instance['label']),
+          'callback' => $callback,
+          'description' => t('The @label field of the node.', array('@label' => $instance['label']))
+        );
+      }
+    }
+  }
+}
+
+function pub_mod_org_field_target_setter($source, $entity, $target, $values, $mapping){
+  watchdog('publication_mod', 'target: %target <br> value: %value<br>mapping: %mapping', 
+    array(
+      '%target' => print_r($target, true),
+      '%value' => print_r($values, true), 
+      '%mapping' => print_r($mapping, true)
+    ), WATCHDOG_DEBUG);
+
+  if(empty($values)){
+    return;
+  }
+
+  if(!is_array($values)){
+    $values = array($values);
+  }
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
+  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+  $options = array();
+  foreach ($orgs as $org) {
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
+      $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+      foreach ($accepted_values as $a_value) {
+        $options[$a_value] = array('key' => $key, 'value' => $bg_value);
+      }
+    }
+  }
+  watchdog('publication_mod', 'a_value: "%a_value"', 
+    array(
+      '%a_value' => print_r($options[$values[0]], true),
+    ), WATCHDOG_DEBUG);
+
+  $entity->{$target}['und'][0]['option'] = $options[$values[0]]['value'];
+}
