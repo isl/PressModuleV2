@@ -171,12 +171,12 @@ function pub_mod_org_field_feeds_processor_targets_alter(&$targets, $entity_type
 }
 
 function pub_mod_org_field_target_setter($source, $entity, $target, $values, $mapping){
-  watchdog('publication_mod', 'target: %target <br> value: %value<br>mapping: %mapping', 
-    array(
-      '%target' => print_r($target, true),
-      '%value' => print_r($values, true), 
-      '%mapping' => print_r($mapping, true)
-    ), WATCHDOG_DEBUG);
+  // watchdog('publication_mod', 'target: %target <br> value: %value<br>mapping: %mapping', 
+  //   array(
+  //     '%target' => print_r($target, true),
+  //     '%value' => print_r($values, true), 
+  //     '%mapping' => print_r($mapping, true)
+  //   ), WATCHDOG_DEBUG);
 
   if(empty($values)){
     return;
@@ -199,10 +199,10 @@ function pub_mod_org_field_target_setter($source, $entity, $target, $values, $ma
       }
     }
   }
-  watchdog('publication_mod', 'a_value: "%a_value"', 
-    array(
-      '%a_value' => print_r($options[$values[0]], true),
-    ), WATCHDOG_DEBUG);
+  // watchdog('publication_mod', 'a_value: "%a_value"', 
+  //   array(
+  //     '%a_value' => print_r($options[$values[0]], true),
+  //   ), WATCHDOG_DEBUG);
 
   $entity->{$target}['und'][0]['option'] = $options[$values[0]]['value'];
 }
