@@ -171,12 +171,16 @@ function publication_mod_uninstall() {
     'pub_mod_field_category',
     'pub_mod_field_blazegraph_uuid',
     'pub_mod_field_file',
-    'pub_mod_field_organization'
+    'pub_mod_field_organization',
+    'pub_mod_field_first_name',
+    'pub_mod_field_last_name',
   );
 
   foreach($fields as $field){
     field_delete_field($field);
   }
+
+  user_role_delete('Publication Mod Power User');
 
   // Delete our content type
   // http://api.drupal.org/api/function/node_type_delete/7
@@ -247,7 +251,7 @@ function publication_mod_schema(){
   */
 function publication_mod_enable() {
   global $user;
-
+  $user_edit = array();
   field_info_cache_clear();
   // Check if our field is not already created.
 
@@ -277,8 +281,14 @@ function publication_mod_enable() {
     );
     field_create_instance($instance);
 
-    $user -> pub_mod_field_first_name['und'][0]['value'] = "John";
-    user_save($user);
+    // $user->pub_mod_field_first_name['und'][0]['value'] = "John";
+    $user_edit['pub_mod_field_first_name'] = array(
+      'und' => array(
+        0 => array(
+          'value' => 'John',
+        ),
+      ),
+    );
   }
   // Check if our field is not already created.
   if (!field_info_field('pub_mod_field_last_name')) {
@@ -307,8 +317,14 @@ function publication_mod_enable() {
     );
     field_create_instance($instance);
 
-    $user -> pub_mod_field_last_name['und'][0]['value'] = "Doe";
-    user_save($user);
+    // $user->pub_mod_field_last_name['und'][0]['value'] = "Doe";
+    $user_edit['pub_mod_field_last_name'] = array(
+      'und' => array(
+        0 => array(
+          'value' => 'Doe',
+        ),
+      ),
+    );
   }
 
   // Check if our field is not already created.
@@ -338,7 +354,6 @@ function publication_mod_enable() {
       ),
     );
     field_create_instance($instance);
-    user_save($user);
   }
 
   if(!field_info_instance('user', 'pub_mod_field_blazegraph_uuid', 'user')){
@@ -363,7 +378,6 @@ function publication_mod_enable() {
       ),
     );
     field_create_instance($instance);
-    user_save($user);
   }
 
   if (empty(user_role_load_by_name('Publication Mod Power User'))){
@@ -376,6 +390,8 @@ function publication_mod_enable() {
   if(!in_array('Publication Mod Power User', $user->roles)){
     user_multiple_role_edit(array($user->uid), 'add_role', $role->rid);
   }
+
+  user_save($user, $user_edit);
 }
 
 // Custom Laboratory Field Type

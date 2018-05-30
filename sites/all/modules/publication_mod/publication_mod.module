@@ -893,7 +893,11 @@ function publication_mod_ajax_callback_get_path(){
 function publication_mod_user_presave(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
-  watchdog("publication_mod", print_r($edit, true), array(), WATCHDOG_NOTICE);
+  // watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
+  //   '%edit' => print_r($edit, true),
+  //   '%account' => print_r($account, true),
+  //   '%category' => print_r($category, true),
+  // ), WATCHDOG_NOTICE);
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $orgoptions = array();
   foreach ($orgs as $org) {
@@ -909,20 +913,50 @@ function publication_mod_user_presave(&$edit, $account, $category){
   $prefix = $blazegraph_info['blazegraph_prefix'];
   $blazegraph_url = $blazegraph_info['blazegraph_url'];
 
-  $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
+  if(isset($edit['pub_mod_field_last_name']['und'][0]['value'])){
+    $last_name = $edit['pub_mod_field_last_name']['und'][0]['value'];
+  }elseif (isset($account->pub_mod_field_last_name['und'][0]['value'])) {
+    $last_name = $account->pub_mod_field_last_name['und'][0]['value'];
+  }
+  
+  if(isset($edit['pub_mod_field_first_name']['und'][0]['value'])){
+    $first_name = $edit['pub_mod_field_first_name']['und'][0]['value'];
+  }elseif(isset($account->pub_mod_field_first_name['und'][0]['value'])){
+    $first_name = $account->pub_mod_field_first_name['und'][0]['value'];
+  }
+  
+  if(isset($edit['mail'])){
+    $mail = $edit['mail'];
+  }elseif(isset($account->mail)){
+    $mail = $account->mail;
+  }
 
+  if(isset($edit['pub_mod_field_organization']['und'][0]['value'])){
+    $org = $edit['pub_mod_field_organization']['und'][0]['value'];
+  }elseif(isset($account->pub_mod_field_organization['und'][0]['option'])){
+    $org = $account->pub_mod_field_organization['und'][0]['option'];
+  }
+
+  $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
   "DELETE {<urn:uuid:". $account->uuid . "> ?p ?o} WHERE {".
     "<urn:uuid:". $account->uuid."> ?p ?o".
   "};".
   "INSERT DATA{".
     "<urn:uuid:". $account->uuid."> rdf:type foaf:Person;".
     "<". $prefix ."personUuid> \u0022urn:uuid:" . $account->uuid. "\u0022;".
-    "foaf:familyName \u0022". $edit['pub_mod_field_last_name']['und'][0]['value'] ."\u0022;" .
-    "foaf:givenName \u0022" . $edit['pub_mod_field_first_name']['und'][0]['value'] ."\u0022;".
-    "<". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022;".
-    "foaf:mbox \u0022mailto:". $edit['mail'] . "\u0022;".
-    "<". $prefix ."memberOf> <". $prefix . "Organization/" .$edit['pub_mod_field_organization']['und'][0]['option'] .">." .
-  "}";
+    "foaf:familyName \u0022". $last_name ."\u0022; " .
+    "foaf:givenName \u0022" . $first_name ."\u0022; ".
+    "<". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022; ";
+
+  if(isset($mail)){
+    $sparql .= "foaf:mbox \u0022mailto:". $mail . "\u0022;";
+  }
+
+  if(isset($org) && !empty($org)){
+    $sparql .= "<". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">." ;
+  }
+
+  $sparql .= "}";
 
   $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $account->uuid;
 
