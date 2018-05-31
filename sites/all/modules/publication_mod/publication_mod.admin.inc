@@ -2,6 +2,32 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
+function publication_mod_settings_page(){
+	$markup = '';
+
+	$markup .= '<h3>Edit Authors</h3>';
+	$markup .= '<ul>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/internal_authors">Edit Internal Authors</a></li>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/external_authors">Edit External Authors</a></li>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/merge_authors">Merge Authors</a></li>';
+	$markup .= '</ul>';
+	$markup .= '<h3>Edit Content</h3>';
+	$markup .= '<ul>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/projects">Edit Projects</a></li>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/tags">Edit Tags</a></li>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/edit_orgs">Edit Organizations</a></li>';
+	$markup .= '</ul>';
+	$markup .= '<h3>Import Content</h3>';
+	$markup .= '<ul>';
+	$markup .= '<li><a href="/admin/config/publications/publication_mod/import_pubs">Import Publications</a></li>';
+	$markup .= '</ul>';
+	$page = array(
+		'form' => drupal_get_form('publication_mod_settings_form'),
+		'afterFormContent' => array('#markup'=>$markup),
+	);
+	return $page;
+}
+
 /*
  * Creates the publication_mod Configuration Page
  */
@@ -77,6 +103,53 @@ function _external_authors_edit(){
   return $html;
 }
 
+function _internal_authors_edit(){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  _add_presslib_library();
+
+  drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
+  drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
+  drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
+  drupal_add_js("https://cdn.datatables.net/select/1.2.3/js/dataTables.select.js", 'external');
+
+  $internalJS = "jQuery(document).ready(function($){ \n" .
+	"$('#search-internal-author').pressInternalAuthors({ \n" .
+	  "dbURL: '". $dbURL ."', \n" .
+	  "prefix: '" . $ontologyPrefix . "', \n" .
+	"}); \n".
+  "}); \n";
+  drupal_add_js($internalJS, 'inline');
+
+  $html = '<div class="form-horizontal" id="search-internal-author"></div>';
+  return $html;
+}
+
+function _merge_authors(){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  _add_presslib_library();
+
+  drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
+  drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
+  drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
+  drupal_add_js("https://cdn.datatables.net/select/1.2.3/js/dataTables.select.js", 'external');
+
+  $internalJS = "jQuery(document).ready(function($){ \n" .
+	"$('#search-author').pressMergeAuthors({ \n" .
+	  "dbURL: '". $dbURL ."', \n" .
+	  "prefix: '" . $ontologyPrefix . "', \n" .
+	"}); \n".
+  "}); \n";
+  drupal_add_js($internalJS, 'inline');
+
+  $html = '<div class="form-horizontal" id="search-author"></div>';
+  return $html;
+}
 
 function _projects_edit(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));

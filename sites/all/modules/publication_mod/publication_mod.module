@@ -58,8 +58,8 @@ function publication_mod_menu(){
   $menu['admin/config/publications/publication_mod'] = array(
     'title' => 'PRESS Publication Module',
     'description' => 'Configuration for PRESS Publication Module',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('publication_mod_settings_form'),
+    'page callback' => 'publication_mod_settings_page',
+    // 'page arguments' => array('publication_mod_settings_form'),
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
     // 'type' => MENU_NORMAL_ITEM,
@@ -72,11 +72,27 @@ function publication_mod_menu(){
     // 'type' => MENU_NORMAL_ITEM,
   );
 
+  $menu['admin/config/publications/publication_mod/internal_authors'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Edit Internal Authors',
+    'page callback' => '_internal_authors_edit',
+    'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
+  );
+
   $menu['admin/config/publications/publication_mod/external_authors'] = array(
     'type' => MENU_LOCAL_TASK,
     'title' => 'Edit External Authors',
     'weight' => 2,
     'page callback' => '_external_authors_edit',
+    'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
+  );
+
+  $menu['admin/config/publications/publication_mod/merge_authors'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Merge Authors',
+    'page callback' => '_merge_authors',
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
   );
@@ -600,6 +616,8 @@ function _add_presslib_library(){
   drupal_add_js($module_path . '/js/presslib.js');
   drupal_add_js($module_path . '/js/pressSearch.js');
   drupal_add_js($module_path . '/js/pressExternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressInternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressMergeAuthors.js');
   drupal_add_js($module_path . '/js/pressEditProjects.js');
   drupal_add_js($module_path . '/js/pressEditTags.js');
   drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
