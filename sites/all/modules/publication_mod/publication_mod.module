@@ -58,8 +58,8 @@ function publication_mod_menu(){
   $menu['admin/config/publications/publication_mod'] = array(
     'title' => 'PRESS Publication Module',
     'description' => 'Configuration for PRESS Publication Module',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('publication_mod_settings_form'),
+    'page callback' => 'publication_mod_settings_page',
+    // 'page arguments' => array('publication_mod_settings_form'),
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
     // 'type' => MENU_NORMAL_ITEM,
@@ -72,11 +72,27 @@ function publication_mod_menu(){
     // 'type' => MENU_NORMAL_ITEM,
   );
 
+  $menu['admin/config/publications/publication_mod/internal_authors'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Edit Internal Authors',
+    'page callback' => '_internal_authors_edit',
+    'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
+  );
+
   $menu['admin/config/publications/publication_mod/external_authors'] = array(
     'type' => MENU_LOCAL_TASK,
     'title' => 'Edit External Authors',
     'weight' => 2,
     'page callback' => '_external_authors_edit',
+    'access arguments' => array('access administration pages'),
+    'file' => 'publication_mod.admin.inc',
+  );
+
+  $menu['admin/config/publications/publication_mod/merge_authors'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Merge Authors',
+    'page callback' => '_merge_authors',
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
   );
@@ -299,29 +315,30 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
     }
   }else if($root_path === 'user/%'){
     watchdog('publication_mod', 'local_tasks: root_path: %root_path <br/> $data: <pre> %data </pre><br/> router_item: <pre> %router_item </pre>', array('%root_path' => $root_path, '%data'=>print_r($data, true), '%router_item' => print_r($router_item, true)), WATCHDOG_DEBUG);
-
-    $uuid = $router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid['und'][0]['value'];
-    if(uuid_is_valid($uuid)){
-      $uuid = "urn:uuid:" . $uuid;
-    }
-    $name = $router_item['page_arguments'][0]->pub_mod_field_first_name['und'][0]['value'];
-    $data['tabs'][0]['output'][] = array(
-      '#theme' => 'menu_local_task',
-      '#link' => array(
-        'title' => t($name .'\'s Publications'),
-        'href' => 'publication/search-pub',
-        // 'access callback' => 'publication_mod_user_has_role',
-        // 'access arguments' => array('authenticated user'),
-        'localized_options' => array(
-          'query' => array(
-            'type' => 'advanced',
-            'reviewed' => 'false',
-            'authors0' => $uuid,
-          ),
-          'html' => TRUE
+    if(isset($router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid)){
+      $uuid = $router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid['und'][0]['value'];
+      if(uuid_is_valid($uuid)){
+        $uuid = "urn:uuid:" . $uuid;
+      }
+      $name = $router_item['page_arguments'][0]->pub_mod_field_first_name['und'][0]['value'];
+      $data['tabs'][0]['output'][] = array(
+        '#theme' => 'menu_local_task',
+        '#link' => array(
+          'title' => t($name .'\'s Publications'),
+          'href' => 'publication/search-pub',
+          // 'access callback' => 'publication_mod_user_has_role',
+          // 'access arguments' => array('authenticated user'),
+          'localized_options' => array(
+            'query' => array(
+              'type' => 'advanced',
+              'reviewed' => 'false',
+              'authors0' => $uuid,
+            ),
+            'html' => TRUE
+          )
         )
-      )
-    );
+      );
+    }
   }
 }
 
@@ -599,6 +616,8 @@ function _add_presslib_library(){
   drupal_add_js($module_path . '/js/presslib.js');
   drupal_add_js($module_path . '/js/pressSearch.js');
   drupal_add_js($module_path . '/js/pressExternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressInternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressMergeAuthors.js');
   drupal_add_js($module_path . '/js/pressEditProjects.js');
   drupal_add_js($module_path . '/js/pressEditTags.js');
   drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
@@ -887,218 +906,18 @@ function publication_mod_ajax_callback_get_path(){
 }
 
 
-// Custom Laboratory Field Type
-/**
- * Impllements hook_field_info().
- * @return array
- */
-
-function publication_mod_field_info(){
-  return array(
-    'pub_mod_organization' => array(
-      'label' => t('Publication Mod Organization'),
-      'description' => t('User Organization Field'),
-      'settings' => array('max_length' => 255),
-      'instance_settings' => array(
-        'text_processing' => 0,
-      ),
-      'default_widget' => 'options_select',
-      'default_formatter' => 'pub_mod_organization_formatter',
-    )
-  );
-}
-
-
-/**
- * Implements hook_field_is_empty().
- * 
- */
-function publication_mod_field_is_empty($item, $field) {
-  return (empty($item['option'])) ;
-}
-
-/**
- * Implements hook_field_widget_info_alter
- * @param type &$info 
- * @return type
- */
-function publication_mod_field_widget_info_alter(&$info){
-  $widgets = array(
-    'options_select' => array('pub_mod_organization'),
-  );
-
-  foreach($widgets as $widget => $field_types){
-    $info[$widget]['field types'] = array_merge($info[$widget]['field types'], $field_types);
-  }
-}
-
-function publication_mod_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors){
-  foreach ($items as $delta => $item) {
-    if(!(empty($item['option']))){
-      // if(!preg_match('([A-Za-z0-9_])+', $item['option'])){
-        // $errors[$field['field_name']][$langcode][$delta][] = array(
-        //   'error' => 'pub_mod_field_invalid',
-        //   'message' => t('Lab Value must be one word and contain letters, numbers and _')
-        // );
-      // }
-    }
-  }
-}
-
-function publication_mod_options_list($field, $instance, $entity_type, $entity){
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
-  /*$dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $query = 'prefix press:<' . $ontologyPrefix .'>'.
-'select ?org ?org_name where{'.
-  '?org rdf:type press:Organization;'.
-       'press:organizationName ?org_name.'.
-'}';
-
-  $q = http_build_query(array('query' => $query));
-
-  $options = array(
-    'headers' => array(
-      'Accept'=>'application/sparql-results+json',
-      'content-type'=> 'application/x-www-form-urlencoded'),
-    'method' => 'POST',
-    'data' => $q
-  );
-
-  $result = drupal_http_request($dbURL, $options);
-
-  $data = json_decode($result->data);
-  $options = array();*/
-
-  // foreach($data->results->bindings as $org){
-  //   $options[$org->org->value] = $org->org->value;  //TODO CHANGE
-  // }
-
-  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
-  $options = array();
-  foreach ($orgs as $org) {
-    if($org != ""){
-      $org_info = explode('|', $org);
-      $key = trim($org_info[0]);
-      $bg_value = trim($org_info[1]);
-
-      $options[$bg_value] = $key;
-    }
-  }
-
-
-  return $options;
-}
-
-function publication_mod_field_formatter_info(){
-  return array(
-    'pub_mod_organization_formatter' => array(
-      'label' => t('Default Formatter'),
-      'field types' => array('pub_mod_organization')
-    )
-  );
-}
-
-function publication_mod_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
-  $element = array();
-  //Currently we only have one display option, use switch
-  //to prepare for future options.
-  switch ($display['type']) {
-    case 'pub_mod_organization_formatter':
-      $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
-      $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
-      $options = array();
-      foreach ($orgs as $org) {
-        if($org != ""){
-          $org_info = explode('|', $org);
-          $key = trim($org_info[0]);
-          $bg_value = trim($org_info[1]);
-
-          $options[$bg_value] = $key;
-        }
-      }
-      foreach ($items as $delta => $item) {
-        if (isset($item['option'])) {
-          $output = field_filter_xss($options[$item['option']]);
-        }
-        else {
-          $output = "Not Supplied";
-        }
-        $element[$delta] = array('#markup' => $output);
-      }
-      break;
-    default:
-  }
-  return $element;
-}
-
-
-function publication_mod_feeds_processor_targets_alter(&$targets, $entity_type, $bundle){
-  if ($entity_type == 'user' && $bundle == 'user'){
-    foreach(field_info_instances($entity_type, $bundle) as $name => $instance){
-      $info = field_info_field($name);
-      unset($callback);
-
-      if ($info['type'] == 'pub_mod_organization'){
-        $callback = 'publication_mod_target_setter';
-      }
-
-      if(isset($callback)){
-        $targets[$name] = array(
-          'name' => check_plain($instance['label']),
-          'callback' => $callback,
-          'description' => t('The @label field of the node.', array('@label' => $instance['label']))
-        );
-      }
-    }
-  }
-}
-
-function publication_mod_target_setter($source, $entity, $target, $values, $mapping){
-  watchdog('publication_mod', 'target: %target <br> value: %value<br>mapping: %mapping', 
-    array(
-      '%target' => print_r($target, true),
-      '%value' => print_r($values, true), 
-      '%mapping' => print_r($mapping, true)
-    ), WATCHDOG_DEBUG);
-
-  if(empty($values)){
-    return;
-  }
-
-  if(!is_array($values)){
-    $values = array($values);
-  }
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
-  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
-  $options = array();
-  foreach ($orgs as $org) {
-    if($org != ""){
-      $org_info = explode('|', $org);
-      $key = trim($org_info[0]);
-      $bg_value = trim($org_info[1]);
-      $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
-      foreach ($accepted_values as $a_value) {
-        $options[$a_value] = array('key' => $key, 'value' => $bg_value);
-      }
-    }
-  }
-  watchdog('publication_mod', 'a_value: "%a_value"', 
-    array(
-      '%a_value' => print_r($options[$values[0]], true),
-    ), WATCHDOG_DEBUG);
-
-  $entity->{$target}['und'][0]['option'] = $options[$values[0]]['value'];
-}
-
-
 // On user insert & update
 
 function publication_mod_user_presave(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
+  
+  watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
+    '%edit' => print_r($edit, true),
+    '%account' => print_r($account, true),
+    '%category' => print_r($category, true),
+  ), WATCHDOG_NOTICE);
+
 
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $orgoptions = array();
@@ -1115,22 +934,320 @@ function publication_mod_user_presave(&$edit, $account, $category){
   $prefix = $blazegraph_info['blazegraph_prefix'];
   $blazegraph_url = $blazegraph_info['blazegraph_url'];
 
+  if($account->is_new){
+    $sparql = 'prefix press:<'. $prefix .'> '.
+    'select * where { '.
+      '?person press:username "'. $account->name . '". '.
+      '?person ?p ?o. '.
+    '}';
+
+    $q = http_build_query(array('query' => $sparql));
+
+    $options = array(
+      'headers' => array(
+        'Accept'=>'application/sparql-results+json',
+        'content-type'=> 'application/x-www-form-urlencoded'),
+      'method' => 'POST',
+      'data' => $q
+    );
+
+    $result = drupal_http_request($blazegraph_url, $options);
+    $person_results = json_decode($result->data);
+
+    //User is found in blazegraph
+    if(count($person_results->results->bindings) > 0){
+      $person = $person_results->results->bindings[0]->person->value;
+      $edit_changes = array();
+      $duplicate = FALSE;
+      $notfound = '';
+
+      foreach ($person_results->results->bindings as $key => $value) {
+        if($value->person->value != $person){
+          $duplicate = TRUE;
+          break;
+        }
+        switch ($value->p->value) {
+          case $prefix . 'memberOf':
+            $orgPrefixCount = strlen($prefix . 'Organization/');
+            $org = substr($value->o->value, $orgPrefixCount);
+            $edit_changes['pub_mod_field_organization']['und'][0]['option'] = $org;
+            break;
+          case 'http://xmlns.com/foaf/0.1/familyName':
+            $edit_changes['pub_mod_field_last_name']['und'][0]['value'] = $value->o->value;
+            $last_name = $value->o->value;
+            break;
+          case 'http://xmlns.com/foaf/0.1/givenName':
+            $edit_changes['pub_mod_field_first_name']['und'][0]['value'] = $value->o->value;
+            $first_name = $value->o->value;
+            break;
+          default:
+            // $notfound .= $value->p->value. ' not found <br/>';
+            break;
+        }
+      }
+      if($duplicate){
+
+        $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = 'urn:uuid:' . $account->uuid;
+        watchdog("publication_mod", "Duplicate Username in Blazegraph: %username", array(
+          '%username' => $account->name,
+        ), WATCHDOG_ERROR);
+
+      }else{
+        $uuid = $person;
+        $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $person;
+        $edit['pub_mod_field_organization'] = $edit_changes['pub_mod_field_organization'];
+        $edit['pub_mod_field_first_name'] = $edit_changes['pub_mod_field_first_name'];
+        $edit['pub_mod_field_last_name'] = $edit_changes['pub_mod_field_last_name'];
+        watchdog("publication_mod", "New User %username <br/> result: <pre>%result</pre><br/> not_found: ". $notfound ."<br/>edit_changes: <pre>%edit_changes</pre><br/>", array(
+          '%edit_changes' => print_r($edit_changes, true),
+          '%username' => $account->name,
+          '%result' => print_r($result, true),
+        ), WATCHDOG_NOTICE);
+
+        // $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
+        // "prefix press:<". $prefix . ">".
+        // "DELETE {".
+        //   "<". $uuid . "> foaf:familyName ?familyName. ".
+        //   "<". $uuid . "> foaf:givenName ?givenName. ".
+        //   "<". $uuid."> press:personGroup ?group. ".
+        //   "<". $uuid . "> foaf:mbox ?mbox.".
+        //   "<". $uuid . "> press:memberOf ?org.";
+
+        // $sparql .= "}INSERT{".
+        //   "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
+        //   "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
+        //   "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
+        //   "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ";
+
+        // if(isset($org) && !empty($org)){
+        //   $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
+        // }
+
+        // $sparql .= "} WHERE {".
+        //   "<". $uuid."> rdf:type foaf:Person;".
+        //   // "press:personUuid \u0022". $uuid . "\u0022"
+        //   "foaf:familyName ?familyName;".
+        //   "foaf:givenName ?givenName.".
+        //   "<". $uuid."> press:personGroup ?group. ".
+        //   "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
+        //   "OPTIONAL{<". $uuid."> press:memberOf ?org.}".
+        //   "}";
+
+        // $q = http_build_query(array('update' => $sparql));
+
+        // $options = array(
+        //   'headers' => array(
+        //     'Accept'=>'html',
+        //     'content-type'=> 'application/x-www-form-urlencoded'),
+        //   'method' => 'POST',
+        //   'data' => $q
+        // );
+
+        // $result = drupal_http_request($blazegraph_url, $options);   
+        // watchdog("Blazegraph Existing Username Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
+      }
+    }else{  //User is not found in blazegraph
+      // $uuid = 'urn:uuid:' . $account->uuid;
+      // $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $uuid;
+
+      // $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
+      //   "prefix press:<". $prefix . ">".
+      //   "INSERT DATA{".
+      //     "<". $uuid ."> rdf:type foaf:Person. ".
+      //     "<". $uuid."> press:personUuid \u0022urn:uuid:". $uuid ."\u0022. " .
+      //     "<". $uuid."> foaf:familyName \u0022". $account->pub_mod_field_last_name['und'][0]['value'] ."\u0022. " .
+      //     "<". $uuid."> foaf:givenName \u0022" . $account->pub_mod_field_first_name['und'][0]['value'] ."\u0022. ".
+      //     "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
+      //     "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ";
+
+      //   if(isset($org) && !empty($org)){
+      //     $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" . $account->pub_mod_field_organization['und'][0]['option'] .">. ";
+      //   }
+
+      //   $sparql .= "}";
+
+      //   $q = http_build_query(array('update' => $sparql));
+
+      //   $options = array(
+      //     'headers' => array(
+      //       'Accept'=>'html',
+      //       'content-type'=> 'application/x-www-form-urlencoded'),
+      //     'method' => 'POST',
+      //     'data' => $q
+      //   );
+
+      //   $result = drupal_http_request($blazegraph_url, $options);
+      //   watchdog("Blazegraph Person Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
+    }
+  }else{ //Account update, not new
+    $needs_update = FALSE;
+    if(isset($edit['pub_mod_field_blazegraph_uuid']['und'][0]['value']) &&
+      !empty($edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'])){
+      $uuid = $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'];
+      $needs_update = TRUE;
+    }elseif(isset($account->pub_mod_field_blazegraph_uuid['und'][0]['value']) && 
+      !empty($account->pub_mod_field_blazegraph_uuid['und'][0]['value'])){
+      $uuid = $account->pub_mod_field_blazegraph_uuid['und'][0]['value'];
+    }else{
+      $uuid = 'urn:uuid:' . $account->uuid;
+      $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $uuid;
+    }
+
+    if(isset($edit['pub_mod_field_last_name']['und'][0]['value']) &&
+      !empty($edit['pub_mod_field_last_name']['und'][0]['value'])){
+
+      $last_name = $edit['pub_mod_field_last_name']['und'][0]['value'];
+      $needs_update = TRUE;
+    }elseif (isset($account->pub_mod_field_last_name['und'][0]['value']) &&
+      !empty($account->pub_mod_field_last_name['und'][0]['value'])) {
+    
+      $last_name = $account->pub_mod_field_last_name['und'][0]['value'];
+    }
+    
+    if(isset($edit['pub_mod_field_first_name']['und'][0]['value']) &&
+        !empty($edit['pub_mod_field_first_name']['und'][0]['value'])){
+      $first_name = $edit['pub_mod_field_first_name']['und'][0]['value'];
+      $needs_update = TRUE;
+    }elseif(isset($account->pub_mod_field_first_name['und'][0]['value']) &&
+        !empty($account->pub_mod_field_first_name['und'][0]['value'])){
+      $first_name = $account->pub_mod_field_first_name['und'][0]['value'];
+    }
+    
+    if(isset($edit['mail']) && !empty($edit['mail'])){
+      $mail = $edit['mail'];
+      $needs_update = TRUE;
+    }elseif(isset($account->mail) && !empty($account->mail)){
+      $mail = $account->mail;
+    }
+
+    if(isset($edit['pub_mod_field_organization']['und'][0]['option']) &&
+        !empty($edit['pub_mod_field_organization']['und'][0]['option'])){
+      $org = $edit['pub_mod_field_organization']['und'][0]['option'];
+      $needs_update = TRUE;
+    }elseif(isset($account->pub_mod_field_organization['und'][0]['option']) &&
+        !empty($account->pub_mod_field_organization['und'][0]['option'])){
+      $org = $account->pub_mod_field_organization['und'][0]['option'];
+    }
+
+    if($needs_update){
+      $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
+      "prefix press:<". $prefix . ">".
+      "DELETE {".
+        "<". $uuid . "> foaf:familyName ?familyName. ".
+        "<". $uuid . "> foaf:givenName ?givenName. ".
+        "<". $uuid . "> foaf:mbox ?mbox.";
+      if(isset($org) && !empty($org)){
+        $sparql .= "<". $uuid . "> press:memberOf ?org.";
+      }
+      $sparql .= "}INSERT{".
+        "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
+        "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
+        "<". $uuid."> foaf:mbox \u0022mailto:". $mail . "\u0022. ";
+
+      if(isset($org) && !empty($org)){
+        $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
+      }
+
+      $sparql .= "} WHERE {".
+        "<". $uuid."> rdf:type foaf:Person;".
+        "foaf:familyName ?familyName;".
+        "foaf:givenName ?givenName.".
+        "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
+        "OPTIONAL{<". $uuid."> press:memberOf ?org.}".
+        "}";
+
+      $q = http_build_query(array('update' => $sparql));
+
+      $options = array(
+        'headers' => array(
+          'Accept'=>'html',
+          'content-type'=> 'application/x-www-form-urlencoded'),
+        'method' => 'POST',
+        'data' => $q
+      );
+
+      $result = drupal_http_request($blazegraph_url, $options);
+
+
+      watchdog("Blazegraph Person Update", print_r($result, true), array(), WATCHDOG_NOTICE);
+    }
+  }
+}
+
+function publication_mod_user_cancel($edit, $account, $method){
+  watchdog('publication_mod', '$edit <pre>%edit</pre><br/>$account <pre>%account</pre><br/>$method <pre>%method</pre>',
+    array(
+      '%edit' => print_r($edit, true),
+      '%account' => print_r($account, true),
+      '%method' => print_r($method, true),
+    ), WATCHDOG_DEBUG);
+}
+
+function publication_mod_user_insert(&$edit, $account, $category){
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
+  
+  watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
+    '%edit' => print_r($edit, true),
+    '%account' => print_r($account, true),
+    '%category' => print_r($category, true),
+  ), WATCHDOG_NOTICE);
+
+
+  $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
+  $orgoptions = array();
+  foreach ($orgs as $org) {
+    if($org != ""){
+      $org_info = explode('|', $org);
+      $key = trim($org_info[0]);
+      $bg_value = trim($org_info[1]);
+      $accepted_values = array_map('trim', explode(",", trim($org_info[2], " \t\n\r\0\x0B[]")));
+      $orgoptions[$key] = $bg_value;
+    }
+  }
+
+  $prefix = $blazegraph_info['blazegraph_prefix'];
+  $blazegraph_url = $blazegraph_info['blazegraph_url'];
+
+  if(isset($edit['pub_mod_field_blazegraph_uuid']['und'][0]['value']) &&
+    !empty($edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'])){
+    $uuid = $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'];
+  }else{
+    $uuid = 'urn:uuid:' . $account->uuid;
+    $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $uuid;
+  }
+  $first_name = $edit['pub_mod_field_first_name']['und'][0]['value'];
+  $last_name = $edit['pub_mod_field_last_name']['und'][0]['value'];
+  $org = $edit['pub_mod_field_organization']['und'][0]['option'];
+
   $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
+  "prefix press:<". $prefix . ">".
+  "DELETE {".
+    "<". $uuid . "> foaf:familyName ?familyName. ".
+    "<". $uuid . "> foaf:givenName ?givenName. ".
+    "<". $uuid."> press:personGroup ?group. ".
+    "<". $uuid . "> foaf:mbox ?mbox.".
+    "<". $uuid . "> press:memberOf ?org.";
 
-  "DELETE {<urn:uuid:". $account->uuid . "> ?p ?o} WHERE {".
-    "<urn:uuid:". $account->uuid."> ?p ?o".
-  "};".
-  "INSERT DATA{".
-    "<urn:uuid:". $account->uuid."> rdf:type foaf:Person;".
-    "<". $prefix ."personUuid> \u0022urn:uuid:" . $account->uuid. "\u0022;".
-    "foaf:familyName \u0022". $account->pub_mod_field_last_name['und'][0]['value'] ."\u0022;" .
-    "foaf:givenName \u0022" . $account->pub_mod_field_first_name['und'][0]['value'] ."\u0022;".
-    "<". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022;".
-    "foaf:mbox \u0022mailto:". $account->mail . "\u0022;".
-    "<". $prefix ."memberOf> <". $prefix . "Organization/" .$account->pub_mod_field_organization['und'][0]['option'] .">." .
-  "}";
+  $sparql .= "}INSERT{".
+    "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
+    "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
+    "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
+    "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ";
 
-  $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = $account->uuid;
+  if(isset($org) && !empty($org)){
+    $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
+  }
+
+  $sparql .= "} WHERE {".
+    "<". $uuid."> rdf:type foaf:Person;".
+    // "press:personUuid \u0022". $uuid . "\u0022"
+    "foaf:familyName ?familyName;".
+    "foaf:givenName ?givenName.".
+    "<". $uuid."> press:personGroup ?group. ".
+    "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
+    "OPTIONAL{<". $uuid."> press:memberOf ?org.}".
+    "}";
 
   $q = http_build_query(array('update' => $sparql));
 
@@ -1142,17 +1259,6 @@ function publication_mod_user_presave(&$edit, $account, $category){
     'data' => $q
   );
 
-  $result = drupal_http_request($blazegraph_url, $options);
-
-
-  watchdog("Blazegraph Person Creation", print_r($result, true), array(), WATCHDOG_NOTICE);
-}
-
-function publication_mod_user_cancel($edit, $account, $method){
-  watchdog('publication_mod', '$edit <pre>%edit</pre><br/>$account <pre>%account</pre><br/>$method <pre>%method</pre>',
-    array(
-      '%edit' => print_r($edit, true),
-      '%account' => print_r($account, true),
-      '%method' => print_r($method, true),
-    ), WATCHDOG_DEBUG);
+  $result = drupal_http_request($blazegraph_url, $options);   
+  watchdog("Blazegraph Existing Username Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
 }

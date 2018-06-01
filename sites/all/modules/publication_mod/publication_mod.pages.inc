@@ -197,6 +197,13 @@ function publication_mod_add_project(){
   $html .= '</div>';
   $html .= '';
   $html .= '<div class="form-group">';
+  $html .= '<label class="control-label col-sm-2" for="projectAcronym"><span style="color:red">*</span>Project Acronym:</label>';
+  $html .= '<div class="col-sm-10">';
+  $html .= '<input class="form-control input-sm" id="projectAcronym" type="text"/>';
+  $html .= '</div>';
+  $html .= '</div>';
+  $html .= '';
+  $html .= '<div class="form-group">';
   $html .= '<label class="control-label col-sm-2" for="projectId"><span style="color:red">*</span>Project ID:</label>';
   $html .= '<div class="col-sm-10">';
   $html .= '<input class="form-control input-sm" id="projectId" type="text"/>';

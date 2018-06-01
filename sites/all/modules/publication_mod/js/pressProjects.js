@@ -57,6 +57,7 @@ function initProjects(ontologyPrefix, dbURL){
                 "press:projectDateEnd \'" + $("#endDate").val() + "\';",
                 "press:projectStatus \'" + $("input[name=\'optradio\']:checked").val() + "\';",
                 "press:projectName \'" + $("#projectName").val() + "\';",
+                "press:projectAcronym \'" + $("#projectAcronym").val() + "\';",
                 "press:projectId \'" + $("#projectId").val() + "\'. ",
                 "}"
             ].join("");
