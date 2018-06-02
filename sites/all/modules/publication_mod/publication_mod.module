@@ -607,15 +607,9 @@ function _get_labs_to_json(){
 
 function _add_presslib_library(){
   $module_path = drupal_get_path('module', 'publication_mod');
-  
-  $bootstrap_enabled = FALSE;
-  $themes = list_themes();
+  global $theme;
 
-  if(isset($themes['bootstrap']) && !empty($themes['bootstrap']) && $themes['bootstrap']->status == 1){
-    $bootstrap_enabled = TRUE;
-  }
-
-  if(!$bootstrap_enabled){
+  if($theme != 'bootstrap'){
     drupal_add_js($module_path . '/js/bootstrap.js');
   }
 
@@ -632,7 +626,7 @@ function _add_presslib_library(){
   drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
   drupal_add_js($module_path . '/js/pressProjects.js');
 
-  if(!$bootstrap_enabled){
+  if($theme != 'bootstrap'){
     drupal_add_css($module_path . "/css/bootstrap.css");
   }
   drupal_add_css($module_path . "/css/presslib.css");
