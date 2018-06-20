@@ -242,6 +242,12 @@ function publication_mod_add_project(){
 function publication_mod_all_publications(){
   global $base_url;
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+
+  echo $blazegraph_info['all_pubs'];
+
+  return;
+
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];

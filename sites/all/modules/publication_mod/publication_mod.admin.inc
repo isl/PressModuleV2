@@ -277,7 +277,7 @@ function publication_mod_import_submit_callback($form, $form_state){
 
 	$pub_page = _publication_mod_create_page_body($pub_uri);
 
-	$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri);
+	$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
 
 	//Add publicationUrl to created publication.
 	$update = 'prefix press: <'. $ontologyPrefix. '>
