@@ -1521,14 +1521,14 @@
                     var currentDate = new Date();
                     var formattedDate = currentDate.toISOString();
                     query += "INSERT DATA { \n";
-                    query += "<urn:uuid:" + response.uuid + "> rdf:type <" + this.prefix + this.subcat.val() + ">; \n";
+                    query += "<" + response.uuid + "> rdf:type <" + this.prefix + this.subcat.val() + ">; \n";
                     if (this.editMode) {
                         query += '<' + prefix + 'creationDate> "' + this.creationDate + '"^^xsd:dateTime; \n';
                     } else {
                         query += '<' + prefix + 'creationDate> "' + formattedDate + '"^^xsd:dateTime; \n';
                     }
                     query += '<' + prefix + 'modifiedDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    query += '<' + prefix + 'publicationUuid> "urn:uuid:' + response.uuid + '"; \n';
+                    query += '<' + prefix + 'publicationUuid> "' + response.uuid + '"; \n';
                     query += '<' + prefix + 'publicationUrl> "' + response.path + '"; \n';
 
 
@@ -1624,8 +1624,10 @@
                     });
                     var length = Object.keys(contributors).length;
                     var j = 0;
+                    var contributors_all_pubs = {};
                     for (key in contributors) {
                         var $concat = $('<div class="col-sm-3"><h3>' + this.fields[key].label + '</h3></div>');
+                        contributors_all_pubs[this.fields[key].label] = [];
                         for (let i = 0; i < contributors[key].length; i++) {
                             $contributor = '<a href="' + this.base_url + '/publication/search-pub?type=advanced' +
                                 '&reviewed=false' +
@@ -1634,6 +1636,11 @@
                             $concat.append($contributor + '<br/>');
                             // console.log(contributors[key][i]);
                             $summary.append(contributors[key][i].text());
+
+                            contributors_all_pubs[this.fields[key].label].push({
+                                uri: contributors[key][i].attr('data-uuid'),
+                                name: contributors[key][i].text()
+                            });
                             if (j !== length - 1 || i !== contributors[key].length - 1) {
                                 $summary.append(', ');
                             }
@@ -1712,6 +1719,7 @@
                     pkg.append('body', $body.html());
                     pkg.append('summary', $summary.html());
                     pkg.append('category', $('#subcategory').val());
+                    pkg.append('contributors', JSON.stringify(contributors_all_pubs));
                     pkg.append('delete', false);
                 } else {
                     pkg.append('delete', true);
@@ -1720,9 +1728,9 @@
                 var ajax_url = this.base_url + '/ajax/add_publication_page'; //TODO: Remove Hardcoded URL
                 if (this.editMode) {
                     var uuid = this.editPublication.uuid
-                    if (this.editPublication.uuid.startsWith('urn:uuid:')) {
-                        uuid = uuid.substring(9);
-                    }
+                    // if (this.editPublication.uuid.startsWith('urn:uuid:')) {
+                    //     uuid = uuid.substring(9);
+                    // }
                     pkg.append('uuid', uuid);
                     ajax_url = this.base_url + '/ajax/edit_publication_page';
                 }

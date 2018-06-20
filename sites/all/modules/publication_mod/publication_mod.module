@@ -198,7 +198,7 @@ function publication_mod_menu(){
     'title' => "Author's Publications",
     'description' => 'Publications of an Author',
     'page callback' => 'publication_mod_author_publications',
-    'page arguments' => array(),
+    'page arguments' => array(2),
     'access callback' => TRUE,
     'file' => 'publication_mod.pages.inc',
   );
@@ -275,6 +275,15 @@ function _publication_mod_get_blazegraph_info($keys){
     ->fetchAllKeyed();
 
   return $result;
+}
+
+function _publication_mod_set_blazegraph_info($key, $value){
+  db_merge('publication_mod')
+  ->key(array('pm_key' => $key))
+  ->fields(array(
+    'pm_value' => $value
+  ))
+  ->execute();
 }
 
 function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
@@ -535,7 +544,7 @@ function _publication_mod_create_page_body($pub_uri){
     }
   }
 
-  return array('title'=>$title, 'html'=>$html, 'summary'=> $summary, 'category'=>$pub_type);
+  return array('title'=>$title, 'html'=>$html, 'summary'=> $summary, 'category'=>$pub_type, 'contributors'=>$contributors);
 }
 
 /**
@@ -621,6 +630,8 @@ function _add_presslib_library(){
   drupal_add_js($module_path . '/js/presslib.js');
   drupal_add_js($module_path . '/js/pressSearch.js');
   drupal_add_js($module_path . '/js/pressExternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressInternalAuthors.js');
+  drupal_add_js($module_path . '/js/pressMergeAuthors.js');
   drupal_add_js($module_path . '/js/pressEditProjects.js');
   drupal_add_js($module_path . '/js/pressEditTags.js');
   drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
@@ -635,11 +646,44 @@ function _add_presslib_library(){
   drupal_add_css($module_path . "/css/daterangepicker.css");
 }
 
+function _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors){
+  $element = $doc->createElement('div');
+  $element->setAttribute('id', $uuid);
+  $first = TRUE;
+  foreach ($contributors as $type_label => $cons) {
+    foreach ($cons as $key => $value) {
+      if(!$first){
+        $element->appendChild(new DOMText(', '));
+      }
+      if(gettype($value) === "array"){
+        $name = $value['name'];
+        $uri = $value['uri'];
+      }else{
+        $name = $value->name;
+        $uri = $value->uri;
+      }
+      $conElement = $doc->createElement('a', htmlspecialchars($name));
+      $conElement->setAttribute('href', '/publication/search-pub?type=advanced' .
+                                '&reviewed=false' .
+                                '&authors0='. urlencode($uri));
+      $conElement->setAttribute('target', '_blank');
+      $element->appendChild($conElement);
+      $first = FALSE;
+    }
+  }
+  $element->appendChild(new DOMText(': '));
+  $titleElement = $doc->createElement('a', htmlspecialchars($title));
+  $titleElement->setAttribute('href', '/'. $path);
+  $titleElement->setAttribute('target', '_blank');
+  $element->appendChild($titleElement);
+
+  return $element;
+}
 
 /*
  * Handles the new publication addition.
  */
-function publication_mod_ajax_callback($title='', $category='', $body='', $summary='', $uuid=''){
+function publication_mod_ajax_callback($title='', $category='', $body='', $summary='', $uuid='', $contributors=array()){
   global $user;
   $function_called = true;
   if(empty($title) && empty($category) && empty($body)){
@@ -647,6 +691,7 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
     $category = $_POST['category'];
     $body = $_POST['body'];
     $summary = $_POST['summary'];
+    $contributors = json_decode($_POST['contributors']);
     $function_called = false;
   }
   // $values = explode("&", $value);
@@ -743,11 +788,30 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
   header('Content-Type: application/json');
   $ewrapper->pub_mod_field_blazegraph_uuid->set($ewrapper->value()->uuid);
   $ewrapper->save();
+  if(!isset($uuid) || empty($uuid)){
+    $uuid = "urn:uuid:" . $ewrapper->value()->uuid;
+  }
+  $path = drupal_get_path_alias("node/" . $ewrapper->value()->nid, null);
   $result = array(
-    'uuid' => $ewrapper->value()->uuid,
-    'path' => drupal_get_path_alias("node/" . $ewrapper->value()->nid, null),
+    'uuid' => $uuid,
+    'path' => $path,
     'file_url' => $file_path
   );
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+  libxml_use_internal_errors(true);
+  $doc = new DOMDocument();
+
+  $doc->loadHTML($blazegraph_info['all_pubs']);
+  $div = $doc->getElementById('all_pubs');
+  
+  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
+  
+  $div->appendChild($element);
+  $html = $doc->saveHTML();
+
+  _publication_mod_set_blazegraph_info('all_pubs', $html);
+
 
   if($function_called){
     return $result;
@@ -794,7 +858,6 @@ function publication_mod_update_pubs($blazegraph_uris = array()){
 
 function publication_mod_ajax_callback_edit_pub(){
   global $user;
-
   $uuid = $_POST['uuid'];
   $delete = false;
   if (array_key_exists("delete", $_POST)){
@@ -821,27 +884,49 @@ function publication_mod_ajax_callback_edit_pub(){
     ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
 
   $result = $query->execute();
-
+  $new_entity = false;
   if (isset($result['node']) && count($result['node']) == 1){
     $ids = array_keys($result['node']);
     $entity = node_load($ids[0]);
   }else{
-    $ewrappers = array();
+    $values = array(
+      'type' => 'publication_mod_publications',
+      'uid' => $user->uid,
+      'status' => 1,
+      'comment' => 0,
+      'promote' => 1,
+    );
+    $entity = entity_create('node', $values);
+    $new_entity = true;
   }
   echo $delete;
-  if ($delete){
+  if ($delete === true){
     if ($entity)
       node_delete($entity->nid);
 
     return;
   }
+  
+  $ewrapper = entity_metadata_wrapper('node', $entity);
+  $contributors = json_decode($_POST['contributors']);
 
-  $ewrapper;
+  // $entity->title= $title;
+  $ewrapper->title->set($title);
 
-  $entity->title= $title;
-  $entity->body['und'][0]['value'] = $body_content;
-  $entity->body['und'][0]['summary'] = $summary;
-  $entity->pub_mod_field_category['und'][0]['value'] = $category;
+  // $entity->body['und'][0]['value'] = $body_content;
+  $ewrapper->body->set(array('value' => $body_content, 'format' => 'full_html'));
+
+  // $entity->body['und'][0]['summary'] = $summary;
+  if(isset($summary)){
+    $ewrapper->body->summary->set($summary);
+  }
+
+  // $entity->pub_mod_field_category['und'][0]['value'] = $category;
+  $ewrapper->pub_mod_field_category->set($category);
+
+  if($new_entity){
+    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
+  }
   // echo print_r($ewrapper);
 
   if (array_key_exists("myfile", $_FILES) &&    //If file exists, update it
@@ -871,22 +956,44 @@ function publication_mod_ajax_callback_edit_pub(){
   }
   // print_r($ewrapper->field_file->raw());
   $file_real_path;
-  if($entity->field_file && $fwrapper = file_stream_wrapper_get_instance_by_uri($entity->field_file['und'][0]['uri'])){
+  if(isset($entity->field_file) && $fwrapper = file_stream_wrapper_get_instance_by_uri($entity->field_file['und'][0]['uri'])){
     $file_real_path = $fwrapper->realpath();
     $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
   }
   entity_get_controller('node')->resetCache(array(entity_id('node', $entity)));
-  field_attach_update('node', $entity);
+  if(!$new_entity){
+    field_attach_update('node', $entity);
+  }
 
-  node_save($entity);
+  // node_save($entity);
+  $ewrapper->save();
 
   header('Content-Type: application/json');
+  
+  // $uuid = $entity->uuid;
+  $path = drupal_get_path_alias("node/" . $entity->nid, null);
   $result = array(
-    'uuid' => $entity->uuid,
-    'path' => drupal_get_path_alias("node/" . $entity->nid, null),
+    'uuid' => $uuid,
+    'path' => $path,
     'file_url' => $file_path
   );
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+  libxml_use_internal_errors(true);
+  $doc = new DOMDocument();
+
+  $doc->loadHTML($blazegraph_info['all_pubs']);
+  $div = $doc->getElementById('all_pubs');
+  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
+  $pub_div = $doc->getElementById($uuid);
+  
+  if($pub_div && $pub_div->parentNode){
+    $pub_div->parentNode->removeChild($pub_div);
+  }
+  $div->appendChild($element);
+  $html = $doc->saveHTML();
+  _publication_mod_set_blazegraph_info('all_pubs', $html);
+  
   echo json_encode($result, true);
   exit();
 }

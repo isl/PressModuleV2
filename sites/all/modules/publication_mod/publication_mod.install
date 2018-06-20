@@ -146,6 +146,22 @@ function publication_mod_install(){
       'pm_value' => ''
     ))
     ->execute();
+
+  $html = '<!DOCTYPE html>
+    <html>
+    <head>
+          <title>All Publications</title>
+      </head>
+      <body>
+      <div id="all_pubs"></div>
+      </body>
+      </html>';
+  $nid = db_insert('publication_mod')
+    ->fields(array(
+      'pm_key' => 'all_pubs',
+      'pm_value' => $html
+    ))
+    ->execute();
 }
 
 /**

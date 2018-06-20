@@ -242,6 +242,12 @@ function publication_mod_add_project(){
 function publication_mod_all_publications(){
   global $base_url;
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+
+  echo $blazegraph_info['all_pubs'];
+
+  return;
+
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
@@ -309,21 +315,28 @@ function publication_mod_all_publications(){
   }
 }
 
-function publication_mod_author_publications($author_uri){
-  if(!isset($author_uri) || empty($author_uri)){
+function publication_mod_author_publications($author){
+  if(!isset($author) || empty($author)){
     return;
   }
-  echo 'test1';
-  echo print_r(func_get_args(), true);
-  echo 'test2';
+
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
+  $user = user_load_by_name($author);
+  if(!$user){
+    echo "User not found";
+    return;
+  }
+
+  $uwrapper = entity_metadata_wrapper('user', $user);
+  $author_uri = $uwrapper->value()->pub_mod_field_blazegraph_uuid['und'][0]['value'];
+  // echo '<pre>' . print_r($uwrapper->value(), true) . '</pre>';
   $query = 'prefix press: <'. $ontologyPrefix. '>
           select ?publicationUrl ?englishTitle ?chapterTitle ?bookTitle ?type where{
             ?con0 rdfs:subPropertyOf* press:contributorType. 
-            ?slot0 ?con0 <'. $author_uri .'>.
+            ?slot0 ?con0 <'. $author_uri.'>.
             ?pub press:hasContributor ?slot0.
             ?pub rdf:type ?type.
             ?type rdfs:subClassOf* press:Publication. 
@@ -345,6 +358,22 @@ function publication_mod_author_publications($author_uri){
 
   $result = drupal_http_request($dbURL, $options);
 
-  echo '<pre>' . $query . '</pre>';
-  echo '<pre>' . print_r($result, true) . '</pre>';
+  // echo '<pre>' . print_r($result, true) . '</pre>';
+
+  $html = '
+<h1>'. $uwrapper->value()->pub_mod_field_first_name['und'][0]['value'] . ' ' . $uwrapper->value()->pub_mod_field_last_name['und'][0]['value'] . '\'s Publications</h1>';
+  
+  $data = json_decode($result->data);
+  $results = $data->results->bindings;
+  foreach ($results as $key => $value) {
+    if(isset($value->chapterTitle)){
+      $title = $value->chapterTitle->value;
+    }elseif (isset($value->bookTitle)) {
+      $title = $value->bookTitle->value;
+    }elseif (isset($value->englishTitle)){
+      $title = $value->englishTitle->value;
+    }
+    $html .= '<a href="/'. $value->publicationUrl->value . '">' . $title .'</a><br/>';
+  }
+  echo $html;
 }
