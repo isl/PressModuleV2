@@ -241,6 +241,7 @@ function publication_mod_import_pubs_form($form, &$form_state){
  */
 function publication_mod_import_submit_callback($form, $form_state){
   global $base_url;
+  set_time_limit(0);
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];

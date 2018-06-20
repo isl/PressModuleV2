@@ -677,7 +677,12 @@
                 $('input[type!=file], textarea', '#form-fields').each(function() {
                     if ($(this).val() !== '')
                         oldFields[$(this).attr('id')] = $(this).val();
-                })
+                });
+                $('.list-group', '#form-fields').each(function(){
+                    if ($(this).children().length > 0){
+                        oldFields[$(this).attr('id')] = $(this).children();
+                    }
+                });
                 this.oldFields = oldFields;
                 $('#form-fields').empty();
                 $('#form-fields').show();
@@ -835,7 +840,10 @@
                     }
                 }
             });
-
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
             //Add External Author Modal
             var $exAuthorsModal = $('#externalAuthorModal');
             if ($exAuthorsModal.length === 0) {
@@ -1131,6 +1139,10 @@
                 }
             });
 
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
 
             $input.bind('typeahead:select', function(ev, suggestion) {
                 if (ev.type === 'keypress' && ev.which != 13) {
@@ -1200,6 +1212,11 @@
                     }
                 }
             });
+
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
 
             $input.bind('typeahead:select keypress', function(ev, suggestion) {
                 var $list = $('#tag-editable');
@@ -2088,7 +2105,7 @@
             }
 
             //URL
-            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['doi'])
+            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['DOI'])
                 .done(function(data) {
                     // $('#external').val()
                     for (var i = 0; i < data.values.length; i++) {

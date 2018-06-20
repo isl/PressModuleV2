@@ -1940,7 +1940,7 @@
 
                                 if (!this.current_user.anonymous && addEdit === false) {
                                     console.log(current_contributor);
-                                    if ('urn:uuid:' + this.current_user.uuid === current_contributor.person.value) {
+                                    if (this.current_user.uuid === current_contributor.person.value) {
                                         addEdit = true;
                                     }
                                 }
