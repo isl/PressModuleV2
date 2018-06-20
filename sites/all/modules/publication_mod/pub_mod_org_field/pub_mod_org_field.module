@@ -139,6 +139,7 @@ function pub_mod_org_field_field_formatter_view($entity_type, $entity, $field, $
         }
         elseif (isset($item['option']) && !isset($options[$item['option']])) {
           drupal_set_message('The Laboratory is not valid. Please set it in your account edit page.', 'warning');
+          $output = "Not Valid";
         }
         else {
           drupal_set_message('The Laboratory is not set. Please set it in your account edit page.', 'warning');

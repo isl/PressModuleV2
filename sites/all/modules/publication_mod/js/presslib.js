@@ -533,7 +533,7 @@
         //Insert Lab Field using typeahead.js and sortable.js
         insertLabs: function(labs) {
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
-                'id="lab-input" data-label="' + this.organization_label + '" type="text"/>');
+                'id="lab-input" data-label="' + this.organization_label + '" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="lab-editable" class="list-group editable" style="display:none"></ul>');
             var $labgroup = $('<div id="lab-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -714,7 +714,7 @@
             var $d = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             var tooltip = 'Each word has to be at least 3 characters long to search.\nPress Enter to add a new External Contributor.';
             var $input = $('<input class="person-input typeahead form-control input-sm ' +
-                'press-field" data-toggle="tooltip" type="text"/>');
+                'press-field" data-toggle="tooltip" type="text" placeholder="Search..."/>');
             $input.attr('id', field.id + '-input');
             $input.attr('title', tooltip);
             $input.attr('data-label', field.label);
@@ -1067,7 +1067,7 @@
             var $label = $('<label class="col-sm-2 control-label" for="' + field.id + '-input">' + required + field.label + ':</label>');
             var $d = $('<div class="col-sm-10"></div>');
             var $input = $('<input id="' + field.id + '-input" class="typeahead ' +
-                'form-control input-sm press-field" type="text" data-label="' + field.label + '"/>');
+                'form-control input-sm press-field" type="text" data-label="' + field.label + '" placeholder="Search..."/>');
 
             $d.append($input);
 
@@ -1169,7 +1169,7 @@
                 required = '<span style="color:red">*</span>';
             }
             $input = $('<input class="typeahead form-control input-sm press-field tag-input" ' +
-                'id="tag-input" data-label="Tags" data-toggle="tooltip" type="text"/>');
+                'id="tag-input" data-label="Tags" data-toggle="tooltip" type="text" placeholder="Search..."/>');
 
             var tooltip = 'Select from autocomplete to use already added tags.\n' +
                 'Type your tag and press Enter to add a new tag.';
