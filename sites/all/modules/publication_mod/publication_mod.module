@@ -198,7 +198,7 @@ function publication_mod_menu(){
     'title' => "Author's Publications",
     'description' => 'Publications of an Author',
     'page callback' => 'publication_mod_author_publications',
-    'page arguments' => array(),
+    'page arguments' => array(2),
     'access callback' => TRUE,
     'file' => 'publication_mod.pages.inc',
   );
@@ -647,10 +647,17 @@ function _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $co
       if(!$first){
         $element->appendChild(new DOMText(', '));
       }
-      $conElement = $doc->createElement('a', htmlspecialchars($value['name']));
+      if(gettype($value) === "array"){
+        $name = $value['name'];
+        $uri = $value['uri'];
+      }else{
+        $name = $value->name;
+        $uri = $value->uri;
+      }
+      $conElement = $doc->createElement('a', htmlspecialchars($name));
       $conElement->setAttribute('href', '/publication/search-pub?type=advanced' .
                                 '&reviewed=false' .
-                                '&authors0='. urlencode($value['uri']));
+                                '&authors0='. urlencode($uri));
       $conElement->setAttribute('target', '_blank');
       $element->appendChild($conElement);
       $first = FALSE;
