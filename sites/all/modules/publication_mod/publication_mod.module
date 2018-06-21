@@ -1041,12 +1041,11 @@ function publication_mod_user_presave(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
   
-  watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
-    '%edit' => print_r($edit, true),
-    '%account' => print_r($account, true),
-    '%category' => print_r($category, true),
-  ), WATCHDOG_NOTICE);
-
+  // watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
+  //   '%edit' => print_r($edit, true),
+  //   '%account' => print_r($account, true),
+  //   '%category' => print_r($category, true),
+  // ), WATCHDOG_NOTICE);
 
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $orgoptions = array();
@@ -1066,7 +1065,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
   if($account->is_new){
     $sparql = 'prefix press:<'. $prefix .'> '.
     'select * where { '.
-      '?person press:username "'. $account->name . '". '.
+      '?person press:username "'. $edit['name'] . '". '.
       '?person ?p ?o. '.
     '}';
 
@@ -1116,9 +1115,9 @@ function publication_mod_user_presave(&$edit, $account, $category){
       }
       if($duplicate){
 
-        $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = 'urn:uuid:' . $account->uuid;
+        // $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = 'urn:uuid:' . $account->uuid;
         watchdog("publication_mod", "Duplicate Username in Blazegraph: %username", array(
-          '%username' => $account->name,
+          '%username' => $edit['name'],
         ), WATCHDOG_ERROR);
 
       }else{
@@ -1129,7 +1128,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
         $edit['pub_mod_field_last_name'] = $edit_changes['pub_mod_field_last_name'];
         watchdog("publication_mod", "New User %username <br/> result: <pre>%result</pre><br/> not_found: ". $notfound ."<br/>edit_changes: <pre>%edit_changes</pre><br/>", array(
           '%edit_changes' => print_r($edit_changes, true),
-          '%username' => $account->name,
+          '%username' => $edit['name'],
           '%result' => print_r($result, true),
         ), WATCHDOG_NOTICE);
       }
