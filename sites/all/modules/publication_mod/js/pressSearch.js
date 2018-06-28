@@ -1876,7 +1876,7 @@
                 var $download_icon = $('<a target="_blank" class="result-icons" data-toggle="tooltip" ' +
                     'data-placement="top" data-container="body" title="Download the PDF of ' +
                     'this Publication" style="color:inherit; visibility:hidden">' +
-                    '<i class="fa fa-download" style="font-size:17px;"></i></a>');
+                    '<i class="icon-download" style="font-size:17px;"></i></a>');
                 if ('localLink' in current_pub && !this.current_user.anonymous) {
                     $download_icon.attr('href', '../' + current_pub.localLink.value);
                     $download_icon.mouseover(function(e) { $(this).tooltip(); });
@@ -1892,15 +1892,15 @@
                 var $info_icon = $('<a  class="result-icons" data-toggle="tooltip" ' +
                     'data-placement="top" data-container="body" title="' +
                     this.category_labels[results[i].typeID.value] + '" style="color:inherit">' +
-                    '<i class=" fa fa-info-circle" style="font-size:17px;display:block;' +
+                    '<i class="icon-info-circled" style="font-size:17px;display:block;' +
                     'color:' + info_color + '"></i></a>');
                 var $edit_icon = $('<a href="' + this.base_url + '/publication/edit?uuid=' +
                     encodeURIComponent(current_pub.pub.value) + '&category=' +
                     encodeURIComponent(current_pub.typeID.value) + '" target="_blank" ' +
-                    'class="result-icons" style="color:inherit"><i class="fa fa-edit" ' +
+                    'class="result-icons" style="color:inherit"><i class="icon-edit" ' +
                     'style="font-size:17px;font-weight:bold;"></i></a>');
 
-                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="fa fa-share-alt" style="font-size:17px;"></i></a>');
+                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="icon-share" style="font-size:17px;"></i></a>');
                 var $share_icon_div = this.createShareButton('', title + ' | PRESS Publication System');
                 $share_icon_div.prepend($share_icon);
                 if ('publicationUrl' in current_pub) {
@@ -2335,16 +2335,16 @@
             var $shareHtml = $('<div class="share-button sharer" style="display: block;">' +
                 '<div class="social top center networks-5 ">' +
                 '<!-- Facebook Share Button -->' +
-                '<a class="fbtn share facebook" href="https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '"><i class="fa fa-facebook"></i></a> ' +
+                '<a class="fbtn share facebook" href="https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '"><i class="icon-facebook"></i></a> ' +
 
                 '<!-- Google Plus Share Button -->' +
-                '<a class="fbtn share gplus" href="https://plus.google.com/share?url=' + encodedUrl + '"><i class="fa fa-google-plus"></i></a> ' +
+                '<a class="fbtn share gplus" href="https://plus.google.com/share?url=' + encodedUrl + '"><i class="icon-gplus"></i></a> ' +
 
                 '<!-- Twitter Share Button -->' +
-                '<a class="fbtn share twitter" href="https://twitter.com/intent/tweet?text=' + encodedTitle + '&amp;url=' + encodedUrl + '"><i class="fa fa-twitter"></i></a> ' +
+                '<a class="fbtn share twitter" href="https://twitter.com/intent/tweet?text=' + encodedTitle + '&amp;url=' + encodedUrl + '"><i class="icon-twitter"></i></a> ' +
 
                 '<!-- LinkedIn Share Button -->' +
-                '<a class="fbtn share linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodedUrl + '&amp;title=' + encodedTitle + '&amp;source=' + encodedUrl + '/"><i class="fa fa-linkedin"></i></a>' +
+                '<a class="fbtn share linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodedUrl + '&amp;title=' + encodedTitle + '&amp;source=' + encodedUrl + '/"><i class="icon-linkedin"></i></a>' +
                 '</div>' +
                 '</div>');
 

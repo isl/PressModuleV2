@@ -665,6 +665,7 @@ function _add_presslib_library(){
   drupal_add_css($module_path . "/css/typeaheadjs.css");
   drupal_add_css($module_path . "/css/sortable.css");
   drupal_add_css($module_path . "/css/daterangepicker.css");
+  drupal_add_css($module_path . "/css/fontello.css");
 }
 
 function _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors){

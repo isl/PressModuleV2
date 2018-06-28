@@ -50,7 +50,7 @@ button.custom-close:hover{
   float: left;
 }
 
-.social .fa {
+.social [class^="icon-"] {
   padding: 15px 0px
 }
 
