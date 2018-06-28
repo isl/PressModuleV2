@@ -11,6 +11,13 @@ function publication_mod_help($path, $arg) {
 }
 
 function publication_mod_menu(){
+  $menu['ajax/pub_mod_blazegraph'] = array(
+    'title' => '',
+    'page callback' => 'publication_mod_ajax_callback_blazegraph',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK
+  );
+
   $menu['ajax/add_publication_page'] = array(
     'title' => '',
     'page callback' => 'publication_mod_ajax_callback',
@@ -258,6 +265,39 @@ function publication_mod_menu(){
   menu_cache_clear_all();
 
   return $menu;
+}
+
+function publication_mod_ajax_callback_blazegraph(){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url'));
+  if(!empty($_GET['query']) || isset($_GET['uuid'])){
+    // watchdog('publication_mod', '$GET: <pre>%GET</pre>', array('%GET'=>print_r($_GET, TRUE)), WATCHDOG_DEBUG);
+    $query = $_GET;
+    unset($query['q']);
+  }elseif (!empty($_POST['update'])) {
+    // watchdog('publication_mod', '$POST: <pre>%POST</pre>', array('%POST'=>print_r($_POST, TRUE)), WATCHDOG_DEBUG);
+    $query = $_POST;
+  }else{
+    return;
+  }
+
+  $q = http_build_query($query);
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  foreach ($result->headers as $key => $value) {
+    header($key . ':' . $value);
+  }
+  http_response_code($result->code);
+  // watchdog('publication_mod', '$result: <pre>%result</pre>', array('%result'=>print_r($result, TRUE)), WATCHDOG_DEBUG);
+  echo $result->data;
 }
 
 function _publication_mod_get_blazegraph_info($keys){
