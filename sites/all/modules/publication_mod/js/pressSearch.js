@@ -359,7 +359,7 @@
 
             var required = '';
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
-                'id="tag-input" data-label="Tags" type="text"/>');
+                'id="tag-input" data-label="Tags" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="tag-editable" class="list-group editable" style="display:none"></ul>');
             var $taggroup = $('<div id="tag-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -424,7 +424,7 @@
             var $d = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             var tooltip = 'Each word has to be at least 3 characters long to search.';
 
-            var $input = $('<input id="author-input" data-toggle="tooltip" data-placement="top" title="' + tooltip + '" class="typeahead form-control input-sm" type="text"/>');
+            var $input = $('<input id="author-input" data-toggle="tooltip" data-placement="top" title="' + tooltip + '" class="typeahead form-control input-sm" type="text" placeholder="Search..."/>');
             $input.mouseover(function(e) { $(this).tooltip(); });
             $input.mouseover();
 
@@ -612,7 +612,7 @@
         },
         //Get typeahead.js field for Organizations
         getOrgsField: function(organization) {
-            $input = $('<input class="typeahead form-control input-sm" id="org-input" type="text"/>');
+            $input = $('<input class="typeahead form-control input-sm" id="org-input" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="org-editable" class="list-group editable" style="display:none"></ul>');
             var $orggroup = $('<div id="org-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -1940,7 +1940,7 @@
 
                                 if (!this.current_user.anonymous && addEdit === false) {
                                     console.log(current_contributor);
-                                    if ('urn:uuid:' + this.current_user.uuid === current_contributor.person.value) {
+                                    if (this.current_user.uuid === current_contributor.person.value) {
                                         addEdit = true;
                                     }
                                 }

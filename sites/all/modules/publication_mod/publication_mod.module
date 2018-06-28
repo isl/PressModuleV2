@@ -323,17 +323,24 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
       }
     }
   }else if($root_path === 'user/%'){
-    watchdog('publication_mod', 'local_tasks: root_path: %root_path <br/> $data: <pre> %data </pre><br/> router_item: <pre> %router_item </pre>', array('%root_path' => $root_path, '%data'=>print_r($data, true), '%router_item' => print_r($router_item, true)), WATCHDOG_DEBUG);
+    // watchdog('publication_mod', 'local_tasks: root_path: %root_path <br/> $data: <pre> %data </pre><br/> router_item: <pre> %router_item </pre>', array('%root_path' => $root_path, '%data'=>print_r($data, true), '%router_item' => print_r($router_item, true)), WATCHDOG_DEBUG);
     if(isset($router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid)){
       $uuid = $router_item['page_arguments'][0]->pub_mod_field_blazegraph_uuid['und'][0]['value'];
-      if(uuid_is_valid($uuid)){
-        $uuid = "urn:uuid:" . $uuid;
+      // if(uuid_is_valid($uuid)){
+      //   $uuid = "urn:uuid:" . $uuid;
+      // }
+      $first_name = '';
+      if(isset($router_item['page_arguments'][0]->pub_mod_field_first_name['und'][0]['value'])){
+        $first_name = $router_item['page_arguments'][0]->pub_mod_field_first_name['und'][0]['value'];
+      }else{
+        drupal_set_message('Your First Name is not set. Please set it in your account edit page.', 'warning');
+        $info_missing = TRUE;
       }
-      $name = $router_item['page_arguments'][0]->pub_mod_field_first_name['und'][0]['value'];
+
       $data['tabs'][0]['output'][] = array(
         '#theme' => 'menu_local_task',
         '#link' => array(
-          'title' => t($name .'\'s Publications'),
+          'title' => t($first_name .'\'s Publications'),
           'href' => 'publication/search-pub',
           // 'access callback' => 'publication_mod_user_has_role',
           // 'access arguments' => array('authenticated user'),
@@ -569,23 +576,45 @@ function publication_mod_user_has_role(){
 function _get_user_info_to_json(){
   global $user;
 
-  $current_user = '';
   if (!user_is_anonymous()){
-    $user_data = user_load($user->uid); //TODO Fix Anonymous
-    $current_user = $current_user . "{uuid: '". $user_data->uuid . "', name:'" .
-          $user_data->pub_mod_field_first_name['und'][0]['value'] . " " .
-          $user_data->pub_mod_field_last_name['und'][0]['value'] . "', mail:'" .
-          $user_data->mail . "', lab: '" .
-          $user_data->pub_mod_field_organization['und'][0]['option'] ."', roles: ";
-    $current_user = $current_user . "[";
-    foreach($user->roles as $value){
-      $current_user = $current_user . "'". $value . "',";
+    $info_missing = FALSE;
+    $user_data = user_load($user->uid);
+
+    if(isset($user_data->pub_mod_field_organization['und'][0]['option'])){
+      $org = $user_data->pub_mod_field_organization['und'][0]['option'];
+    }else{
+      drupal_set_message('Your Laboratory is not set. Please set it in your account edit page.', 'warning');
+      $info_missing = TRUE;
     }
-    $current_user = $current_user . "]}";
+    
+    if(isset($user_data->pub_mod_field_first_name['und'][0]['value'])){
+      $first_name = $user_data->pub_mod_field_first_name['und'][0]['value'];
+    }else{
+      drupal_set_message('Your First Name is not set. Please set it in your account edit page.', 'warning');
+      $info_missing = TRUE;
+    }
+    
+    if(isset($user_data->pub_mod_field_last_name['und'][0]['value'])){
+      $last_name = $user_data->pub_mod_field_last_name['und'][0]['value'];
+    }else{
+      drupal_set_message('Your Last Name is not set. Please set it in your account edit page.', 'warning');
+      $info_missing = TRUE;
+    }
+
+    if($info_missing){
+      return json_encode(array('anonymous' => TRUE));
+    }
+    $cu = array(
+      'uuid' => $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'],
+      'name' => $first_name . " " . $last_name,
+      'mail' => $user_data->mail,
+      'lab' => $org,
+      'roles' => array_values($user->roles)
+    );
   }else{
-    $current_user = "{anonymous:true}";
+    $cu = array('anonymous' => TRUE);
   }
-  return $current_user;
+  return json_encode($cu);
 }
 
 /**
@@ -910,24 +939,19 @@ function publication_mod_ajax_callback_edit_pub(){
   $ewrapper = entity_metadata_wrapper('node', $entity);
   $contributors = json_decode($_POST['contributors']);
 
-  // $entity->title= $title;
   $ewrapper->title->set($title);
 
-  // $entity->body['und'][0]['value'] = $body_content;
   $ewrapper->body->set(array('value' => $body_content, 'format' => 'full_html'));
 
-  // $entity->body['und'][0]['summary'] = $summary;
   if(isset($summary)){
     $ewrapper->body->summary->set($summary);
   }
 
-  // $entity->pub_mod_field_category['und'][0]['value'] = $category;
   $ewrapper->pub_mod_field_category->set($category);
 
   if($new_entity){
     $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
   }
-  // echo print_r($ewrapper);
 
   if (array_key_exists("myfile", $_FILES) &&    //If file exists, update it
       file_exists($_FILES['myfile']['tmp_name']) &&   //TODO does it delete it?
@@ -1025,12 +1049,11 @@ function publication_mod_user_presave(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
   
-  watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
-    '%edit' => print_r($edit, true),
-    '%account' => print_r($account, true),
-    '%category' => print_r($category, true),
-  ), WATCHDOG_NOTICE);
-
+  // watchdog("publication_mod", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
+  //   '%edit' => print_r($edit, true),
+  //   '%account' => print_r($account, true),
+  //   '%category' => print_r($category, true),
+  // ), WATCHDOG_NOTICE);
 
   $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
   $orgoptions = array();
@@ -1050,7 +1073,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
   if($account->is_new){
     $sparql = 'prefix press:<'. $prefix .'> '.
     'select * where { '.
-      '?person press:username "'. $account->name . '". '.
+      '?person press:username "'. $edit['name'] . '". '.
       '?person ?p ?o. '.
     '}';
 
@@ -1100,9 +1123,9 @@ function publication_mod_user_presave(&$edit, $account, $category){
       }
       if($duplicate){
 
-        $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = 'urn:uuid:' . $account->uuid;
+        // $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'] = 'urn:uuid:' . $account->uuid;
         watchdog("publication_mod", "Duplicate Username in Blazegraph: %username", array(
-          '%username' => $account->name,
+          '%username' => $edit['name'],
         ), WATCHDOG_ERROR);
 
       }else{
@@ -1113,51 +1136,9 @@ function publication_mod_user_presave(&$edit, $account, $category){
         $edit['pub_mod_field_last_name'] = $edit_changes['pub_mod_field_last_name'];
         watchdog("publication_mod", "New User %username <br/> result: <pre>%result</pre><br/> not_found: ". $notfound ."<br/>edit_changes: <pre>%edit_changes</pre><br/>", array(
           '%edit_changes' => print_r($edit_changes, true),
-          '%username' => $account->name,
+          '%username' => $edit['name'],
           '%result' => print_r($result, true),
         ), WATCHDOG_NOTICE);
-
-        // $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
-        // "prefix press:<". $prefix . ">".
-        // "DELETE {".
-        //   "<". $uuid . "> foaf:familyName ?familyName. ".
-        //   "<". $uuid . "> foaf:givenName ?givenName. ".
-        //   "<". $uuid."> press:personGroup ?group. ".
-        //   "<". $uuid . "> foaf:mbox ?mbox.".
-        //   "<". $uuid . "> press:memberOf ?org.";
-
-        // $sparql .= "}INSERT{".
-        //   "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
-        //   "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
-        //   "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
-        //   "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ";
-
-        // if(isset($org) && !empty($org)){
-        //   $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
-        // }
-
-        // $sparql .= "} WHERE {".
-        //   "<". $uuid."> rdf:type foaf:Person;".
-        //   // "press:personUuid \u0022". $uuid . "\u0022"
-        //   "foaf:familyName ?familyName;".
-        //   "foaf:givenName ?givenName.".
-        //   "<". $uuid."> press:personGroup ?group. ".
-        //   "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
-        //   "OPTIONAL{<". $uuid."> press:memberOf ?org.}".
-        //   "}";
-
-        // $q = http_build_query(array('update' => $sparql));
-
-        // $options = array(
-        //   'headers' => array(
-        //     'Accept'=>'html',
-        //     'content-type'=> 'application/x-www-form-urlencoded'),
-        //   'method' => 'POST',
-        //   'data' => $q
-        // );
-
-        // $result = drupal_http_request($blazegraph_url, $options);   
-        // watchdog("Blazegraph Existing Username Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
       }
     }else{  //User is not found in blazegraph
       // $uuid = 'urn:uuid:' . $account->uuid;

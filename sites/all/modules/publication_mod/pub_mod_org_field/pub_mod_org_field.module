@@ -134,10 +134,15 @@ function pub_mod_org_field_field_formatter_view($entity_type, $entity, $field, $
         }
       }
       foreach ($items as $delta => $item) {
-        if (isset($item['option'])) {
+        if (isset($item['option']) && isset($options[$item['option']])) {
           $output = field_filter_xss($options[$item['option']]);
         }
+        elseif (isset($item['option']) && !isset($options[$item['option']])) {
+          drupal_set_message('The Laboratory is not valid. Please set it in your account edit page.', 'warning');
+          $output = "Not Valid";
+        }
         else {
+          drupal_set_message('The Laboratory is not set. Please set it in your account edit page.', 'warning');
           $output = "Not Supplied";
         }
         $element[$delta] = array('#markup' => $output);
