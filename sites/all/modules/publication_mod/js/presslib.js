@@ -1453,7 +1453,7 @@
             var contributors = ['hasAuthors', 'hasBookEditors', 'hasChapterAuthors', 'hasSupervisors']; //Remove hardcoded
 
             $('.contributor').each($.proxy(function(index, element) {
-                if ($(element).attr('data-mail') === this.current_user.mail) {
+                if ($(element).attr('data-uuid') === this.current_user.uuid) {
                     current_user_added = true;
                     return false
                 }
