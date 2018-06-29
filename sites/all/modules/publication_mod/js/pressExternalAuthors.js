@@ -44,6 +44,9 @@
       // element.append(this.loader);
 
       element.append(this.getAuthorField());
+      element.append('<br/><br/><p>Each word has to be at least 3 characters long '+
+        'to search.<br/>Double click in the cell to edit the field. Press "Enter" to '+
+        'Save, or "Esc" to Cancel. The fields cannot be empty.</p>');
     };
 
     PRESSExternalAuthors.prototype = {
@@ -204,8 +207,8 @@
       },
       getAuthorsTable: function(response){
         $('#myTable_wrapper').remove();
-        $table = $('<table id="myTable" class="display"><thead><tr><th>Given Name</th><th>Family Name</th>'+
-          '<th>Mail</th><th>UUID</th></tr></thead></table>');
+        $table = $('<table id="myTable" class="display"><thead><tr><th data-p="foaf:givenName">Given Name</th><th data-p="foaf:familyName">Family Name</th>'+
+          '<th data-p="foaf:mbox">Mail</th><th>UUID</th></tr></thead></table>');
         this.element.append($table);
         that = this;
         var table = $table.DataTable(
@@ -249,13 +252,8 @@
               {data: 'givenName.value'},
               {data:'familyName.value'},
               {
-                data: 'mail',
-                render: function(data, type, row){
-                  if(data !== undefined){
-                    return data.value;
-                  }
-                  return '';
-                }
+                data: 'mail.value',
+                defaultContent: ""
               },
               {data:'uuid.value'}
             ],
@@ -265,6 +263,39 @@
             },
           }
         );
+        $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
+          var cell = table.cell(this);
+          var prevVal = cell.data();
+          if(cell.index().column !== 3){
+            $(this).addClass('input-open');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            $(this).find('input').select();
+            $(this).keyup(function(ev){
+              if(ev.which == 13 || ev.keyCode == 13){
+                var newVal = $(this).find('input').val().trim();
+                if(newVal === ''){
+                  $(this).text(prevVal);
+                  $(this).removeClass('input-open');
+                  return;
+                }
+                cell.data(newVal);
+                if(newVal !== prevVal){
+                  var index = cell.index();
+                  $.when(that.editAuthor(table.row(index.row).data().uuid.value,
+                      $(table.column(index.column).header()).attr('data-p'),
+                      newVal)
+                  ).done(function(a){
+                    console.log('DONE');
+                  });
+                  $(this).removeClass('input-open');
+                }
+              }else if(ev.which == 27 || ev.keyCode == 27){
+                $(this).text(prevVal);
+                $(this).removeClass('input-open');
+              }
+            });
+          }
+        });
       },
 
       getQuery: function(q, limit, offset){
@@ -299,7 +330,7 @@
       },
 
       deleteAuthors(uuids){
-        prefix = this.prefix;
+        var prefix = this.prefix;
         var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
 
         query += 'DELETE { \n';
@@ -319,6 +350,45 @@
         query += '). \n';
         query += '?person ?p ?o. \n';
         query += 'OPTIONAL{?x ?y ?person}. \n';
+        query += '}';
+
+        console.log(query);
+
+        return $.ajax({
+          dataType: 'json',
+          method: "POST",
+          dataType: 'html',
+          url: this.dbURL,
+          data: {
+            update: query
+          }
+        })
+        .done(function(response) {
+          return response;
+        })
+        .fail(function(response) {
+          alert("Oops! There was an error with getting query! See console for more info.");
+          console.error(response);
+        });
+      },
+
+      editAuthor(uuid, editKey, editValue){
+        var prefix = this.prefix;
+        
+        if(editKey === 'foaf:mbox'){
+          editValue = 'mailto:'+editValue;
+        }
+        var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
+
+        query += 'DELETE { \n';
+        query += '<'+uuid+'> '+editKey+' ?o. \n';
+        query += '}\n';
+        query += 'INSERT { \n';
+        query += '<'+uuid+'> '+editKey+' "'+editValue+'". \n';
+        query += '}\n';
+        query += 'WHERE{ \n';
+        query += '<'+uuid+'> rdf:type foaf:Person. \n';
+        query += 'OPTIONAL{<'+uuid+'> '+editKey+' ?o}. \n';
         query += '}';
 
         console.log(query);
