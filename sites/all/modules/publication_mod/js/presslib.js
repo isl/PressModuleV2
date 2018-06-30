@@ -330,9 +330,9 @@
                             $ul.show();
                         }
                     } else {
-                        var $li = $('<li id="' + results[i].org.value.split('#')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                        var $li = $('<li id="' + results[i].org.value.split('#Organization/')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                         $ul.append($li);
-                        $li.html(results[i].orgName.value);
+                        $li.text(results[i].orgName.value);
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
