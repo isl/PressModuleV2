@@ -238,9 +238,9 @@ span.searchclear {
     right: 20px;
     top: 0;
     bottom: 0;
-    height: 14px;
+    height: 18px;
     margin: auto;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #cccccc;
 }

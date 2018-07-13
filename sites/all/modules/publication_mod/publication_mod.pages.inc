@@ -29,7 +29,7 @@ function publication_mod_add_publication(){
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;', \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;', \n".
           "priority: 0 \n".
         "}, \n".
         "External_Author: { \n".
@@ -78,7 +78,7 @@ function publication_mod_search_publication(){
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;' \n".
         "}, \n".
         "External_Author: { \n".
           "label: 'External Authors', \n".
@@ -135,7 +135,7 @@ function publication_mod_edit_publication(){
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;' \n".
         "}, \n".
         "External_Author: { \n".
           "label: 'External Authors', \n".

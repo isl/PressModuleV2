@@ -1326,7 +1326,7 @@
             $i.val('');
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             $d1.append($i);
-            var $clear = $('<span class="searchclear glyphicon glyphicon-remove-circle"></span>');
+            var $clear = $('<span class="searchclear icon-cancel-circled2"></span>');
             $clear.on('click', function() {
                 $i.val('');
             })
