@@ -614,11 +614,11 @@ function _get_labs_to_json(){
   return $labs;
 }
 
-function _add_presslib_library(){
+function _add_presslib_library($bootstrap = true){
   $module_path = drupal_get_path('module', 'publication_mod');
   global $theme;
 
-  if($theme != 'bootstrap'){
+  if($theme != 'bootstrap' && $bootstrap){
     drupal_add_js($module_path . '/js/bootstrap.js');
   }
 
@@ -637,7 +637,7 @@ function _add_presslib_library(){
   drupal_add_js($module_path . '/js/jquery.twbsPagination.js');
   drupal_add_js($module_path . '/js/pressProjects.js');
 
-  if($theme != 'bootstrap'){
+  if($theme != 'bootstrap' && $bootstrap){
     drupal_add_css($module_path . "/css/bootstrap.css");
   }
   drupal_add_css($module_path . "/css/presslib.css");

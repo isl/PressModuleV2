@@ -84,7 +84,7 @@ function _external_authors_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  _add_presslib_library();
+  _add_presslib_library(false);
 
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
@@ -108,7 +108,7 @@ function _internal_authors_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  _add_presslib_library();
+  _add_presslib_library(false);
 
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
@@ -132,7 +132,7 @@ function _merge_authors(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  _add_presslib_library();
+  _add_presslib_library(false);
 
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
@@ -156,7 +156,7 @@ function _projects_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  _add_presslib_library();
+  _add_presslib_library(false);
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
@@ -179,7 +179,7 @@ function _tags_edit(){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  _add_presslib_library();
+  _add_presslib_library(false);
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
