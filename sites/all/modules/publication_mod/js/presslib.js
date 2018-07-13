@@ -130,7 +130,7 @@
         if (typeof options.prefix === 'string')
             this.prefix = options.prefix;
 
-        if (typeof options.prefix === 'string')
+        if (typeof options.organization_label === 'string')
             this.organization_label = options.organization_label;
 
         if (typeof options.labs === 'object')
@@ -147,6 +147,9 @@
 
         if (typeof options.editPublication === 'object')
             this.editPublication = options.editPublication;
+
+        if (typeof options.max_file_size === 'string')
+            this.max_file_size = options.max_file_size;
 
         console.log(this.current_user);
 
@@ -330,9 +333,9 @@
                             $ul.show();
                         }
                     } else {
-                        var $li = $('<li id="' + results[i].org.value.split('#')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                        var $li = $('<li id="' + results[i].org.value.split('#Organization/')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                         $ul.append($li);
-                        $li.html(results[i].orgName.value);
+                        $li.text(results[i].orgName.value);
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
@@ -1041,6 +1044,22 @@
         },
         //Insert Upload File Field
         insertLocalField: function(field, size, isRequired = false) {
+            function return_bytes(val) {
+                val = val.trim();
+                var last = val.toLowerCase().substring(val.length-1);
+                val = parseInt(val);
+                switch(last) {
+                    // The 'G' modifier is available since PHP 5.1.0
+                    case 'g':
+                        val *= 1024;
+                    case 'm':
+                        val *= 1024;
+                    case 'k':
+                        val *= 1024;
+                }
+
+                return val;
+            }
             var required = '';
             if (isRequired) {
                 required = '<span style="color:red">*</span>';
@@ -1053,6 +1072,7 @@
             if (this.oldFields[field.id])
                 $input.val(this.oldFields[field.id]);
             $d1.append($input);
+            $d1.append('<div style="font-size: 0.7em;">Max file size: ' + this.max_file_size +' (' + return_bytes(this.max_file_size) + ' bytes)</div>');
             $d.append($d1);
             return $d;
         },
@@ -1306,7 +1326,7 @@
             $i.val('');
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             $d1.append($i);
-            var $clear = $('<span class="searchclear glyphicon glyphicon-remove-circle"></span>');
+            var $clear = $('<span class="searchclear icon-cancel-circled2"></span>');
             $clear.on('click', function() {
                 $i.val('');
             })
@@ -1453,7 +1473,7 @@
             var contributors = ['hasAuthors', 'hasBookEditors', 'hasChapterAuthors', 'hasSupervisors']; //Remove hardcoded
 
             $('.contributor').each($.proxy(function(index, element) {
-                if ($(element).attr('data-mail') === this.current_user.mail) {
+                if ($(element).attr('data-uuid') === this.current_user.uuid) {
                     current_user_added = true;
                     return false
                 }

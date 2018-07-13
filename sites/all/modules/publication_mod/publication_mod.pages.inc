@@ -2,7 +2,6 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
-
 /**
  * Creates Add Publication page
  * @return type
@@ -20,15 +19,17 @@ function publication_mod_add_publication(){
   $current_user = _get_user_info_to_json();
   $labs = _get_labs_to_json();
 
+  $max_file_size = ini_get("upload_max_filesize");
+
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
+      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;', \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;', \n".
           "priority: 0 \n".
         "}, \n".
         "External_Author: { \n".
@@ -38,7 +39,8 @@ function publication_mod_add_publication(){
       "}, \n".
       "current_user: " . $current_user .", \n".
       "labs: " . $labs .", \n".
-      "organization_label: 'Laboratory' \n".
+      "organization_label: 'Laboratory', \n".
+      "max_file_size: '". $max_file_size. "', \n".
     "}); \n".
   "}); \n";
   drupal_add_js($internalJS, 'inline');
@@ -71,12 +73,12 @@ function publication_mod_search_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#search-publication').pressSearch({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
+      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;' \n".
         "}, \n".
         "External_Author: { \n".
           "label: 'External Authors', \n".
@@ -128,12 +130,12 @@ function publication_mod_edit_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '". $dbURL ."', \n" .
+      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
           "label: 'FORTH ICS Authors', \n".
-          "span: '<span class=\"glyphicon glyphicon-user\"></span>&nbsp;' \n".
+          "span: '<span class=\"icon-user\"></span>&nbsp;' \n".
         "}, \n".
         "External_Author: { \n".
           "label: 'External Authors', \n".
@@ -168,7 +170,7 @@ function publication_mod_add_project(){
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $inlineJS = 'jQuery(document).ready(function($){';
-  $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "'. $dbURL .'");'; 
+  $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "/ajax/pub_mod_blazegraph");'; 
   $inlineJS .= '}); ';
   drupal_add_js($inlineJS, 'inline');
 

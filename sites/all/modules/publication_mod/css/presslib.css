@@ -50,8 +50,9 @@ button.custom-close:hover{
   float: left;
 }
 
-.social .fa {
-  padding: 15px 0px
+.social [class^="icon-"] {
+  padding: 15px 0px;
+  display: block;
 }
 
 .facebook {
@@ -183,7 +184,7 @@ div.pub-tags{
 .result-icons{
 	color: inherit;
 	float: left;
-	margin: 0 5px;
+	margin: 0 2px;
 }
 
 a.result-icons:hover,
@@ -237,9 +238,9 @@ span.searchclear {
     right: 20px;
     top: 0;
     bottom: 0;
-    height: 14px;
+    height: 18px;
     margin: auto;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #cccccc;
 }

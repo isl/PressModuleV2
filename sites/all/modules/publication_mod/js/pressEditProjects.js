@@ -86,10 +86,10 @@
               }
 
               BDSquery += '?uuid press:projectName ?projectName. \n'+
-              '?uuid press:projectId ?projectId. \n'+
-              '?uuid press:projectDateStart ?projectDateStart. \n'+
-              '?uuid press:projectDateEnd ?projectDateEnd. \n'+
-              '?uuid press:projectStatus ?projectStatus. }';
+              'OPTIONAL{?uuid press:projectId ?projectId}. \n'+
+              'OPTIONAL{?uuid press:projectDateStart ?projectDateStart}. \n'+
+              'OPTIONAL{?uuid press:projectDateEnd ?projectDateEnd}. \n'+
+              'OPTIONAL{?uuid press:projectStatus ?projectStatus}. }';
 
               settings.data = {
                 query : BDSquery,
@@ -106,11 +106,23 @@
                   tr[i] = {
                     uuid: results[i].uuid.value,
                     projectName: results[i].projectName.value,
-                    projectStatus: results[i].projectStatus.value,
-                    projectDateStart: results[i].projectDateStart.value,
-                    projectDateEnd: results[i].projectDateEnd.value,
-                    projectId: results[i].projectId.value
+                    // projectStatus: results[i].projectStatus.value,
+                    // projectDateStart: results[i].projectDateStart.value,
+                    // projectDateEnd: results[i].projectDateEnd.value,
+                    // projectId: results[i].projectId.value
                   };
+                  if('projectStatus' in results[i]){
+                    tr[i].projectStatus = results[i].projectStatus.value;
+                  }
+                  if('projectDateStart' in results[i]){
+                    tr[i].projectDateStart = results[i].projectDateStart.value;
+                  }
+                  if('projectDateEnd' in results[i]){
+                    tr[i].projectDateEnd = results[i].projectDateEnd.value;
+                  }
+                  if('projectId' in results[i]){
+                    tr[i].projectId = results[i].projectId.value;
+                  }
                 }
                 console.log(tr);
                 return tr;
@@ -124,18 +136,7 @@
         var dataset = {
           source: bloodhound,
           name: 'External',
-          display: 'fullName',
-          templates: {
-            header: '<h4 class="author-category">External Authors</h4>',
-            suggestion: function(data) {
-              var mail = '';
-              if ('mail' in data){
-                mail = ' - ' + data.mail;
-              }
-              // return '<p><strong>' + data.fullName + '</strong></p>';
-              return '<p><strong>' + data.fullName + '</strong>' + mail + '</p>';
-            }
-          },
+          display: 'projectName',
           limit: 300
 
         };
@@ -184,10 +185,10 @@
         }
 
         BDSquery += '?uuid press:projectName ?projectName. \n'+
-        '?uuid press:projectId ?projectId. \n'+
-        '?uuid press:projectDateStart ?projectDateStart. \n'+
-        '?uuid press:projectDateEnd ?projectDateEnd. \n'+
-        '?uuid press:projectStatus ?projectStatus. }';
+        'OPTIONAL{?uuid press:projectId ?projectId}. \n'+
+        'OPTIONAL{?uuid press:projectDateStart ?projectDateStart}. \n'+
+        'OPTIONAL{?uuid press:projectDateEnd ?projectDateEnd}. \n'+
+        'OPTIONAL{?uuid press:projectStatus ?projectStatus}. }';
 
         $.when(this.getQuery(BDSquery)).done((function(a){
           this.getProjectsTable(a.results.bindings);
@@ -237,12 +238,12 @@
             ],
             data:response,
             columns:[
-              {data:'projectName.value'},
-              {data:'projectId.value'},
-              {data:'projectStatus.value'},
-              {data:'projectDateStart.value'},
-              {data:'projectDateEnd.value'},
-              {data:'uuid.value'}
+              {data:'projectName.value', defaultContent: ""},
+              {data:'projectId.value', defaultContent: ""},
+              {data:'projectStatus.value', defaultContent: ""},
+              {data:'projectDateStart.value', defaultContent: ""},
+              {data:'projectDateEnd.value', defaultContent: ""},
+              {data:'uuid.value', defaultContent: ""}
             ],
             select: {
               items: 'row',

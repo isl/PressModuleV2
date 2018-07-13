@@ -93,7 +93,7 @@ function _external_authors_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-external-author').pressExternalAuthors({ \n" .
-	  "dbURL: '". $dbURL ."', \n" .
+	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -117,7 +117,7 @@ function _internal_authors_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-internal-author').pressInternalAuthors({ \n" .
-	  "dbURL: '". $dbURL ."', \n" .
+	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -141,7 +141,7 @@ function _merge_authors(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-author').pressMergeAuthors({ \n" .
-	  "dbURL: '". $dbURL ."', \n" .
+	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -164,7 +164,7 @@ function _projects_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-project').pressEditProjects({ \n" .
-	  "dbURL: '". $dbURL ."', \n" .
+	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -187,7 +187,7 @@ function _tags_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-tag').pressEditTags({ \n" .
-	  "dbURL: '". $dbURL ."', \n" .
+	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
