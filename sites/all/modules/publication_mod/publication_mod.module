@@ -55,7 +55,7 @@ function publication_mod_menu(){
     'title' => 'Publications',
     'description' => 'Publications Description',
     'position' => 'right',
-    'weight' => -12,
+    'weight' => 10,
     'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer site configuration'),
     'file' => 'system.admin.inc',
@@ -247,7 +247,7 @@ function publication_mod_menu(){
     'link_path' => 'press/add-project',
     'link_title' => 'Add Project',
     'menu_name' => 'main-menu',
-    'weight' => -4
+    'weight' => 11
   );
 
   foreach ($menu_links as $link) {
