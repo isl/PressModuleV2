@@ -134,8 +134,8 @@
                 '<div class="col-sm-1"></div>' +
                 '<div class="col-sm-10"><input id="free-text" class="form-control input-sm" ' +
                 'type="text" placeholder="Enter text for free text search"></input></div>' +
-                '<a id="searchByFields"  class="glyphicon glyphicon-search" ' +
-                'style="font-size:30px; text-decoration:none;"></a>&nbsp;' +
+                '<a id="searchByFields"  class="icon-search" ' +
+                'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
                 '</div>' +
                 '<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
                 ' href="#advanced_search">Advanced Search</a></div>' +
@@ -777,7 +777,7 @@
                         $container.append($category);
                         $container.append($('<a href="#' + key + '-collapse" style="position:absolute; ' +
                             'right:0; top:20px; z-index:100" data-toggle="collapse" ' +
-                            'class="btn btn-default glyphicon glyphicon-chevron-right"></a>'));
+                            'class="collapse-btn btn btn-default icon-right-open"></a>'));
                         $container.append($next);
                         var $div = $('<div class="col-xs-12" style="padding-right:0"></div>');
                         $div.append(badge);
@@ -801,10 +801,10 @@
             $div.append(container);
             $div.append($listRoot);
 
-            $listRoot.find('a.glyphicon').on('click', function() {
+            $listRoot.find('a.collapse-btn').on('click', function() {
                 $(this)
-                    .toggleClass('glyphicon-chevron-right')
-                    .toggleClass('glyphicon-chevron-down');
+                    .toggleClass('icon-right-open')
+                    .toggleClass('icon-down-open');
             });
 
             $listRoot.find('a.search-category').on('click', (function(that) {
