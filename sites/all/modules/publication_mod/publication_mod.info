@@ -6,11 +6,8 @@ package = Publications
 dependencies[] = pub_mod_org_field
 dependencies[] = field
 dependencies[] = entity
-dependencies[] = libraries
 dependencies[] = jquery_update
 dependencies[] = pathauto
 dependencies[] = uuid
-dependencies[] = rules
-dependencies[] = php
 
 configure = admin/config/publications/publication_mod
