@@ -130,7 +130,7 @@
         if (typeof options.prefix === 'string')
             this.prefix = options.prefix;
 
-        if (typeof options.prefix === 'string')
+        if (typeof options.organization_label === 'string')
             this.organization_label = options.organization_label;
 
         if (typeof options.labs === 'object')
@@ -147,6 +147,9 @@
 
         if (typeof options.editPublication === 'object')
             this.editPublication = options.editPublication;
+
+        if (typeof options.max_file_size === 'string')
+            this.max_file_size = options.max_file_size;
 
         console.log(this.current_user);
 
@@ -1041,6 +1044,22 @@
         },
         //Insert Upload File Field
         insertLocalField: function(field, size, isRequired = false) {
+            function return_bytes(val) {
+                val = val.trim();
+                var last = val.toLowerCase().substring(val.length-1);
+                val = parseInt(val);
+                switch(last) {
+                    // The 'G' modifier is available since PHP 5.1.0
+                    case 'g':
+                        val *= 1024;
+                    case 'm':
+                        val *= 1024;
+                    case 'k':
+                        val *= 1024;
+                }
+
+                return val;
+            }
             var required = '';
             if (isRequired) {
                 required = '<span style="color:red">*</span>';
@@ -1053,6 +1072,7 @@
             if (this.oldFields[field.id])
                 $input.val(this.oldFields[field.id]);
             $d1.append($input);
+            $d1.append('<div style="font-size: 0.7em;">Max file size: ' + this.max_file_size +' (' + return_bytes(this.max_file_size) + ' bytes)</div>');
             $d.append($d1);
             return $d;
         },

@@ -2,7 +2,6 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
-
 /**
  * Creates Add Publication page
  * @return type
@@ -19,6 +18,8 @@ function publication_mod_add_publication(){
 
   $current_user = _get_user_info_to_json();
   $labs = _get_labs_to_json();
+
+  $max_file_size = ini_get("upload_max_filesize");
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
@@ -38,7 +39,8 @@ function publication_mod_add_publication(){
       "}, \n".
       "current_user: " . $current_user .", \n".
       "labs: " . $labs .", \n".
-      "organization_label: 'Laboratory' \n".
+      "organization_label: 'Laboratory', \n".
+      "max_file_size: '". $max_file_size. "', \n".
     "}); \n".
   "}); \n";
   drupal_add_js($internalJS, 'inline');
