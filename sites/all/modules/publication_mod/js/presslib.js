@@ -130,7 +130,7 @@
         if (typeof options.prefix === 'string')
             this.prefix = options.prefix;
 
-        if (typeof options.prefix === 'string')
+        if (typeof options.organization_label === 'string')
             this.organization_label = options.organization_label;
 
         if (typeof options.labs === 'object')
@@ -147,6 +147,9 @@
 
         if (typeof options.editPublication === 'object')
             this.editPublication = options.editPublication;
+
+        if (typeof options.max_file_size === 'string')
+            this.max_file_size = options.max_file_size;
 
         console.log(this.current_user);
 
@@ -330,9 +333,9 @@
                             $ul.show();
                         }
                     } else {
-                        var $li = $('<li id="' + results[i].org.value.split('#')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                        var $li = $('<li id="' + results[i].org.value.split('#Organization/')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                         $ul.append($li);
-                        $li.html(results[i].orgName.value);
+                        $li.text(results[i].orgName.value);
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
@@ -533,7 +536,7 @@
         //Insert Lab Field using typeahead.js and sortable.js
         insertLabs: function(labs) {
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
-                'id="lab-input" data-label="' + this.organization_label + '" type="text"/>');
+                'id="lab-input" data-label="' + this.organization_label + '" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="lab-editable" class="list-group editable" style="display:none"></ul>');
             var $labgroup = $('<div id="lab-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -677,7 +680,12 @@
                 $('input[type!=file], textarea', '#form-fields').each(function() {
                     if ($(this).val() !== '')
                         oldFields[$(this).attr('id')] = $(this).val();
-                })
+                });
+                $('.list-group', '#form-fields').each(function(){
+                    if ($(this).children().length > 0){
+                        oldFields[$(this).attr('id')] = $(this).children();
+                    }
+                });
                 this.oldFields = oldFields;
                 $('#form-fields').empty();
                 $('#form-fields').show();
@@ -709,7 +717,7 @@
             var $d = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             var tooltip = 'Each word has to be at least 3 characters long to search.\nPress Enter to add a new External Contributor.';
             var $input = $('<input class="person-input typeahead form-control input-sm ' +
-                'press-field" data-toggle="tooltip" type="text"/>');
+                'press-field" data-toggle="tooltip" type="text" placeholder="Search..."/>');
             $input.attr('id', field.id + '-input');
             $input.attr('title', tooltip);
             $input.attr('data-label', field.label);
@@ -835,7 +843,10 @@
                     }
                 }
             });
-
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
             //Add External Author Modal
             var $exAuthorsModal = $('#externalAuthorModal');
             if ($exAuthorsModal.length === 0) {
@@ -1033,6 +1044,22 @@
         },
         //Insert Upload File Field
         insertLocalField: function(field, size, isRequired = false) {
+            function return_bytes(val) {
+                val = val.trim();
+                var last = val.toLowerCase().substring(val.length-1);
+                val = parseInt(val);
+                switch(last) {
+                    // The 'G' modifier is available since PHP 5.1.0
+                    case 'g':
+                        val *= 1024;
+                    case 'm':
+                        val *= 1024;
+                    case 'k':
+                        val *= 1024;
+                }
+
+                return val;
+            }
             var required = '';
             if (isRequired) {
                 required = '<span style="color:red">*</span>';
@@ -1045,6 +1072,7 @@
             if (this.oldFields[field.id])
                 $input.val(this.oldFields[field.id]);
             $d1.append($input);
+            $d1.append('<div style="font-size: 0.7em;">Max file size: ' + this.max_file_size +' (' + return_bytes(this.max_file_size) + ' bytes)</div>');
             $d.append($d1);
             return $d;
         },
@@ -1059,7 +1087,7 @@
             var $label = $('<label class="col-sm-2 control-label" for="' + field.id + '-input">' + required + field.label + ':</label>');
             var $d = $('<div class="col-sm-10"></div>');
             var $input = $('<input id="' + field.id + '-input" class="typeahead ' +
-                'form-control input-sm press-field" type="text" data-label="' + field.label + '"/>');
+                'form-control input-sm press-field" type="text" data-label="' + field.label + '" placeholder="Search..."/>');
 
             $d.append($input);
 
@@ -1131,6 +1159,10 @@
                 }
             });
 
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
 
             $input.bind('typeahead:select', function(ev, suggestion) {
                 if (ev.type === 'keypress' && ev.which != 13) {
@@ -1157,7 +1189,7 @@
                 required = '<span style="color:red">*</span>';
             }
             $input = $('<input class="typeahead form-control input-sm press-field tag-input" ' +
-                'id="tag-input" data-label="Tags" data-toggle="tooltip" type="text"/>');
+                'id="tag-input" data-label="Tags" data-toggle="tooltip" type="text" placeholder="Search..."/>');
 
             var tooltip = 'Select from autocomplete to use already added tags.\n' +
                 'Type your tag and press Enter to add a new tag.';
@@ -1200,6 +1232,11 @@
                     }
                 }
             });
+
+            if(this.oldFields[$ul.attr('id')]){
+                $ul.append(this.oldFields[$ul.attr('id')]);
+                $ul.show();
+            }
 
             $input.bind('typeahead:select keypress', function(ev, suggestion) {
                 var $list = $('#tag-editable');
@@ -1289,7 +1326,7 @@
             $i.val('');
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             $d1.append($i);
-            var $clear = $('<span class="searchclear glyphicon glyphicon-remove-circle"></span>');
+            var $clear = $('<span class="searchclear icon-cancel-circled2"></span>');
             $clear.on('click', function() {
                 $i.val('');
             })
@@ -1436,7 +1473,7 @@
             var contributors = ['hasAuthors', 'hasBookEditors', 'hasChapterAuthors', 'hasSupervisors']; //Remove hardcoded
 
             $('.contributor').each($.proxy(function(index, element) {
-                if ($(element).attr('data-mail') === this.current_user.mail) {
+                if ($(element).attr('data-uuid') === this.current_user.uuid) {
                     current_user_added = true;
                     return false
                 }
@@ -2088,7 +2125,7 @@
             }
 
             //URL
-            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['doi'])
+            var jqxhr = $.ajax("https://doi.org/api/handles/" + item['DOI'])
                 .done(function(data) {
                     // $('#external').val()
                     for (var i = 0; i < data.values.length; i++) {

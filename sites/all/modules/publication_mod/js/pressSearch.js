@@ -134,8 +134,8 @@
                 '<div class="col-sm-1"></div>' +
                 '<div class="col-sm-10"><input id="free-text" class="form-control input-sm" ' +
                 'type="text" placeholder="Enter text for free text search"></input></div>' +
-                '<a id="searchByFields"  class="glyphicon glyphicon-search" ' +
-                'style="font-size:30px; text-decoration:none;"></a>&nbsp;' +
+                '<a id="searchByFields"  class="icon-search" ' +
+                'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
                 '</div>' +
                 '<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
                 ' href="#advanced_search">Advanced Search</a></div>' +
@@ -359,7 +359,7 @@
 
             var required = '';
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
-                'id="tag-input" data-label="Tags" type="text"/>');
+                'id="tag-input" data-label="Tags" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="tag-editable" class="list-group editable" style="display:none"></ul>');
             var $taggroup = $('<div id="tag-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -424,7 +424,7 @@
             var $d = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             var tooltip = 'Each word has to be at least 3 characters long to search.';
 
-            var $input = $('<input id="author-input" data-toggle="tooltip" data-placement="top" title="' + tooltip + '" class="typeahead form-control input-sm" type="text"/>');
+            var $input = $('<input id="author-input" data-toggle="tooltip" data-placement="top" title="' + tooltip + '" class="typeahead form-control input-sm" type="text" placeholder="Search..."/>');
             $input.mouseover(function(e) { $(this).tooltip(); });
             $input.mouseover();
 
@@ -612,7 +612,7 @@
         },
         //Get typeahead.js field for Organizations
         getOrgsField: function(organization) {
-            $input = $('<input class="typeahead form-control input-sm" id="org-input" type="text"/>');
+            $input = $('<input class="typeahead form-control input-sm" id="org-input" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="org-editable" class="list-group editable" style="display:none"></ul>');
             var $orggroup = $('<div id="org-group" class="form-group"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
@@ -777,7 +777,7 @@
                         $container.append($category);
                         $container.append($('<a href="#' + key + '-collapse" style="position:absolute; ' +
                             'right:0; top:20px; z-index:100" data-toggle="collapse" ' +
-                            'class="btn btn-default glyphicon glyphicon-chevron-right"></a>'));
+                            'class="collapse-btn btn btn-default icon-right-open"></a>'));
                         $container.append($next);
                         var $div = $('<div class="col-xs-12" style="padding-right:0"></div>');
                         $div.append(badge);
@@ -801,10 +801,10 @@
             $div.append(container);
             $div.append($listRoot);
 
-            $listRoot.find('a.glyphicon').on('click', function() {
+            $listRoot.find('a.collapse-btn').on('click', function() {
                 $(this)
-                    .toggleClass('glyphicon-chevron-right')
-                    .toggleClass('glyphicon-chevron-down');
+                    .toggleClass('icon-right-open')
+                    .toggleClass('icon-down-open');
             });
 
             $listRoot.find('a.search-category').on('click', (function(that) {
@@ -1876,7 +1876,7 @@
                 var $download_icon = $('<a target="_blank" class="result-icons" data-toggle="tooltip" ' +
                     'data-placement="top" data-container="body" title="Download the PDF of ' +
                     'this Publication" style="color:inherit; visibility:hidden">' +
-                    '<i class="fa fa-download" style="font-size:17px;"></i></a>');
+                    '<i class="icon-download" style="font-size:17px;"></i></a>');
                 if ('localLink' in current_pub && !this.current_user.anonymous) {
                     $download_icon.attr('href', '../' + current_pub.localLink.value);
                     $download_icon.mouseover(function(e) { $(this).tooltip(); });
@@ -1892,15 +1892,15 @@
                 var $info_icon = $('<a  class="result-icons" data-toggle="tooltip" ' +
                     'data-placement="top" data-container="body" title="' +
                     this.category_labels[results[i].typeID.value] + '" style="color:inherit">' +
-                    '<i class=" fa fa-info-circle" style="font-size:17px;display:block;' +
+                    '<i class="icon-info-circled" style="font-size:17px;display:block;' +
                     'color:' + info_color + '"></i></a>');
                 var $edit_icon = $('<a href="' + this.base_url + '/publication/edit?uuid=' +
                     encodeURIComponent(current_pub.pub.value) + '&category=' +
                     encodeURIComponent(current_pub.typeID.value) + '" target="_blank" ' +
-                    'class="result-icons" style="color:inherit"><i class="fa fa-edit" ' +
+                    'class="result-icons" style="color:inherit"><i class="icon-edit" ' +
                     'style="font-size:17px;font-weight:bold;"></i></a>');
 
-                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="fa fa-share-alt" style="font-size:17px;"></i></a>');
+                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="icon-share" style="font-size:17px;"></i></a>');
                 var $share_icon_div = this.createShareButton('', title + ' | PRESS Publication System');
                 $share_icon_div.prepend($share_icon);
                 if ('publicationUrl' in current_pub) {
@@ -1940,7 +1940,7 @@
 
                                 if (!this.current_user.anonymous && addEdit === false) {
                                     console.log(current_contributor);
-                                    if ('urn:uuid:' + this.current_user.uuid === current_contributor.person.value) {
+                                    if (this.current_user.uuid === current_contributor.person.value) {
                                         addEdit = true;
                                     }
                                 }
@@ -2335,16 +2335,16 @@
             var $shareHtml = $('<div class="share-button sharer" style="display: block;">' +
                 '<div class="social top center networks-5 ">' +
                 '<!-- Facebook Share Button -->' +
-                '<a class="fbtn share facebook" href="https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '"><i class="fa fa-facebook"></i></a> ' +
+                '<a class="fbtn share facebook" href="https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '"><i class="icon-facebook"></i></a> ' +
 
                 '<!-- Google Plus Share Button -->' +
-                '<a class="fbtn share gplus" href="https://plus.google.com/share?url=' + encodedUrl + '"><i class="fa fa-google-plus"></i></a> ' +
+                '<a class="fbtn share gplus" href="https://plus.google.com/share?url=' + encodedUrl + '"><i class="icon-gplus"></i></a> ' +
 
                 '<!-- Twitter Share Button -->' +
-                '<a class="fbtn share twitter" href="https://twitter.com/intent/tweet?text=' + encodedTitle + '&amp;url=' + encodedUrl + '"><i class="fa fa-twitter"></i></a> ' +
+                '<a class="fbtn share twitter" href="https://twitter.com/intent/tweet?text=' + encodedTitle + '&amp;url=' + encodedUrl + '"><i class="icon-twitter"></i></a> ' +
 
                 '<!-- LinkedIn Share Button -->' +
-                '<a class="fbtn share linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodedUrl + '&amp;title=' + encodedTitle + '&amp;source=' + encodedUrl + '/"><i class="fa fa-linkedin"></i></a>' +
+                '<a class="fbtn share linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=' + encodedUrl + '&amp;title=' + encodedTitle + '&amp;source=' + encodedUrl + '/"><i class="icon-linkedin"></i></a>' +
                 '</div>' +
                 '</div>');
 
