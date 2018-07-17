@@ -1397,3 +1397,67 @@ function publication_mod_user_insert(&$edit, $account, $category){
   $result = drupal_http_request($blazegraph_url, $options);   
   watchdog("Blazegraph Existing Username Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
 }
+
+
+function publication_mod_get_pub_count($lab = 'all', $category = 'all') {
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
+
+  if ($lab == 'all'){
+    $lab_sparql = '?pub press:belongsTo ?lab. ' ;
+  }else {
+    $lab_sparql = '?pub press:belongsTo org:' . $lab .'. ';
+    $lab_sparql .= 'BIND(org:' . $lab . ' AS ?lab) .';
+  }
+
+  if($category == 'all') {
+    $cat_sparql = 'Publication';
+  }else {
+    $cat_sparql = $category;
+  }
+
+  $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . ">";
+  $sparql .= "prefix org:<". $blazegraph_info['blazegraph_prefix'] . "Organization/>";
+
+  $sparql .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel (strafter(str(?lab), "Organization/") AS ?labID) ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
+    '{ '.
+      'SELECT (COUNT(?pub) as ?pubCounter) ?low ?lab WHERE { ' .
+        '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
+        'OPTIONAL { '. 
+        '?pub rdf:type [rdfs:subClassOf* ?low]. '.
+        $lab_sparql .
+        '}. ' .
+      '} GROUP BY ?low ?lab ' .
+    '} ' .
+    'OPTIONAL {?low rdfs:label ?lowlabel}. ' .
+    'OPTIONAL {?low press:optgroup ?optgroup}. ' .
+    'OPTIONAL {?low rdfs:subClassOf ?superclass}. ' .
+  '}';
+
+  $q = http_build_query(array('query' => $sparql));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);   
+  $num_json = json_decode($result->data);
+  $result_array = array();
+  foreach($num_json->results->bindings as $cat){
+    if(isset($cat->labID)){
+      if(!isset($result_array[$cat->labID->value])){
+        $result_array[$cat->labID->value] = array();
+      }
+      $result_array[$cat->labID->value][$cat->lowid->value] = $cat->pubCounter->value;
+    }
+  }
+
+
+  watchdog("publication_mod get_pub_count", '<pre>%array</pre>' , 
+    array(
+      '%array' => print_r($result_array, true),
+    ), WATCHDOG_NOTICE);
+}
