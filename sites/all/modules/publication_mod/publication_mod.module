@@ -1472,7 +1472,7 @@ function publication_mod_get_pub_count($category = '*') {
     $cat_sparql = $category;
   }
 
-  $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . ">";
+  $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . "> ";
 
   $sparql .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
     '{ '.
@@ -1513,4 +1513,43 @@ function publication_mod_get_pub_count($category = '*') {
   return $result_array;
 }
 
-// publication_mod_add_project
+function publication_mod_save_project($id, $name, $acronym) {
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
+
+  $sparql = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] . "> " .
+    "DELETE { " .
+      "<" . $blazegraph_info['blazegraph_prefix'] . "projects/" . $id . "> ?p ?o" .
+    "} ".
+    "INSERT { " .
+      "<" . $blazegraph_info['blazegraph_prefix'] . "projects/" . $id . "> rdf:type press:Project; " .
+      'press:projectName "' . $name . '"; '.
+      'press:projectAcronym "' . $acronym . '"; '.
+      'press:projectId "' . $id . '". '.
+    "}".
+    "WHERE {" . 
+      "OPTIONAL{ <" . $blazegraph_info['blazegraph_prefix'] . "projects/" . $id . "> ?p ?o }." .
+    "}";
+
+  $q = http_build_query(array('update' => $sparql));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'html',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+
+  watchdog("publication_mod save_project", '<pre>%array</pre>' , 
+    array(
+      '%array' => print_r($result, true),
+    ), WATCHDOG_NOTICE);
+
+  if($result->code == 200) {
+    return "<" . $blazegraph_info['blazegraph_prefix'] . "projects/" . $id . ">";
+  }
+
+  return $result;
+}
