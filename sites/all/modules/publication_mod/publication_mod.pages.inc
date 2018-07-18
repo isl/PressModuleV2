@@ -6,7 +6,7 @@
  * Creates Add Publication page
  * @return type
  */
-function publication_mod_add_publication(){
+function publication_mod_page_add_publication(){
   global $user;
   global $base_url;
   
@@ -53,7 +53,7 @@ function publication_mod_add_publication(){
 /*
  * Creates Search Publication Page
  */
-function publication_mod_search_publication(){
+function publication_mod_page_search_publication(){
   global $user;
   global $base_url;
 
@@ -105,7 +105,7 @@ function publication_mod_search_publication(){
 /*
  * Creates Edit Publication page
  */
-function publication_mod_edit_publication(){
+function publication_mod_page_edit_publication(){
   global $base_url;
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
@@ -165,7 +165,7 @@ function publication_mod_edit_publication(){
  * Creates page for Project Addition.
  * @return type
  */
-function publication_mod_add_project(){
+function publication_mod_page_add_project(){
   _add_presslib_library();
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
@@ -244,7 +244,7 @@ function publication_mod_add_project(){
 /*
  * Creates a page of the pages of all the publications
  */
-function publication_mod_all_publications(){
+function publication_mod_page_all_publications(){
   global $base_url;
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
@@ -320,7 +320,7 @@ function publication_mod_all_publications(){
   }
 }
 
-function publication_mod_author_publications($author){
+function publication_mod_page_author_publications($author){
   if(!isset($author) || empty($author)){
     return;
   }

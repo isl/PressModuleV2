@@ -178,7 +178,7 @@ function publication_mod_menu(){
     'title' => 'Edit Publication',
     // 'type' => MENU_LOCAL_TASK,
     'description' => 'Edit a Publication',
-    'page callback' => 'publication_mod_edit_publication',
+    'page callback' => 'publication_mod_page_edit_publication',
     'access callback' => 'publication_mod_user_has_role',
     'access arguments' => array('authenticated user'),
     'file' => 'publication_mod.pages.inc',
@@ -187,7 +187,7 @@ function publication_mod_menu(){
   $menu['publication/add-pub'] = array(
     'title' => 'Add New Publication',
     'description' => 'Add New Publication',
-    'page callback' => 'publication_mod_add_publication',
+    'page callback' => 'publication_mod_page_add_publication',
     'access callback' => 'publication_mod_user_has_role',
     'access arguments' => array('authenticated user'),
     'file' => 'publication_mod.pages.inc',
@@ -196,7 +196,7 @@ function publication_mod_menu(){
   $menu['publication/all'] = array(
     'title' => 'All Publications',
     'description' => 'All Publications',
-    'page callback' => 'publication_mod_all_publications',
+    'page callback' => 'publication_mod_page_all_publications',
     'access callback' => TRUE,
     'file' => 'publication_mod.pages.inc',
   );
@@ -204,7 +204,7 @@ function publication_mod_menu(){
   $menu['publication/author/%'] = array(
     'title' => "Author's Publications",
     'description' => 'Publications of an Author',
-    'page callback' => 'publication_mod_author_publications',
+    'page callback' => 'publication_mod_page_author_publications',
     'page arguments' => array(2),
     'access callback' => TRUE,
     'file' => 'publication_mod.pages.inc',
@@ -221,7 +221,7 @@ function publication_mod_menu(){
   $menu['publication/search-pub'] = array(
     'title' => 'Search Publication',
     'description' => 'Search for Publications',
-    'page callback' => 'publication_mod_search_publication',
+    'page callback' => 'publication_mod_page_search_publication',
     'access callback' => TRUE,
     'file' => 'publication_mod.pages.inc',
   );
@@ -237,7 +237,7 @@ function publication_mod_menu(){
   $menu['press/add-project'] = array(
     'title' => 'Add Project',
     'description' => 'Add Project',
-    'page callback' => 'publication_mod_add_project',
+    'page callback' => 'publication_mod_page_add_project',
     'access callback' => 'publication_mod_user_has_role',
     'access arguments' => array('Publication Mod Power User'),
     'file' => 'publication_mod.pages.inc',
@@ -1512,3 +1512,5 @@ function publication_mod_get_pub_count($category = '*') {
 
   return $result_array;
 }
+
+// publication_mod_add_project
