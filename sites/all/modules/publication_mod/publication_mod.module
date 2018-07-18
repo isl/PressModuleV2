@@ -1399,17 +1399,17 @@ function publication_mod_user_insert(&$edit, $account, $category){
 }
 
 
-function publication_mod_get_pub_count($lab = 'all', $category = 'all') {
+function publication_mod_get_pub_count_per_lab($lab = '*', $category = '*') {
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
 
-  if ($lab == 'all'){
+  if ($lab == '*'){
     $lab_sparql = '?pub press:belongsTo ?lab. ' ;
   }else {
     $lab_sparql = '?pub press:belongsTo org:' . $lab .'. ';
     $lab_sparql .= 'BIND(org:' . $lab . ' AS ?lab) .';
   }
 
-  if($category == 'all') {
+  if($category == '*') {
     $cat_sparql = 'Publication';
   }else {
     $cat_sparql = $category;
@@ -1455,9 +1455,60 @@ function publication_mod_get_pub_count($lab = 'all', $category = 'all') {
     }
   }
 
+  // watchdog("publication_mod get_pub_count_per_lab", '<pre>%array</pre>' , 
+  //   array(
+  //     '%array' => print_r($result_array, true),
+  //   ), WATCHDOG_NOTICE);
 
-  watchdog("publication_mod get_pub_count", '<pre>%array</pre>' , 
-    array(
-      '%array' => print_r($result_array, true),
-    ), WATCHDOG_NOTICE);
+  return $result_array;
+}
+
+function publication_mod_get_pub_count($category = '*') {
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
+
+  if($category == '*') {
+    $cat_sparql = 'Publication';
+  }else {
+    $cat_sparql = $category;
+  }
+
+  $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . ">";
+
+  $sparql .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
+    '{ '.
+      'SELECT (COUNT(?pub) as ?pubCounter) ?low WHERE { ' .
+        '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
+        'OPTIONAL { '. 
+        '?pub rdf:type [rdfs:subClassOf* ?low]. '.
+        '}. ' .
+      '} GROUP BY ?low ' .
+    '} ' .
+    'OPTIONAL {?low rdfs:label ?lowlabel}. ' .
+    'OPTIONAL {?low press:optgroup ?optgroup}. ' .
+    'OPTIONAL {?low rdfs:subClassOf ?superclass}. ' .
+  '}';
+
+  $q = http_build_query(array('query' => $sparql));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);   
+  $num_json = json_decode($result->data);
+  $result_array = array();
+  foreach($num_json->results->bindings as $cat){
+      $result_array[$cat->lowid->value] = $cat->pubCounter->value;
+  }
+
+  // watchdog("publication_mod get_pub_count", '<pre>%array</pre>' , 
+  //   array(
+  //     '%array' => print_r($result_array, true),
+  //   ), WATCHDOG_NOTICE);
+
+  return $result_array;
 }

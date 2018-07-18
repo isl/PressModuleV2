@@ -57,7 +57,8 @@ function publication_mod_search_publication(){
   global $user;
   global $base_url;
 
-  // publication_mod_get_pub_count("ISL");
+  // publication_mod_get_pub_count_per_lab("ISL");
+  // publication_mod_get_pub_count("Book");
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
