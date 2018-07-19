@@ -326,7 +326,7 @@ function _publication_mod_set_blazegraph_info($key, $value){
   ->execute();
 }
 
-function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
+/*function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
   if (substr($root_path, 0, 5) === 'node/'){
     foreach ($router_item['page_arguments'] as $key => $argument) {
       if (is_object($argument) && array_key_exists('type', $argument) && $argument->type == 'publication_mod_publications') {
@@ -396,7 +396,7 @@ function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path
       );
     }
   }
-}
+}*/
 
 function _publication_mod_create_page_body($pub_uri){
   global $base_url;
