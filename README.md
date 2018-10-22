@@ -16,7 +16,7 @@ Publication management systems can be instrumental in disseminating research res
   * [Pathauto](https://www.drupal.org/project/pathauto)
   * [Token](https://www.drupal.org/project/token)
 * Copy Drupal Module contents folder (sites/all/modules/publication_mod) in folder "sites/all/modules/"
-* Enable Publication Module
+* Enable PRESS Organization Field & PRESS Publication Module
 * In case not all menus appear, please clear all caches from "[yourwebsite]/admin/config/development/performance"
 
 #### Module Configuration
