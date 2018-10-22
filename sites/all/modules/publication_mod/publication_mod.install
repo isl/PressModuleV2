@@ -26,10 +26,10 @@ function publication_mod_install(){
   $t_args = array('%name' => $content_type->name);
 
   if ($status == SAVED_UPDATED) { // update case
-    drupal_set_message($t('The content type %name has been updated.', $t_args));
+    // drupal_set_message($t('The content type %name has been updated.', $t_args));
   }
   elseif ($status == SAVED_NEW) { // create case
-    drupal_set_message($t('The content type %name has been added.', $t_args));
+    // drupal_set_message($t('The content type %name has been added.', $t_args));
     watchdog('node', 'Added content type %name.', $t_args, WATCHDOG_NOTICE, l($t('view'), 'admin/structure/types'));
   }
   variable_set('pathauto_node_publication_mod_publications_pattern', 'publication/[node:title]');
@@ -218,13 +218,13 @@ function publication_mod_uninstall() {
     }
     if (!empty($nids)) {
       node_delete_multiple($nids);
-      drupal_set_message(t('%count nodes has been deleted.', array('%count' => count($nids))));
+      // drupal_set_message(t('%count nodes has been deleted.', array('%count' => count($nids))));
     }
     // Then, delete content type
     if (node_type_load($type)) {
       node_type_delete($type);
       variable_del('node_preview_' . $type);
-      drupal_set_message(t('%type content type has been deleted.', array('%type' => $type)));
+      // drupal_set_message(t('%type content type has been deleted.', array('%type' => $type)));
     }
   }
   node_types_rebuild();
