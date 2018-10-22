@@ -13,8 +13,8 @@ Publication management systems can be instrumental in disseminating research res
     * Enable for jQuery 1.10
   * [Entity API](https://www.drupal.org/project/entity)
   * [Universally Unique IDentifier](https://www.drupal.org/project/uuid)
-  * [Pathauto](https://www.drupal.org/project/pathauto)
   * [Token](https://www.drupal.org/project/token)
+  * [Pathauto](https://www.drupal.org/project/pathauto)
 * Copy Drupal Module contents folder (sites/all/modules/publication_mod) in folder "sites/all/modules/"
 * Enable PRESS Organization Field & PRESS Publication Module
 * In case not all menus appear, please clear all caches from "[yourwebsite]/admin/config/development/performance"
