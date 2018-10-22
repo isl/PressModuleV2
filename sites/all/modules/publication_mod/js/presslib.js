@@ -1663,6 +1663,8 @@
                     var j = 0;
                     var contributors_all_pubs = {};
                     for (key in contributors) {
+                        console.log(this.fields);
+                        console.log(key);
                         var $concat = $('<div class="col-sm-3"><h3>' + this.fields[key].label + '</h3></div>');
                         contributors_all_pubs[this.fields[key].label] = [];
                         for (let i = 0; i < contributors[key].length; i++) {
@@ -2024,8 +2026,8 @@
                                     'style="float:left;"></li>');
                                 var group = (that.authorGroups[current_author[authorGroups[j]][0].group].span) ? that.authorGroups[current_author[authorGroups[j]][0].group].span : '';
                                 $li.append(group);
-                                var $span = $('<span class="author-contributor-name contributor" ' +
-                                    'data-uuid="' + current_author[authorGroups[j]][0].uuid + '" data-field="author">' + current_author[authorGroups[j]][0].fullName + '</span>');
+                                var $span = $('<span class="hasAuthors-contributor-name contributor" ' +
+                                    'data-uuid="' + current_author[authorGroups[j]][0].uuid + '" data-field="hasAuthors">' + current_author[authorGroups[j]][0].fullName + '</span>');
                                 if (current_author[authorGroups[j]][0].mail) {
                                     $li.attr('title', current_author[authorGroups[j]][0].mail);
                                     $span.attr('data-mail', current_author[authorGroups[j]][0].mail);
