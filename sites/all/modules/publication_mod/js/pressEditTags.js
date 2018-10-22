@@ -39,11 +39,14 @@
       if (typeof options.prefix === 'string')
         this.prefix = options.prefix;
 
-      this.loader = $('<div id="loader">');
+      this.loader = $('<div id="loader">').hide();
       this.filterLoader = $('<div id="filterLoader">');
-      // element.append(this.loader);
+      element.append(this.loader);
 
       element.append(this.getTagField());
+      element.append('<br/><br/><p>Each word has to be at least 3 characters long '+
+        'to search.<br/>Double click in the cell to edit the field. Press "Enter" to '+
+        'Save, or "Esc" to Cancel. The fields cannot be empty.</p>');
     };
 
     PRESSEditTags.prototype = {
@@ -58,6 +61,7 @@
         var tooltip = 'Each word has to be at least 3 characters long to search.';
         var $input = $('<input id="tag-input" data-toggle="tooltip" data-placement="top" title="'+tooltip+'" class="typeahead form-text" type="text"/>');
         // $input.mouseover(function(e){$(this).tooltip();});
+
         $input.mouseover();
 
         $d.append($input);
@@ -135,18 +139,21 @@
             if (ev.type === 'keypress' && ev.which != 13) {
               return;
             }
-            console.log(suggestion);
+            if(!suggestion){
+              that.searchTags();
+              return;
+            }
             var sug = {
               tag: {value: suggestion.tag},
               Tag_Uses: {value: suggestion.Tag_Uses}
             }
-            console.log(sug);
             that.getTagsTable([sug]);
             $(this).typeahead('val', '');
           };
         })(this));
         var $searchButton = $('<input type="button" class="form-submit" value="Search" style="float:left;"></input>');
         $searchButton.click($.proxy(this.searchTags, this));
+
         $group.append($searchButton);
         return $group;
       },
@@ -231,7 +238,12 @@
             ],
             data:response,
             columns:[
-              {data:'tag.value'},
+              {
+                data:'tag.value',
+                createdCell: function(td, cellData, rowData, row, col) {
+                  $(td).attr('original_value', cellData);
+                }
+              },
               {data:'Tag_Uses.value'}
             ],
             select: {
@@ -240,6 +252,40 @@
             },
           }
         );
+
+        $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
+          var cell = table.cell(this);
+          var prevVal = cell.data();
+          if(cell.index().column < 1){
+            $(this).addClass('input-open');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            $(this).find('input').select();
+
+            $(this).find('input').keyup(function(ev){
+              if(ev.which == 13 || ev.keyCode == 13){
+                that.loader.show();
+                var newVal = $(this).val().trim();
+                if(newVal === ''){
+                  $(cell.node()).text(prevVal);
+                  $(cell.node()).removeClass('input-open');
+                  return;
+                }
+                cell.data(newVal);
+                if(newVal !== prevVal){
+                  $.when(that.editTag($(cell.node()).attr('original_value'), newVal)
+                  ).done(function(a){
+                    that.loader.hide();
+                    console.log('DONE');
+                  });
+                  $(cell.node()).removeClass('input-open');
+                }
+              }else if(ev.which == 27 || ev.keyCode == 27){
+                $(cell.node()).text(prevVal);
+                $(cell.node()).removeClass('input-open');
+              }
+            });
+          }
+        });
       },
       getQuery: function(q, limit, offset){
         console.log('getQuery');
@@ -328,6 +374,39 @@
         console.log(query);
 
         return $.ajax({
+          method: "POST",
+          dataType: 'html',
+          url: this.dbURL,
+          data: {
+            update: query
+          }
+        })
+        .done(function(response) {
+          return response;
+        })
+        .fail(function(response) {
+          alert("Oops! There was an error with getting query! See console for more info.");
+          console.error(response);
+        });
+      },
+      editTag: function(original_value, new_value){
+        var prefix = this.prefix;
+
+        var query = 'prefix press: <'+prefix+'> \n';
+        query += 'DELETE { \n';
+        query += '?publication  press:tag "'+original_value+'". \n';
+        query += '}\n';
+        query += 'INSERT { \n';
+        query += '?publication  press:tag "'+new_value+'". \n';
+        query += '}\n';
+        query += 'WHERE{ \n';
+        query += '?publication  press:tag "'+original_value+'". \n';
+        query += '}';
+
+        console.log(query);
+
+        return $.ajax({
+          dataType: 'json',
           method: "POST",
           dataType: 'html',
           url: this.dbURL,
