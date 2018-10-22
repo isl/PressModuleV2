@@ -372,7 +372,7 @@
         });
       },
 
-      editAuthor(uuid, editKey, editValue){
+      editAuthor: function(uuid, editKey, editValue){
         var prefix = this.prefix;
         
         if(editKey === 'foaf:mbox'){
