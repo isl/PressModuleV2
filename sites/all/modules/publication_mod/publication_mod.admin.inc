@@ -221,6 +221,23 @@ function publication_mod_import_pubs_form($form, &$form_state){
 	  )
 	)
   );
+
+  $form['delete_publication_urls'] = array(
+  	'#type' => 'submit',
+  	'#value' => t('Delete publication pages/nodes & urls from Blazegraph'),
+
+  	'#ajax' => array(
+  		'callback' => 'publication_mod_delete_pub_pages_urls_callback',
+  		'wrapper' => 'import-wrapper',
+  		'progress' => array(
+  			'type' => 'bar',
+  			'message' => t('Starting delete...'),
+  			'url' => 'import_pubs/progress',
+  			'interval' => '1000'
+  		)
+  	)
+  );
+
   $form['checkboxes_fieldset'] = array(
 	'#title' => t("Result"),
 	// The prefix/suffix provide the div that we're replacing, named by
@@ -228,10 +245,70 @@ function publication_mod_import_pubs_form($form, &$form_state){
 	'#prefix' => '<div id="import-wrapper">',
 	'#suffix' => '</div>',
 	'#type' => 'fieldset',
-	'#description' => t('This is where we get automatically generated checkboxes'),
+	'#description' => t('This is where we get automatically generated checkboxes')
   );
   return $form;
 }
+
+/**
+ * Delete Pages & Blazegraph URLs for each publication  callback
+ * @param type $form 
+ * @param type $form_state 
+ * @return type
+ */
+function publication_mod_delete_pub_pages_urls_callback($form, $form_state){
+	global $base_url;
+	set_time_limit(0);
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  //Get all pubs with a publicationUrl
+
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'publication_mod_publications'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+
+    variable_set('publication_mod_import_message', 'Deleting...');
+
+  $nids_count = count($nids);
+  $form['checkboxes_fieldset']['#value'] = $nids_count;
+  for($i=0; $i<$nids_count; $i+=20){
+  	node_delete_multiple(array_slice($nids, $i, 20));
+  	variable_set('publication_mod_import_status', round(($i/$nids_count)*100));
+  }
+
+
+  $sparql =  'prefix press: <'. $ontologyPrefix. '>
+delete {
+  ?pub press:publicationUrl ?url.
+}
+where {
+  ?pub rdf:type [rdfs:subClassOf* press:Publication].
+  ?pub press:publicationUrl ?url.
+}';
+
+  $q = http_build_query(array('update' => $sparql));
+
+  $options = array(
+	'headers' => array(
+		'Accept'=>'application/ld+json',
+	  'content-type'=> 'application/x-www-form-urlencoded'),
+	'method' => 'POST',
+	'data' => $q
+  );
+
+  $result = drupal_http_request($dbURL, $options);
+  variable_set('publication_mod_import_status', 100);
+  return print_r($result->data, true);
+  // foreach ($result as $row) {
+  //   $nids[] = $row->nid;
+  // }
+}
+
 
 /**
  * Create Pages for each publication callback
@@ -253,7 +330,7 @@ function publication_mod_import_submit_callback($form, $form_state){
 			  ?pub rdf:type [rdfs:subClassOf* press:Publication].
 			  FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
 			  ?pub rdf:type ?type.
-			}';
+			} limit 500';
 
   $q = http_build_query(array('query' => $query));
 
@@ -271,42 +348,42 @@ function publication_mod_import_submit_callback($form, $form_state){
   $pub_count = count($obj->results->bindings);
   $count = 0;
   
-
+  variable_set('publication_mod_import_message', 'Importing...');
   foreach($obj->results->bindings as $pub){
-	$pub_uri = $pub->pub->value;
-	$pub_type = explode("#", $pub->type->value)[1];
+		$pub_uri = $pub->pub->value;
+		$pub_type = explode("#", $pub->type->value)[1];
 
-	$pub_page = _publication_mod_create_page_body($pub_uri);
+		$pub_page = _publication_mod_create_page_body($pub_uri);
 
-	$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
+		$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
 
-	//Add publicationUrl to created publication.
-	$update = 'prefix press: <'. $ontologyPrefix. '>
-			delete{
-			  ?pub press:publicationUrl ?old_url.
-			}
-			insert{
-			  ?pub press:publicationUrl "'.$new_node_info['path'].'".
-			}
-			where{
-			  BIND (<'. $pub_uri .'> as ?pub).
-			  OPTIONAL {?pub press:publicationUrl ?old_url}.
-			}';
+		//Add publicationUrl to created publication.
+		$update = 'prefix press: <'. $ontologyPrefix. '>
+				delete{
+				  ?pub press:publicationUrl ?old_url.
+				}
+				insert{
+				  ?pub press:publicationUrl "'.$new_node_info['path'].'".
+				}
+				where{
+				  BIND (<'. $pub_uri .'> as ?pub).
+				  OPTIONAL {?pub press:publicationUrl ?old_url}.
+				}';
 
-	$q = http_build_query(array('update' => $update));
+		$q = http_build_query(array('update' => $update));
 
-	$options = array(
-	  'headers' => array(
-		'Accept'=>'application/sparql-results+json',
-		'content-type'=> 'application/x-www-form-urlencoded'),
-	  'method' => 'POST',
-	  'data' => $q
-	);
+		$options = array(
+		  'headers' => array(
+			'Accept'=>'application/sparql-results+json',
+			'content-type'=> 'application/x-www-form-urlencoded'),
+		  'method' => 'POST',
+		  'data' => $q
+		);
 
-	$update_results = drupal_http_request($dbURL, $options);
+		$update_results = drupal_http_request($dbURL, $options);
 
-	//Update status bar
-	variable_set('publication_mod_import_status', round((++$count/$pub_count)*100));
+		//Update status bar
+		variable_set('publication_mod_import_status', round((++$count/$pub_count)*100));
   }
 
   variable_set('publication_mod_import_status', 0);
@@ -324,9 +401,9 @@ function publication_mod_import_progress(){
   );
 
   $completed_percentage = variable_get('publication_mod_import_status', 0); // calculate progress percentage here
-
+  $message = variable_get('publication_mod_import_message', '');
   if($completed_percentage){
-	  $progress['message'] = t('Importing...');
+	  $progress['message'] = t($message);
 	  $progress['percentage'] = $completed_percentage ;
   }
 
