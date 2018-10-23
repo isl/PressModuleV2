@@ -27,4 +27,4 @@ Publication management systems can be instrumental in disseminating research res
 * Go at "[yourwebsite]/admin/config/publications/publication_mod"
   * Add Blazegraph REST API URL
   * Add the Ontology Prefix
-  * Import the Organizations. Go to Configuration -> PRESS Publication Module -> Edit Organizations Tab (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then click on "Import Organizations" and then "Submit Changes"
+  * Import the Organizations. Go to Configuration -> PRESS Publication Module -> Edit Organizations Tab (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then click on "Import Organizations from Blazegraph" and then "Submit Changes"
