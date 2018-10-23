@@ -158,7 +158,11 @@
             if (ev.type === 'keypress' && ev.which != 13) {
               return;
             }
-            console.log(suggestion);
+            if(!suggestion){
+              $input.typeahead('close');
+              that.searchAuthors();
+              return;
+            }
             var sug = {
               familyName: {value: suggestion.familyName},
               givenName: {value: suggestion.givenName},
@@ -372,7 +376,7 @@
         });
       },
 
-      editAuthor(uuid, editKey, editValue){
+      editAuthor: function(uuid, editKey, editValue){
         var prefix = this.prefix;
         
         if(editKey === 'foaf:mbox'){

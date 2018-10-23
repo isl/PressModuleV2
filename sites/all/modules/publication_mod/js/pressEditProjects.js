@@ -151,7 +151,11 @@
             if (ev.type === 'keypress' && ev.which != 13) {
               return;
             }
-            console.log(suggestion);
+            if(!suggestion){
+              $input.typeahead('close');
+              that.searchProjects();
+              return;
+            }
             var sug = {
               projectName: {value: suggestion.projectName},
               projectId: {value: suggestion.projectId},
@@ -160,7 +164,7 @@
               projectDateStart: {value: suggestion.projectDateStart},
               uuid: {value: suggestion.uuid}
             }
-            console.log(sug);
+            
             that.getProjectsTable([sug])
             $(this).typeahead('val', '');
           };
@@ -200,6 +204,14 @@
           '<th>Project Status</th><th>Start Date</th><th>End Date</th><th>UUID</th></tr></thead></table>');
         this.element.append($table);
         that = this;
+        var columns = [
+          {data:'projectName.value', defaultContent: "", name: 'projectName', 'data_p': 'press:projectName'},
+          {data:'projectId.value', defaultContent: "", name: 'projectId', 'data_p': 'press:projectId'},
+          {data:'projectStatus.value', defaultContent: "", name: 'projectStatus', 'data_p': 'press:projectStatus'},
+          {data:'projectDateStart.value', defaultContent: "", name: 'projectDateStart', 'data_p': 'press:projectDateStart'},
+          {data:'projectDateEnd.value', defaultContent: "", name: 'projectDateEnd', 'data_p': 'press:projectDateEnd'},
+          {data:'uuid.value', defaultContent: "", name: 'uuid'}
+        ];
         var table = $table.DataTable(
           {
             dom: 'lfrtip<"dtButton"B>',
@@ -237,20 +249,70 @@
               }
             ],
             data:response,
-            columns:[
-              {data:'projectName.value', defaultContent: ""},
-              {data:'projectId.value', defaultContent: ""},
-              {data:'projectStatus.value', defaultContent: ""},
-              {data:'projectDateStart.value', defaultContent: ""},
-              {data:'projectDateEnd.value', defaultContent: ""},
-              {data:'uuid.value', defaultContent: ""}
-            ],
+            columns: columns,
             select: {
               items: 'row',
               style: 'multi',
             },
           }
         );
+
+        $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
+          var cell = table.cell(this);
+          var index = cell.index();
+          var column = index.column;
+          var columnName = columns[column].name;
+          var prevVal = cell.data();
+          if(['projectName', 'projectDateStart', 'projectDateEnd'].includes(columnName)){
+            $(this).addClass('input-open');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            if(['projectDateStart', 'projectDateEnd'].includes(columnName)){
+              /*$(this).find('input').daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                "locale": {
+                  format: "YYYY-MM-DD",
+                  cancelLabel: 'Clear'
+                }
+              });
+              $(this).find('input').on('cancel.daterangepicker', function(ev, picker) {
+                //do something, like clearing an input
+                $(this).val('');
+              });*/
+              $(this).find('input').datepicker({
+                'dateFormat': 'yy-mm-dd'
+              });
+            }
+            $(this).find('input').select();
+
+            $(this).find('input').keyup(function(ev){
+              if(ev.which == 13 || ev.keyCode == 13){
+                that.loader.show();
+                var newVal = $(this).val().trim();
+                if(newVal === ''){
+                  $(cell.node()).text(prevVal);
+                  $(cell.node()).removeClass('input-open');
+                  return;
+                }
+                cell.data(newVal);
+                if(newVal !== prevVal){
+                  $.when(that.editProject(table.row(index.row).data().uuid.value,
+                    columns[column].data_p,
+                    newVal)
+                  ).done(function(a){
+                    that.loader.hide();
+                    console.log('DONE');
+                  });
+                  $(cell.node()).removeClass('input-open');
+                }
+              }else if(ev.which == 27 || ev.keyCode == 27){
+                console.log('CANCEL');
+                $(cell.node()).text(prevVal);
+                $(cell.node()).removeClass('input-open');
+              }
+            });
+          }
+        });
       },
 
       getQuery: function(q, limit, offset){
@@ -284,7 +346,7 @@
         });
       },
 
-      deleteProjects(uuids){
+      deleteProjects: function(uuids){
         prefix = this.prefix;
         var query = 'prefix press: <'+prefix+'> \n';
 
@@ -319,6 +381,46 @@
           }
         })
         .done(function(response) {
+          return response;
+        })
+        .fail(function(response) {
+          alert("Oops! There was an error with getting query! See console for more info.");
+          console.error(response);
+        });
+      },
+
+      editProject: function(uuid, editKey, editValue){
+        console.log('uuid:', uuid);
+        console.log('editKey:', editKey);
+        console.log('editValue:', editValue);
+
+        var prefix = this.prefix;
+
+        var query = 'prefix press: <'+prefix+'> \n';
+
+        query += 'DELETE { \n';
+        query += '<'+uuid+'> ' + editKey+ ' ?o. \n';
+        query += '}\n';
+        query += 'INSERT { \n';
+        query += '<'+uuid+'> '+editKey+' "'+editValue+'". \n';
+        query += '}\n';
+        query += 'WHERE{ \n';
+        query += '<'+uuid+'> rdf:type press:Project. \n';
+        query += 'OPTIONAL{ <'+uuid+'>' + editKey + ' ?o}. \n';
+        query += '}';
+
+        console.log(query);
+
+        return $.ajax({
+          dataType: 'json',
+          method: 'POST',
+          dataType: 'html',
+          url: this.dbURL,
+          data: {
+            update: query
+          }
+        })
+        .done(function(response){
           return response;
         })
         .fail(function(response) {

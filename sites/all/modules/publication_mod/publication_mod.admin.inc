@@ -67,14 +67,14 @@ function publication_mod_settings_form_submit($form, $form_state){
   db_merge('publication_mod')
 	->key(array('pm_key' => 'blazegraph_url'))
 	->fields(array(
-	  'pm_value' => $form_state['values']['publication_mod_blazegraph_url']
+	  'pm_value' => trim($form_state['values']['publication_mod_blazegraph_url'])
 	))
 	->execute();
 
   db_merge('publication_mod')
 	->key(array('pm_key' => 'blazegraph_prefix'))
 	->fields(array(
-	  'pm_value' => $form_state['values']['publication_mod_blazegraph_prefix']
+	  'pm_value' => trim($form_state['values']['publication_mod_blazegraph_prefix'])
 	))
 	->execute();
 }
@@ -157,6 +157,7 @@ function _projects_edit(){
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   _add_presslib_library(false);
+  drupal_add_library('system', 'ui.datepicker');
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');
