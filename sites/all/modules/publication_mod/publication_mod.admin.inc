@@ -67,14 +67,14 @@ function publication_mod_settings_form_submit($form, $form_state){
   db_merge('publication_mod')
 	->key(array('pm_key' => 'blazegraph_url'))
 	->fields(array(
-	  'pm_value' => $form_state['values']['publication_mod_blazegraph_url']
+	  'pm_value' => trim($form_state['values']['publication_mod_blazegraph_url'])
 	))
 	->execute();
 
   db_merge('publication_mod')
 	->key(array('pm_key' => 'blazegraph_prefix'))
 	->fields(array(
-	  'pm_value' => $form_state['values']['publication_mod_blazegraph_prefix']
+	  'pm_value' => trim($form_state['values']['publication_mod_blazegraph_prefix'])
 	))
 	->execute();
 }
