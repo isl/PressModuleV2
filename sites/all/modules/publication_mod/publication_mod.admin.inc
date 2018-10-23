@@ -331,7 +331,7 @@ function publication_mod_import_submit_callback($form, $form_state){
 			  ?pub rdf:type [rdfs:subClassOf* press:Publication].
 			  FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
 			  ?pub rdf:type ?type.
-			} limit 500';
+			}';
 
   $q = http_build_query(array('query' => $query));
 
