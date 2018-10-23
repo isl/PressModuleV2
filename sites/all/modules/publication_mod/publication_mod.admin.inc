@@ -157,6 +157,7 @@ function _projects_edit(){
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   _add_presslib_library();
+  drupal_add_library('system', 'ui.datepicker');
   drupal_add_css("https://cdn.datatables.net/v/dt/dt-1.10.16/b-1.4.2/sl-1.2.3/datatables.css", array('type'=>'external'));
   drupal_add_js("https://cdn.datatables.net/1.10.16/js/jquery.dataTables.js", 'external');
   drupal_add_js("https://cdn.datatables.net/buttons/1.4.2/js/dataTables.buttons.js", 'external');

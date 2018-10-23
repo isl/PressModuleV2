@@ -140,6 +140,7 @@
               return;
             }
             if(!suggestion){
+              $input.typeahead('close');
               that.searchTags();
               return;
             }
