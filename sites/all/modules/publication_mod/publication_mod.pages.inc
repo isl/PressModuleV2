@@ -127,6 +127,8 @@ function publication_mod_edit_publication(){
 
   $labs = _get_labs_to_json();
 
+  $max_file_size = ini_get("upload_max_filesize");
+
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
@@ -148,7 +150,8 @@ function publication_mod_edit_publication(){
       "editPublication: { \n".
         "uuid:'". $uuid ."', \n".
         "category: '". $category . "' \n".
-      "} \n".
+      "}, \n".
+      "max_file_size: '". $max_file_size. "', \n".
     "}); \n".
   "}); \n";
   drupal_add_js($internalJS, 'inline');
