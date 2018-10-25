@@ -852,8 +852,14 @@
 
             $('#year-to', this.element).val(fields.yearTo);
 
-            $('#category', this.element).val(fields.category);
-            $('#subcategory', this.element).val(fields.subcategory);
+            if(fields.category !== ''){
+                $('#category', this.element).val(fields.category);
+                $('#category', this.element).change();
+                if(fields.subcategory !== ''){
+                    $('#subcategory', this.element).val(fields.subcategory);
+                    $('#subcategory', this.element).change();
+                }
+            }
             $('#reviewed', this.element).prop('checked', fields.reviewed);
 
             if (fields.orgs && $.isArray(fields.orgs) && fields.orgs.length > 0) {
