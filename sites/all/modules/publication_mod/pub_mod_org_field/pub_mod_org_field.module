@@ -61,6 +61,9 @@ function pub_mod_org_field_field_validate($entity_type, $entity, $field, $instan
 
 function pub_mod_org_field_options_list($field, $instance, $entity_type, $entity){
 
+  if(!module_exists('publication_mod')){
+    return array();
+  }
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
   /*$dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
@@ -121,6 +124,9 @@ function pub_mod_org_field_field_formatter_view($entity_type, $entity, $field, $
   //to prepare for future options.
   switch ($display['type']) {
     case 'pub_mod_organization_formatter':
+      if (!module_exists('publication_mod')){
+        break;
+      }
       $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
       $orgs = explode("\n", $blazegraph_info['blazegraph_orgs']);
       $options = array();
