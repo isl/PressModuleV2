@@ -399,6 +399,7 @@
                             $('#' + key, this.element).parent().parent().append('<div><div class="col-sm-2"></div>' +
                                 '<small class="col-sm-10"><a href="' + this.base_url + '/' + results[i][key].value + '" target="_blank">Current File</a>' +
                                 '. Leave blank to keep the same file</small></div>');
+                            this.localLink = results[i][key].value;
                         } else {
                             $('#' + key, this.element).val(results[i][key].value); //TODO: FIX localLink, pdf edit
                         }
@@ -1589,9 +1590,12 @@
                                     $('.project-item').each(function() {
                                         query = query + '<' + prefix + 'appearsIn> <' + $(this).attr('id') + '>; \n';
                                     });
-                                } else if (field[i] === 'localLink' && $('#' + field[i]).val().trim() !== '' &&
-                                    response.file_url !== '') {
-                                    query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
+                                } else if (field[i] === 'localLink'){
+                                    if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
+                                        query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
+                                    }else if(!!this.localLink){
+                                        query += '<' + this.prefix + 'localLink> "' + this.localLink + '"; \n';
+                                    }
                                 } else if (field[i] === 'tag') {
                                     $('.tag-item').each(function() {
                                         query = query + '<' + prefix + 'tag> "' + $(this).attr('id') + '"; \n';
