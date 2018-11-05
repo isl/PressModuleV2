@@ -2,6 +2,9 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
+/**
+ * Implements hook_help()
+ */
 function publication_mod_help($path, $arg) {
   switch ($path) {
     case "admin/help#publication_mod":
@@ -10,6 +13,9 @@ function publication_mod_help($path, $arg) {
   }
 }
 
+/**
+ * Implements hook_menu()
+ */
 function publication_mod_menu(){
   $menu['ajax/pub_mod_blazegraph'] = array(
     'title' => '',
@@ -325,6 +331,10 @@ function _publication_mod_set_blazegraph_info($key, $value){
   ))
   ->execute();
 }
+
+/**
+ * Implements hook_menu_local_tasks_alter
+ */
 
 function publication_mod_menu_local_tasks_alter(&$data, $router_item, $root_path){
   if (substr($root_path, 0, 5) === 'node/'){
@@ -683,6 +693,9 @@ function _get_labs_to_json(){
   return $labs;
 }
 
+/**
+ * Adds to the calling page, the following libraries required by the PRESS Library
+ */
 function _add_presslib_library(){
   $module_path = drupal_get_path('module', 'publication_mod');
 
@@ -1055,7 +1068,7 @@ function publication_mod_ajax_callback_edit_pub(){
   exit();
 }
 
-/*
+/**
  * Returns the path alias by uuid.
  */
 function publication_mod_ajax_callback_get_path(){
@@ -1076,8 +1089,9 @@ function publication_mod_ajax_callback_get_path(){
 }
 
 
-// On user insert & update
-
+/**
+ * Implements hook_user_presave
+ */
 function publication_mod_user_presave(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
@@ -1305,6 +1319,9 @@ function publication_mod_user_presave(&$edit, $account, $category){
   }
 }
 
+/**
+ * Implements hook_user_cancel
+ */
 function publication_mod_user_cancel($edit, $account, $method){
   watchdog('publication_mod', '$edit <pre>%edit</pre><br/>$account <pre>%account</pre><br/>$method <pre>%method</pre>',
     array(
@@ -1314,6 +1331,9 @@ function publication_mod_user_cancel($edit, $account, $method){
     ), WATCHDOG_DEBUG);
 }
 
+/**
+ * Implements hook_user_insert
+ */
 function publication_mod_user_insert(&$edit, $account, $category){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));

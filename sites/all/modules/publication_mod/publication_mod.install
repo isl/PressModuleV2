@@ -7,7 +7,7 @@
  */
 
  /**
-  * Implementation of hook_install().
+  * Implements of hook_install().
   */
 function publication_mod_install(){
   $t = get_t();
@@ -263,7 +263,7 @@ function publication_mod_schema(){
 
 
  /**
-  * Implementation of hook_enable().
+  * Implements of hook_enable().
   */
 function publication_mod_enable() {
   global $user;
@@ -409,17 +409,3 @@ function publication_mod_enable() {
 
   user_save($user, $user_edit);
 }
-
-// Custom Laboratory Field Type
-
-// function publication_mod_field_schema($field){
-//   $schema['columns'] = array(
-//     'option' => array(
-//       'type' => 'varchar',
-//       'length' => 255,
-//       'not null' => TRUE
-//     ),
-//   );
-
-//   return $schema;
-// }

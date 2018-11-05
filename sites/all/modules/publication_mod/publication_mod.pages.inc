@@ -4,7 +4,9 @@
 
 /**
  * Creates Add Publication page
- * @return type
+ * 
+ * @return string
+ *  The html in which the Add Publication Page will be rendered
  */
 function publication_mod_add_publication(){
   global $user;
@@ -50,8 +52,11 @@ function publication_mod_add_publication(){
   return $html;
 }
 
-/*
+/**
  * Creates Search Publication Page
+ * 
+ * @return string
+ *  The html in which the Search Publication Page will be rendered
  */
 function publication_mod_search_publication(){
   global $user;
@@ -99,8 +104,11 @@ function publication_mod_search_publication(){
   return $html;
 }
 
-/*
+/**
  * Creates Edit Publication page
+ * 
+ * @return string
+ *  The html in which the Edit Publication Page will be rendered
  */
 function publication_mod_edit_publication(){
   global $base_url;
@@ -163,7 +171,8 @@ function publication_mod_edit_publication(){
 
 /**
  * Creates page for Project Addition.
- * @return type
+ * @return string
+ *  The html in which the Add Project Page will be rendered
  */
 function publication_mod_add_project(){
   _add_presslib_library();
@@ -241,7 +250,7 @@ function publication_mod_add_project(){
   return $html;
 }
 
-/*
+/**
  * Creates a page of the pages of all the publications
  */
 function publication_mod_all_publications(){
@@ -319,6 +328,12 @@ function publication_mod_all_publications(){
     echo '<br>';
   }
 }
+
+/**
+ * Creates a page of the Publications of a certain author
+ * @param string $author
+ *  Author's User Name
+ */
 
 function publication_mod_author_publications($author){
   if(!isset($author) || empty($author)){

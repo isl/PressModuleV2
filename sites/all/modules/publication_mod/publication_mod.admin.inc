@@ -2,6 +2,12 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
+/**
+ * Page Callback: Displays the configuration page of the module
+ * 
+ * @return array
+ * 	A render array for the configuration page
+ */
 function publication_mod_settings_page(){
 	$markup = '';
 
@@ -28,8 +34,11 @@ function publication_mod_settings_page(){
 	return $page;
 }
 
-/*
- * Creates the publication_mod Configuration Page
+/**
+ * Form constructor for the module configuration page
+ * 
+ * @see publication_mod_settings_page()
+ * @see publication_mod_settings_form_submit()
  */
 function publication_mod_settings_form($form, &$form_state){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
@@ -63,6 +72,12 @@ function publication_mod_settings_form($form, &$form_state){
   return $form;
 }
 
+/**
+ * Form submition handler for publication_mod_settings_form()
+ * 
+ * @see publication_mod_settings_page()
+ * @see publication_mod_settings_form()
+ */
 function publication_mod_settings_form_submit($form, $form_state){
   db_merge('publication_mod')
 	->key(array('pm_key' => 'blazegraph_url'))
@@ -78,6 +93,12 @@ function publication_mod_settings_form_submit($form, $form_state){
 	))
 	->execute();
 }
+
+/**
+ * Page callback: Displays the External Authors Configuration page
+ * @return string
+ * 	 Contains the HTML that will be displayed
+ */
 
 function _external_authors_edit(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
@@ -103,6 +124,11 @@ function _external_authors_edit(){
   return $html;
 }
 
+/**
+ * Page callback: Displays the Internal Authors Configuration page
+ * @return string
+ * 	 Contains the HTML that will be displayed
+ */
 function _internal_authors_edit(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -127,6 +153,11 @@ function _internal_authors_edit(){
   return $html;
 }
 
+/**
+ * Page callback: Displays the Merge Authors Configuration page
+ * @return string
+ * 	 Contains the HTML that will be displayed
+ */
 function _merge_authors(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -151,6 +182,11 @@ function _merge_authors(){
   return $html;
 }
 
+/**
+ * Page callback: Displays the Project Configuration page
+ * @return string
+ * 	 Contains the HTML that will be displayed
+ */
 function _projects_edit(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -175,6 +211,11 @@ function _projects_edit(){
   return $html;
 }
 
+/**
+ * Page callback: Displays the Tag Configuration page
+ * @return string
+ * 	 Contains the HTML that will be displayed
+ */
 function _tags_edit(){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -198,14 +239,13 @@ function _tags_edit(){
   return $html;
 }
 
+/**
+ * Page argument: Form constructor for the Import Publications Configuration page
+ * 
+ * @see publication_mod_import_submit_callback()
+ * 
+ */
 function publication_mod_import_pubs_form($form, &$form_state){
-  // $form['price'] = array(
-  //   '#type' => 'textfield', //you can find a list of available types in the form api
-  //   '#title' => 'What is Your Price?',
-  //   '#size' => 10,
-  //   '#maxlength' => 10,
-  //   '#required' => TRUE, //make this field required
-  // );
 
   $form['submit_button'] = array(
 	'#type' => 'submit',
@@ -235,10 +275,12 @@ function publication_mod_import_pubs_form($form, &$form_state){
 }
 
 /**
- * Create Pages for each publication callback
- * @param type $form 
- * @param type $form_state 
- * @return type
+ * Create Pages for each publication
+ * 
+ * Callback for publication_mod_import_pubs_form()
+ * 
+ * @return string
+ * 	 Result of importing
  */
 function publication_mod_import_submit_callback($form, $form_state){
   global $base_url;
@@ -315,8 +357,10 @@ function publication_mod_import_submit_callback($form, $form_state){
 }
 
 /**
- * Get progress of importing
- * @return type
+ * Page Callback: Creates a page for displaying the progress of publication importing
+ * 
+ * @see publication_mod_import_pubs_form()
+ * 
  */
 function publication_mod_import_progress(){
   $progress = array(
@@ -334,36 +378,17 @@ function publication_mod_import_progress(){
   drupal_json_output($progress);
 }
 
+
+/**
+ * Page argument: Form constructor for the Organization Configuration Page
+ * 
+ * @see publication_mod_orgs_form_submit()
+ * @see publication_mod_import_orgs()
+ * 
+ */
 function publication_mod_edit_orgs_form($form, &$form_state){
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_orgs'));
-
-//   $query = 'prefix press:<' . $ontologyPrefix .'>'.
-// 'select ?org ?org_name where{'.
-//   '?org rdf:type press:Organization;'.
-//        'press:organizationName ?org_name.'.
-// '}';
-
-//   $q = http_build_query(array('query' => $query));
-
-//   $options = array(
-//     'headers' => array(
-//       'Accept'=>'application/sparql-results+json',
-//       'content-type'=> 'application/x-www-form-urlencoded'),
-//     'method' => 'POST',
-//     'data' => $q
-//   );
-
-//   $result = drupal_http_request($dbURL, $options);
-
-//   $data = json_decode($result->data);
-//   $default_value = '';
-//   foreach ($data->results->bindings as $org) {
-//     $blazegraph_value = substr($org->org->value, strlen($ontologyPrefix . 'Organization/'));
-//     $default_value .= $org->org_name->value . ' | ' . $blazegraph_value . ' | [' . $org->org_name->value . ']&#13;&#10;'; 
-//   }
-
-
 
   $form['publication_mod_org_configuration'] = array(
 	'#type' => 'textarea',
@@ -392,6 +417,11 @@ function publication_mod_edit_orgs_form($form, &$form_state){
   return $form;
 }
 
+/**
+ * Form submition handler for publication_mod_edit_orgs_form()
+ * 
+ * @see publication_mod_edit_orgs_form()
+ */
 function publication_mod_orgs_form_submit($form, $form_state){
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix', 'blazegraph_orgs'));
   
