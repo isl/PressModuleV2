@@ -1971,7 +1971,10 @@
                             .fail(function(response) {
                                 console.error(response);
                             });
-                    }).bind(this)
+                    }).bind(this),
+                    fail: (function(res){
+                        console.error(res);
+                    })
                 });
             };
             this.loader.show();
