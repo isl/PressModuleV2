@@ -1,3 +1,13 @@
+/**
+ * @fileOverview Creates the External Author configuration page
+ * 
+ * @requires typeahead.js
+ * @requires datatables.js
+ */
+
+/**
+ * The main function to create the PRESSExternalAuthors Library
+ */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Make globaly available as well
@@ -19,6 +29,13 @@
   }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     *
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESSExternalAuthors = function(element, options, cb) {
       this.dbURL = "";
       this.prefix = "";
@@ -52,8 +69,12 @@
     PRESSExternalAuthors.prototype = {
       constructor: PRESSExternalAuthors,
 
-      //Get Author Field using typeahead.js and sortable.js
-      getAuthorField: function() {  //Typeahead Field for searching Authors
+      /**
+       * Creates the Author text input using typeahead.js
+       *
+       * @return {Object} A jQuery element object containing the new field
+       */
+      getAuthorField: function() {
 
         var $group = $('<div class="form-group" id="author-bloodhound"></div>');
         var $label = $('<label class="col-sm-2 control-label" for="author-input" style="float:left;padding: 4px 2px;">Author:</label>');
@@ -124,7 +145,7 @@
                 return tr;
               };
             })(),
-            // cache: false    //NOTE Sure about this?
+            // cache: false
           }
         });
 
@@ -182,6 +203,10 @@
         return $group;
       },
 
+      /**
+       * Creates the search query for the tags and calls getAuthorsTable()
+       * to create the table
+       */
       searchAuthors: function(){
         console.log('pressed');
         var queries = $('#author-input').val().split(' ');
@@ -209,6 +234,12 @@
           this.getAuthorsTable(a.results.bindings);
         }).bind(this));
       },
+
+      /**
+       * Creates the Author table for displaying the results
+       * 
+       * @param  {Object} response The response from Blazegraph containing the Author Data
+       */
       getAuthorsTable: function(response){
         $('#myTable_wrapper').remove();
         $table = $('<table id="myTable" class="display"><thead><tr><th data-p="foaf:givenName">Given Name</th><th data-p="foaf:familyName">Family Name</th>'+
@@ -267,6 +298,8 @@
             },
           }
         );
+
+        // Open editable field on double click
         $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
           var cell = table.cell(this);
           var prevVal = cell.data();
@@ -302,6 +335,14 @@
         });
       },
 
+      /**
+       * Adds limit and offset to a query and makes the request to Blazegraph.
+       * 
+       * @param  {string} q The Query 
+       * @param  {number} limit The limit of the query
+       * @param  {number} offset The offset of the query
+       * @return {Object} A jqXHR object
+       */
       getQuery: function(q, limit, offset){
         console.log('getQuery');
         if (typeof limit === 'undefined'){
@@ -333,6 +374,14 @@
         });
       },
 
+      /**
+       * Creates the query based on the author uuids provided and makes the request to 
+       * delete the authors
+       * 
+       * @param  {Array} tags An array of the authors' uuids that are going to be deleted
+       * 
+       * @return {Object} A jqXHR object
+       */
       deleteAuthors(uuids){
         var prefix = this.prefix;
         var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
@@ -376,6 +425,16 @@
         });
       },
 
+      /**
+       * Creates the query based on the uuid, editKey and editValue provided and
+       * makes the request to edit the author
+       * 
+       * @param  {string} uuid The uuid of the editing author
+       * @param  {string} editKey The field key that is going to be edited
+       * @param  {string} editValue The new value
+       * 
+       * @return {Object} A jqXHR object
+       */
       editAuthor: function(uuid, editKey, editValue){
         var prefix = this.prefix;
         
@@ -416,6 +475,7 @@
       }
     };
 
+    // We add the library to jQuery functions
     $.fn.pressExternalAuthors = function(options, callback) {
       this.each(function() {
         var el = $(this);

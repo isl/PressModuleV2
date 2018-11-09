@@ -94,9 +94,9 @@ function publication_mod_menu(){
   );
 
   $menu['admin/config/publications/publication_mod/external_authors'] = array(
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Edit External Authors',
-    'weight' => 2,
+    // 'weight' => 2,
     'page callback' => '_external_authors_edit',
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
@@ -111,27 +111,27 @@ function publication_mod_menu(){
   );
 
   $menu['admin/config/publications/publication_mod/projects'] = array(
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Edit Projects',
-    'weight' => 3,
+    // 'weight' => 3,
     'page callback' => '_projects_edit',
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/tags'] = array(
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Edit Tags',
-    'weight' => 4,
+    // 'weight' => 4,
     'page callback' => '_tags_edit',
     'access arguments' => array('access administration pages'),
     'file' => 'publication_mod.admin.inc',
   );
 
   $menu['admin/config/publications/publication_mod/import_pubs'] = array(
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Import Blazegraph Publications',
-    'weight' => 5,
+    // 'weight' => 5,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('publication_mod_import_pubs_form'),
     'access arguments' => array('access administration pages'),
@@ -139,9 +139,9 @@ function publication_mod_menu(){
   );
 
   $menu['admin/config/publications/publication_mod/edit_orgs'] = array(
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'title' => 'Edit Organizations',
-    'weight' => 6,
+    // 'weight' => 6,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('publication_mod_edit_orgs_form'),
     'access arguments' => array('access administration pages'),

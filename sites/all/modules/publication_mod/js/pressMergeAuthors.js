@@ -1,3 +1,13 @@
+/**
+ * @fileOverview Creates the Merge Authors configuration page
+ * 
+ * @requires typeahead.js
+ * @requires datatables.js
+ */
+
+/**
+ * The main function to create the PRESSMergeAuthors Library
+ */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Make globaly available as well
@@ -19,6 +29,13 @@
   }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     * 
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESSMergeAuthors = function(element, options, cb) {
       this.dbURL = "";
       this.prefix = "";
@@ -55,7 +72,11 @@
     PRESSMergeAuthors.prototype = {
       constructor: PRESSMergeAuthors,
 
-      //Get Author Field using typeahead.js and sortable.js
+      /**
+       * Creates the Author text input using typeahead.js
+       *
+       * @returns {Object} A jQuery element object containing the new field
+       */
       getAuthorField: function() {  //Typeahead Field for searching Authors
 
         var $group = $('<div class="form-group" id="author-bloodhound"></div>');
@@ -187,6 +208,10 @@
         return $group;
       },
 
+      /**
+       * Creates the search query for the tags and calls getAuthorsTable()
+       * to create the table
+       */
       searchAuthors: function(){
         console.log('pressed');
         var queries = $('#author-input').val().split(' ');
@@ -214,6 +239,12 @@
           this.getAuthorsTable(a.results.bindings);
         }).bind(this));
       },
+
+      /**
+       * Creates the Author table for displaying the results
+       * 
+       * @param  {Object} response The response from Blazegraph containing the Author Data
+       */
       getAuthorsTable: function(response){
         $('#myTable_wrapper').remove();
         $table = $('<table id="myTable" class="display"><thead><tr><th>Given Name</th><th>Family Name</th>'+
@@ -255,16 +286,6 @@
                     uuids.push(item);
                   }
                   that.addAuthorsToMerge(uuids);
-                  // if (uuids.length === 0){
-                  //   alert('No Authors Selected!');
-                  // }
-                  // else if(confirm('Are you sure you want to delete the selected authors?\n\n'+
-                  //   items)){
-                  //     $.when(that.deleteAuthors(uuids)).done(function(a){
-                  //       console.log(selected);
-                  //       selected.remove().draw();
-                  //     });
-                  // }
                 },
               },
             ],
@@ -300,6 +321,14 @@
         );
       },
 
+      /**
+       * Adds limit and offset to a query and makes the request to Blazegraph.
+       * 
+       * @param  {string} q The Query 
+       * @param  {number} limit The limit of the query
+       * @param  {number} offset The offset of the query
+       * @return {Object} A jqXHR object
+       */
       getQuery: function(q, limit, offset){
         console.log('getQuery');
         if (typeof limit === 'undefined'){
@@ -330,6 +359,12 @@
           console.error(response);
         });
       },
+      /**
+       * Adds the selected authors to a list and created a radio input to select
+       * the final author
+       * 
+       * @param {Array} authors An array containing the authors' uuids to be merged
+       */
       addAuthorsToMerge(authors){
         function removeInput(){
           if($(this).parent().siblings().length === 0){
@@ -362,6 +397,13 @@
           }
         }
       },
+
+      /**
+       * Creates the query based on the added authors makes the request to 
+       * merge the authors
+       * 
+       * @return {Object} A jqXHR object
+       */
       mergeAuthors(){
         if(this.authorsToMerge.find('input').length < 2){
           alert('Please add 2 or more authors to merge');
@@ -415,96 +457,10 @@
           alert("Oops! There was an error with getting query! See console for more info.");
           console.error(response);
         })
-      },
-      deleteAuthors(uuids){
-        prefix = this.prefix;
-        var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
-
-        query += 'DELETE { \n';
-        query += '?person ?p ?o. \n';
-        query += '?x ?y ?person. \n';
-        query += '}\n';
-        query += 'WHERE{ \n';
-        query += '?person rdf:type foaf:Person. \n';
-        query += 'filter(';
-        var i=0;
-        for(i=0; i<uuids.length; i++){
-          query+= '?person = <'+ uuids[i] +'>';
-          if (i<uuids.length -1){
-            query += '|| \n';
-          }
-        }
-        query += '). \n';
-        query += '?person ?p ?o. \n';
-        query += 'OPTIONAL{?x ?y ?person}. \n';
-        query += '}';
-
-        console.log(query);
-
-        return $.ajax({
-          dataType: 'json',
-          method: "POST",
-          dataType: 'html',
-          url: this.dbURL,
-          data: {
-            update: query
-          }
-        })
-        .done(function(response) {
-          return response;
-        })
-        .fail(function(response) {
-          alert("Oops! There was an error with getting query! See console for more info.");
-          console.error(response);
-        });
-      },
-
-      changeAuthorsGroup(uuids){
-        prefix = this.prefix;
-        var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
-        query += "prefix press: <"+ prefix +"> \n";
-
-        query += 'DELETE { \n';
-        query += '?person press:personGroup "FORTH_ICS_Author". \n';
-        query += '}\n';
-        query += 'INSERT{\n';
-        query += '?person press:personGroup "External_Author". \n';
-        query += '}\n';
-        query += 'WHERE{ \n';
-        query += '?person rdf:type foaf:Person. \n';
-        query += '?person press:personGroup "FORTH_ICS_Author". \n';
-        query += 'filter(';
-        var i=0;
-        for(i=0; i<uuids.length; i++){
-          query+= '?person = <'+ uuids[i] +'>';
-          if (i<uuids.length -1){
-            query += '|| \n';
-          }
-        }
-        query += '). \n';
-        query += '}';
-
-        console.log(query);
-
-        return $.ajax({
-          dataType: 'json',
-          method: "POST",
-          dataType: 'html',
-          url: this.dbURL,
-          data: {
-            update: query
-          }
-        })
-        .done(function(response) {
-          return response;
-        })
-        .fail(function(response) {
-          alert("Oops! There was an error with getting query! See console for more info.");
-          console.error(response);
-        });
       }
     };
 
+    // We add the library to jQuery functions
     $.fn.pressMergeAuthors = function(options, callback) {
       this.each(function() {
         var el = $(this);

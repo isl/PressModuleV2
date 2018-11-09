@@ -1,5 +1,10 @@
-// Copyright FORTH-ICS, Emmanouil Dermitzakis
+/**
+ * @fileOverview Creates the Search Publication page
+ */
 
+/**
+ * The main function to create the PRESSSearch Library
+ */
 (function(root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Make globaly available as well
@@ -21,6 +26,13 @@
     }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     *
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESSSearch = function(element, options, cb) {
         this.currentSearchMode = '';
         this.currentSearchFields = {};
@@ -122,6 +134,9 @@
         this.loader = $('<div id="loader">');
         this.filterLoader = $('<div class="filterLoader">');
         element.append(this.loader);
+
+        // Retreive from blazegraph the tags and categories. On success, 
+        // Create the page
         $.when(this.getCategories(), this.getTags()).always($.proxy(function(a1, a2) {
             if (!(a1) || !a2) {
                 console.error('GET was unsuccesfull');
@@ -232,11 +247,12 @@
     PRESSSearch.prototype = {
         constructor: PRESSSearch,
 
-        //Set dbURL
-        setdbURL: function(url) {
-            this.dbURL = url;
-        },
-
+        /**
+         * 
+         * 
+         * @param  {Object} parameters
+         * @return {Object} fields
+         */
         parametersToFields: function(parameters) {
             var fields = {};
             //Single Value Fields
@@ -268,7 +284,12 @@
             });
             return fields;
         },
-        //Get Categories and populate select fields
+        
+        /**
+         * Gets categories from blazegraph
+         * 
+         * @return {Object} A jqXHR object
+         */
         getCategories: function() {
             return $.ajax({
 
@@ -329,7 +350,12 @@
                     console.error(response);
                 });
         },
-        //Get tags from Database
+
+        /**
+         * Gets tags from blazegraph
+         * 
+         * @return {Object} A jqXHR object
+         */
         getTags: function() {
             tags = [];
             return $.ajax({
@@ -350,7 +376,13 @@
                     console.error(response);
                 });
         },
-        //Get tag Field using typeahead.js and sortable.js
+
+        /**
+         * Creates a tag field using typeahead.js and sortable.js
+         *
+         * @param {object} response The blazegraph response containing the tags
+         * @return {Object} A jQuery element object
+         */
         getTagField: function(response) {
             var tags = [];
             for (var i = 0; i < response.results.bindings.length; i++) {
@@ -416,7 +448,11 @@
             });
             return $taggroup;
         },
-        //Get Author Field using typeahead.js and sortable.js
+        /**
+         * Creates an author/contributor field using typeahead.js and sortable.js
+         * 
+         * @return {Object} A jQuery element object
+         */
         getAuthorField: function() { //Typeahead Field for searching Authors
 
             var $group = $('<div class="form-group" id="author-bloodhound"></div>');
@@ -601,7 +637,11 @@
 
             return $group;
         },
-        //Get tag Field
+        /**
+         * Returns a number field for Year
+         * 
+         * @return {Object} A jQuery element object
+         */
         getYearField: function() {
             return $('<div class="form-group"><div>' +
                 '<label class="col-sm-2 control-label" for="year-from">Year From:</label>' +
@@ -610,7 +650,11 @@
                 '<div class="col-sm-4"><input class="form-control input-sm" id="year-to" type="number"></input></div></div><div class="col-sm-1"></div>' +
                 '</div>');
         },
-        //Get typeahead.js field for Organizations
+        /**
+         * Creates an organization field using typeahead.js and sortable.js
+         * 
+         * @return {Object} A jQuery element object
+         */
         getOrgsField: function(organization) {
             $input = $('<input class="typeahead form-control input-sm" id="org-input" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="org-editable" class="list-group editable" style="display:none"></ul>');
@@ -685,7 +729,11 @@
             });
             return $orggroup;
         },
-        //Get Categories field and create <select>
+        /**
+         * Creates two select inputs for category and subcategory
+         * 
+         * @return {Array} An array of the two jQuery element objects
+         */
         getCategoriesFields: function(category_tree) {
             this.cat = $('<select class="form-control input-sm" id="category"></select>');
             this.subcat = $('<select class="form-control input-sm" id="subcategory" disabled></select>');
@@ -736,7 +784,11 @@
 
             return [$catgroup, $subcatgroup];
         },
-        //Get reviewed option field
+        /**
+         * Creates a checkbox input for reviewed publications
+         * 
+         * @return {Object} A jQuery element object
+         */
         getReviewedField: function() {
             var $div = $('<div class="form-group"></div>');
             $div.append('<label for="reviewed" class="col-sm-2 ' +
@@ -745,7 +797,11 @@
 
             return $div;
         },
-        //Get Browse By Category List
+        /**
+         * Creates the browse by category list
+         * 
+         * @return {Object} A jQuery element object
+         */
         getCategoryList: function() {
             var container = $('<div class="col-md-1"></div>');
 
@@ -820,7 +876,12 @@
 
             return $div;
         },
-        //Get authors from author uuids
+        /**
+         * Gets the info of authors based on their uuids
+         * 
+         * @param  {Array} authoruuids An array containing the author uuids to be retreived
+         * @return {Object} A jqXHR object
+         */
         getPredefinedAuthors: function(authoruuids) {
             var query = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
             query += 'prefix press: <' + this.prefix + '> \n';
@@ -1183,14 +1244,6 @@
             var fieldQuery = '';
 
             if (field !== '') {
-                // fieldQuery += '?searchField bds:search "'+field+'". \n';
-                // fieldQuery += '?searchField bds:matchAllTerms "true". \n';
-                // fieldQuery += '?searchField bds:relevance ?score. \n';
-                // fieldQuery += '?pub ?predicate ?searchField. \n';
-                // fieldQuery += '?pub rdf:type [rdfs:subClassOf* press:Publication]. \n';
-                // fieldQuery += 'BIND(concat(str(?score), str(?pub)) as ?scoreOrder). \n';
-                // fieldQuery += 'MINUS {?pub press:englishAbstract ?searchField}. \n';
-                // fieldQuery += 'MINUS {?pub press:publicationUrl ?searchField}. \n';
 
                 fieldQuery += '    { \n' + //NOTE: PRESS V3
                     '       ?searchField bds:search "' + field + '". \n' +
@@ -1256,15 +1309,11 @@
 
             var searchQuery = '';
             if (field !== '') {
-                // searchQuery = multipleFieldsQuery + restFields + authorFieldsQuery + restFields + '} \n';
                 multipleFieldsQuery += authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
                 authorFieldsQuery += authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
             } else {
                 query = authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
             }
-
-            // query = fieldQuery + authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
-            // query = searchQuery + authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
 
             for (key in filters) {
                 if (key !== 'contributors') {
@@ -1275,7 +1324,6 @@
                         } else {
                             query += filters[key][filterVal];
                         }
-                        // query += filters[key][filterVal];
                     }
                 } else {
                     if (filters.contributors.filterIntro) {
@@ -1285,10 +1333,8 @@
                         } else {
                             query += filters.contributors.filterIntro;
                         }
-                        // query += filters.contributors.filterIntro;
                     }
                     for (var filterVal in filters[key]) {
-                        // query += filters[key][filterVal];
                         if (field !== '') {
                             multipleFieldsQuery += filters[key][filterVal];
                             authorFieldsQuery += filters[key][filterVal];
@@ -1682,7 +1728,14 @@
 
             return values;
         },
-        //Get the available filters of results
+        /**
+         * Creates and makes a call to Blazegraph to get the available years,
+         * organizations and categories for the filters
+         * 
+         * @param  {string} prefixQuery The prefix of the sparql query
+         * @param  {string} searchQuery The sparql Query
+         * @return {Object} A jqXHR object
+         */
         getFilters: function(prefixQuery, searchQuery) {
             var completeQuery = prefixQuery +
                 'select ?p ?o (count(?o) as ?oCount) WITH { \n' +
@@ -1695,6 +1748,16 @@
                 '}group by ?p ?o order by desc(?oCount)';
             return this.getQuery(completeQuery);
         },
+
+        /**
+         * Creates and makes a call to Blazegraph to get the available authors for
+         * the filters
+         * 
+         * @param  {string} prefixQuery The prefix of the sparql query
+         * @param  {string} searchQuery The sparql Query
+         * @param  {number} offset The offset of the results
+         * @return {Object} A jqXHR object
+         */
         getAuthorFilters: function(prefixQuery, searchQuery, offset) {
             if (offset === undefined) {
                 offset = 0;
@@ -1720,6 +1783,16 @@
             }
             return this.getQuery(completeQuery);
         },
+
+        /**
+         * Creates and makes a call to Blazegraph to get the available projects
+         * for the filters
+         * 
+         * @param  {string} prefixQuery The prefix of the sparql query
+         * @param  {string} searchQuery The sparql Query
+         * @param  {number} offset The offset of the results
+         * @return {Object} A jqXHR object
+         */
         getProjectFilters: function(prefixQuery, searchQuery, offset){
             if(offset === undefined){
                 offset = 0;
@@ -1744,6 +1817,16 @@
             }
             return this.getQuery(completeQuery);
         },
+
+        /**
+         * Creates and makes a call to Blazegraph to get the available tags for
+         * the filters
+         * 
+         * @param  {string} prefixQuery The prefix of the sparql query
+         * @param  {string} searchQuery The sparql Query
+         * @param  {number} offset The offset of the results
+         * @return {Object} A jqXHR object
+         */
         getTagFilters: function(prefixQuery, searchQuery, offset){
             if(offset === undefined){
                 offset = 0;
@@ -1768,7 +1851,14 @@
 
             return this.getQuery(completeQuery);
         },
-        //Get count of results of query
+        /**
+         * Creates a query to get the number of results of another search query
+         * and makes the request
+         * 
+         * @param  {string} prefixQuery The prefixes of the sparql query
+         * @param  {string} searchQuery The sparqlQuery
+         * @return {Object} A jqXHR object
+         */
         getCount: function(prefixQuery, searchQuery) {
 
             var completeQuery = prefixQuery +
@@ -1780,9 +1870,17 @@
                 '}';
             return this.getQuery(completeQuery);
         },
+
+        /**
+         * Clears the search input
+         */
         clearSearchInput: function() {
             $('#free-text', this.element).val('');
         },
+
+        /**
+         * Clears all the input fields of the advanced search
+         */
         clearAdvancedSearch: function() {
             $('input', this.advanced_search).val('');
             $('select', this.advanced_search).val('');
@@ -1791,10 +1889,25 @@
             $('.editable', this.advanced_search).empty();
             $('.editable', this.advanced_search).hide();
         },
+
+        /**
+         * Removes the selected filters
+         */
         clearFilters: function() {
             $('.search-filter[data-selected="selected"]', this.filters).removeAttr('data-selected');
         },
-        //Insert Search results
+        
+        /**
+         * Inserts the search results based on the responses from Blazegraph
+         * 
+         * @param  {Object} responsePublications
+         * @param  {Object} responseContributors
+         * @param  {Object} responseMultipleFields
+         * @param  {[type]} requiredFields
+         * @param  {string} searchLabel
+         * @param  {number} offset
+         * @param  {number} count
+         */
         insertSearchResults: function(responsePublications, responseContributors, responseMultipleFields, requiredFields, searchLabel, offset, count) {
 
             var limit = 10;
@@ -2039,6 +2152,19 @@
 
             this.loader.hide();
         },
+
+        /**
+         * Creates and inserts the filter column containing the filtering functionality
+         * for the publication search
+         * 
+         * @param  {Object} fieldResponse   The response from Blazegraph for the fields used
+         * @param  {Object} contributorResponse The response from Blazegraph for the contributors used
+         * @param  {Object} projectResponse The response from Blazegraph for the projects used
+         * @param  {Object} tagResponse The response from Blazegraph for the tags used
+         * @param  {Object} selected The user selected values used for filtering
+         * @param  {string} prefixes The query prefixes
+         * @param  {string} query The sparql query
+         */
         insertFilters: function(fieldResponse, contributorResponse, projectResponse, tagResponse, selected, prefixes, query) {
             console.log(projectResponse);
             this.filters.empty();
@@ -2073,6 +2199,7 @@
                 };
             }
 
+            // Insert author filters
             function insertAuthors(contributors, div) {
                 var $authorsMore = div.find('#show-more-authors');
                 for (var i = 0; i < contributors.length; i++) {
@@ -2125,7 +2252,7 @@
 
             this.filters.append(contributorsDiv);
 
-
+            //Insert field filters (year, org, categories)
             var results = fieldResponse.results.bindings;
 
             var years = [];
@@ -2157,6 +2284,7 @@
             // console.log(categories);
             // console.log(tags);
 
+            // Insert tag filters
             this.filters.append('<h4 class="col-xs-12">Tags</h4>');
             var tagsDiv = $('<div class="col-xs-12"></div>');
 
@@ -2207,6 +2335,7 @@
 
             this.filters.append(tagsDiv);
 
+            // Insert Year filters
             this.filters.append('<h4 class="col-xs-12">Year</h4>');
             var yearsDiv = $('<div class="col-xs-12"></div>');
             for (var i = 0; i < years.length; i++) {
@@ -2225,6 +2354,7 @@
             }
             this.filters.append(yearsDiv);
 
+            // Insert category filters
             this.filters.append('<h4 class="col-xs-12">Category</h4>');
             var categoriesDiv = $('<div class="col-xs-12"></div>');
             for (var i = 0; i < categories.length; i++) {
@@ -2243,6 +2373,7 @@
             }
             this.filters.append(categoriesDiv);
 
+            // Insert organization filters
             this.filters.append('<h4 class="col-xs-12">Organization</h4>');
             var orgsDiv = $('<div class="col-xs-12"></div>');
             for (var i = 0; i < orgs.length; i++) {
@@ -2261,6 +2392,7 @@
             }
             this.filters.append(orgsDiv);
 
+            // Insert project filters
             this.filters.append('<h4 class="col-xs-12">Projects</h4>');
             var projectsDiv = $('<div class="col-xs-12"></div>');
             var projects = projectResponse.results.bindings;
@@ -2306,6 +2438,15 @@
 
             // console.log(this.lastQueryWithoutFilters[0]);
         },
+
+        /**
+         * Adds limit and offset to a query and makes the request to Blazegraph.
+         * 
+         * @param  {string} q The Query 
+         * @param  {number} limit The limit of the query
+         * @param  {number} offset The offset of the query
+         * @return {Object} A jqXHR object
+         */
         getQuery: function(q, limit, offset) {
             if (typeof limit === 'undefined') {
                 limit = 0;
@@ -2335,6 +2476,13 @@
                     console.error(response);
                 });
         },
+        /**
+         * Returns the HTML of a box containing the share buttons
+         * 
+         * @param  {string} url The url of the publication
+         * @param  {string} title The title used for the share functionality
+         * @return {string} The HTML of the share box
+         */
         createShareButton: function(url, title) {
             var encodedUrl = encodeURIComponent(url);
             var encodedTitle = encodeURIComponent(title);

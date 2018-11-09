@@ -1,3 +1,13 @@
+/**
+ * @fileOverview Creates the Edit Tags configuration page
+ * 
+ * @requires typeahead.js
+ * @requires datatables.js
+ */
+
+/**
+ * The main function to create the PRESSEditTags Library
+ */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Make globaly available as well
@@ -19,6 +29,13 @@
   }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     * 
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESSEditTags = function(element, options, cb) {
       this.dbURL = "";
       this.prefix = "";
@@ -52,8 +69,12 @@
     PRESSEditTags.prototype = {
       constructor: PRESSEditTags,
 
-      //Get Tag Field using typeahead.js and sortable.js
-      getTagField: function() {  //Typeahead Field for searching Tags
+      /**
+       * Creates the Tag text input using typeahead.js
+       * 
+       * @returns {Object} A jQuery element object containing the new field
+       */
+      getTagField: function() {
 
         var $group = $('<div class="form-group" id="tag-bloodhound"></div>');
         var $label = $('<label class="col-sm-2 control-label" for="tag-input" style="float:left;padding: 4px 2px;">Tag:</label>');
@@ -110,7 +131,7 @@
                 return tr;
               };
             })(),
-            // cache: false    //NOTE Sure about this?
+            // cache: false
           }
         });
 
@@ -159,6 +180,10 @@
         return $group;
       },
 
+      /**
+       * Creates the search query for the tags and calls getTagsTable()
+       * to create the table
+       */
       searchTags: function(){
         console.log('pressed');
         var queries = $('#tag-input').val().split(' ').join('* ')+'*';
@@ -175,6 +200,12 @@
           this.getTagsTable(a.results.bindings);
         }).bind(this));
       },
+
+      /**
+       * Creates the Tags table for displaying the results
+       * 
+       * @param  {Object} response The response from Blazegraph containing the Tag Data
+       */
       getTagsTable: function(response){
         $('#myTable_wrapper').remove();
         $table = $('<table id="myTable" class="display"><thead><tr><th>Tag</th><th>Tag Uses</th>'+
@@ -254,6 +285,7 @@
           }
         );
 
+        // Open editable field on double click
         $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
           var cell = table.cell(this);
           var prevVal = cell.data();
@@ -288,6 +320,15 @@
           }
         });
       },
+
+      /**
+       * Adds limit and offset to a query and makes the request to Blazegraph.
+       * 
+       * @param  {string} q The Query 
+       * @param  {number} limit The limit of the query
+       * @param  {number} offset The offset of the query
+       * @return {Object} A jqXHR object
+       */
       getQuery: function(q, limit, offset){
         console.log('getQuery');
         if (typeof limit === 'undefined'){
@@ -319,6 +360,13 @@
         });
       },
 
+      /**
+       * Creates a query based ton the tags provided and makes a request to
+       * Blazegraph to get the uses number of a tag
+       * 
+       * @param  {Array} tags An array containing the tags
+       * @return {Object} A jqXHR object
+       */
       getUsingPubs: function(tags) {
         prefix = this.prefix;
         var query = 'prefix press: <'+prefix+'> \n';
@@ -352,6 +400,14 @@
         });
       },
 
+      /**
+       * Creates the query based on the tags provided and makes the request to 
+       * delete the tags
+       * 
+       * @param  {Array} tags An array of tags that are going to be deleted
+       * 
+       * @return {Object} A jqXHR object
+       */
       deleteTags: function(tags){
         prefix = this.prefix;
         var query = 'prefix press: <'+prefix+'> \n';
@@ -390,6 +446,16 @@
           console.error(response);
         });
       },
+
+      /**
+       * Creates the query based on the original tag value and the new value 
+       * provided and makes the request to edit the tag
+       * 
+       * @param  {string} original_value The original value of the tag
+       * @param  {string} new_value The new value of the tag
+       * 
+       * @return {Object} A jqXHR object
+       */
       editTag: function(original_value, new_value){
         var prefix = this.prefix;
 
@@ -425,6 +491,7 @@
       }
     };
 
+    // We add the library to jQuery functions
     $.fn.pressEditTags = function(options, callback) {
       this.each(function() {
         var el = $(this);
