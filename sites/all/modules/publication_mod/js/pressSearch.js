@@ -900,7 +900,13 @@
             query += '?uuid press:personGroup ?group. }';
             return this.getQuery(query);
         },
-        //Back Button utility, return to state
+        /**
+         * Uses state of browser to implement back button & search with url params
+         * @param  {Object} fields    The advanced search fields of the state
+         * @param  {Object} filters   The selected filters of the state
+         * @param  {boolean} pushState Passing variable to searchByField
+         * @return {[type]}           [description]
+         */
         fillFieldsByStateAndSearch: function(fields, filters, pushState) {
             this.clearSearchInput();
             this.clearAdvancedSearch();
@@ -969,7 +975,13 @@
                 this.searchByFields(fields.offset, filters, pushState, fields);
             }
         },
-        //Search By free-text and advanced search utility
+        /**
+         * Does the search by text & advanced search fields
+         * @param  {number} offset    The offset of the search
+         * @param  {Object} filters   The enabled filters
+         * @param  {boolean} pushState If the search is performed by pushState (back, forward button)
+         * @param  {Object} stateObj  The state object
+         */
         searchByFields: function(offset, filters, pushState, stateObj) {
             var prefixes = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' + //Constructing Query
                 'prefix press: <' + this.prefix + '> \n';
@@ -977,6 +989,7 @@
                 '?order ?type ?externalLink ?bookTitle ?chapterTitle ' +
                 '?typeID ?publicationUrl ?localLink WHERE{ \n';
 
+            //Getting the available fields
             var field = $('#free-text', this.element).val();
             var yearFrom = $('#year-from', this.element).val();
 
@@ -995,6 +1008,7 @@
 
             var authors = $('.author-contributor-name');
 
+            // Return if every field is emepty
             if (field === '' && yearFrom === '' && yearTo === '' && category === '' &&
                 subcategory === '' && reviewed === false && orgs.length === 0 &&
                 tags.length === 0 && authors.length === 0) {
@@ -1009,6 +1023,8 @@
             if (typeof pushState === 'undefined') {
                 pushState = false;
             }
+
+            // Clear the results
             this.resultContainer.find('*').not('#results').empty();
 
             var searchLabel = '';
@@ -1025,9 +1041,11 @@
                 filters = this.getFiltersValues(this.filters);
             }
 
+            // Create the search label to be displayed
             if (field !== '')
                 searchLabel += '"' + field + '"';
 
+            // Add authors to query
             var authorQuery = '';
             var authorIds = [];
             if (authors.length === 0) {
@@ -1054,7 +1072,7 @@
                 }
             }
 
-
+            // Add orgs to query
             var orgQuery = '';
             if (orgs.length === 0) {
 
@@ -1084,6 +1102,7 @@
                 orgQuery += '). \n';
             }
 
+            // Add tags to query
             var tagQuery = '';
 
             if (tags.length > 0) {
@@ -1106,6 +1125,7 @@
                 }
 
             }
+
             //Create new state for history
             if (!pushState) {
                 stateObj = {
@@ -1158,6 +1178,7 @@
                 };
             })(this);
 
+            // Add year to query
             var yearQuery = '';
             if (yearFrom !== '' || yearTo !== '') {
                 if (searchLabel !== '')
@@ -1202,8 +1223,7 @@
                 yearQuery += '). \n';
             }
 
-            var catQuery = '';
-
+            // Add if reviewed to query
             var reviewedQuery = '';
             if (category === '' && reviewed) {
                 if (searchLabel !== '')
@@ -1241,6 +1261,7 @@
                 }
             }
 
+            // Add text field to query
             var fieldQuery = '';
 
             if (field !== '') {
@@ -1277,6 +1298,8 @@
                     '       ?slot ?con ?person. \n' +
                     '       ?pub press:hasContributor ?slot. \n';
             }
+
+            // Add the rest of the fields that we need to be returned to the query
             var restFields = '';
             if (reviewedQuery === '') {
                 restFields += '?pub rdf:type ?type. \n';
@@ -1307,6 +1330,7 @@
                     '?localLink order by desc(?order)';
             }
 
+            // concat the queries
             var searchQuery = '';
             if (field !== '') {
                 multipleFieldsQuery += authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
@@ -1371,6 +1395,7 @@
             // console.log(reviewed);
             this.lastSearchLabel = searchLabel;
 
+            // Make the query and call the displaying results function & filter function on success
             $.when(this.getQuery(completeQuery, 10, offset),
                 this.getCount(prefixes, countQuery)).done((function(a1, a2) {
                 var response = a1[0].results.bindings;
@@ -1398,7 +1423,14 @@
                 this.insertFilters(a1[0], a2[0], a3[0], a4[0], filters, prefixes, countQuery);
             }).bind(this));
         },
-        //Browse by category functionality
+        
+        /**
+         * Does the search by category
+         * @param  {string} category_id  The category ID
+         * @param  {number} offset       The offset of the searc
+         * @param  {Object} filterValues The enabled filters
+         * @param  {boolean} pushState    If the search is performed by pushState (back, forward button)
+         */
         searchByCategory: function(category_id, offset, filterValues, pushState) {
             if (this.currentSearchMode !== 'browse') {
                 this.clearFilters();
@@ -1565,7 +1597,17 @@
                 this.insertFilters(a1[0], a2[0], a3[0], a4[0], filterValues, prefixes, countQuery);
             }).bind(this));
         },
-        //Pagination functionality using twbsPagination.js
+        
+        /**
+         * Creates the pagination for the search results
+         * @param  {string} query          The sparql query
+         * @param  {number} count          The number of the results
+         * @param  {number} offset         The offset of the search
+         * @param  {Object} requiredFields The required fields based on the category
+         * @param  {string} searchLabel    The search label to be displayed
+         * @param  {Object} stateObj       The state object
+         * @return {Object}                A jQuery element object
+         */
         getPagination: function(query, count, offset, requiredFields, searchLabel, stateObj) {
             var $pagination = $('<ul class="pagination"></ul>');
             var pages = Math.ceil(count / 10);
@@ -1621,7 +1663,13 @@
             });
             return $pagination;
         },
-        //Get Contributors of array of Publications
+        
+        /**
+         * Gets the contributors of an array of Publications from Blazegraph
+         * @param  {Array} publications      An array of the publications' uuids
+         * @param  {Array} contributorTypes The contributor types to be retreived
+         * @return {Object}                 A jqXHR object
+         */
         getPublicationsContributors: function(publications, contributorTypes) { //NOTE: PRESS V3
             var query = 'prefix press: <' + this.prefix + '> \n';
             query += 'SELECT * WHERE { \n';
@@ -1649,6 +1697,11 @@
             return this.getQuery(query, 0, 0);
         },
         //Get properties with multiple values of publications based on pub uuid
+        /**
+         * Gets the fields of the publications that might have multiple values (orgs, tags etc.)
+         * @param  {Object} publications The publications' uuids
+         * @return {Object}              A jqXHR object
+         */
         getPublicationsMultipleFields: function(publications) {
             if (!$.isArray(publications) || publications.length === 0) return;
             var query = 'prefix press: <' + this.prefix + '> \n';
@@ -1675,7 +1728,12 @@
 
             return this.getQuery(query, 0, 0);
         },
-        //Get values for filter usage
+        
+        /**
+         * Gets the sparql triples of the selected filters
+         * @param  {Object} $elements A jQuery element object with the filter elements
+         * @return {Object}           An object with the filter values
+         */
         getFiltersValues: function($elements) {
             values = {
                 year: {},
