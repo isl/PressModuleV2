@@ -1,5 +1,10 @@
-// Copyright FORTH-ICS, Emmanouil Dermitzakis
+/**
+ * @fileOverview Creates Add and Edit Publication pages
+ */
 
+/**
+ * The main function to create the PRESS Library
+ */
 (function(root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Make globaly available as well
@@ -21,6 +26,13 @@
     }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     *
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESS = function(element, options, cb) {
 
         this.base_url = "../";
@@ -151,7 +163,7 @@
         if (typeof options.max_file_size === 'string')
             this.max_file_size = options.max_file_size;
 
-        console.log(this.current_user);
+        // console.log(this.current_user);
 
         this.loader = $('<div id="loader"></div>');
         this.loader.hide();
@@ -159,6 +171,8 @@
         this.loader.show();
         this.element.append(this.loader);
         
+        //Retreive from blazegraph the tags, categories, data properties(fields)
+        // On success, start inserting the fields
         $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
             if (!(a1[1] === "success" && a2[1] === "success" && a3[1] === "success")) {
                 console.error('GET was unsuccesfull');
@@ -221,7 +235,8 @@
                 except.push('project');
                 except.push('tag');
 
-                var query = 'prefix press: <' + this.prefix + '>'; //NOTE: PRESS V3
+                // Query for getting all the fields of a publication based on category
+                var query = 'prefix press: <' + this.prefix + '>'; 
                 query += 'SELECT * WHERE{ \n';
                 query += '{?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
                 query += 'OPTIONAL {?pub press:creationDate ?creationDate.}. \n';
@@ -275,12 +290,12 @@
     PRESS.prototype = {
         constructor: PRESS,
 
-        /*
-         *  This function queries the Blazegraph Server for a Publication ID.
-         *  
-         *  
+        /**
+         * Queries blazegraph for the publication info and calls insertData() to
+         * fill the fields
+         * 
+         * @param {string} query The query to be requested 
          */
-
         getPublicationInfo: function(query) {
             $.ajax({
                     dataType: 'json',
@@ -299,26 +314,28 @@
         },
 
 
-        /*
-         *  This function fills the fields of the from based on a response from the Blazegraph Server.
+        /**
+         * Fills the fields of the from based on a response from the Blazegraph Server.
          *  
-         *  
+         * @param {Object} response The response of Blazegraph API
          */
-
         insertData: function(response) {
             results = response.results.bindings;
 
             var category = this.categoryAncestors[this.editPublication.category];
             var subcategory = this.editPublication.category;
 
+            //Select the category & trigger the change to show the fields
             this.cat.val(category);
             this.cat.change();
             this.subcat.val(subcategory);
             this.subcat.change();
 
             var contributors = {};
+
+
             for (var i = 0; i < results.length; i++) {
-                if ('org' in results[i]) {
+                if ('org' in results[i]) { //Fill organization values
                     var $ul = $('#lab-editable', this.element);
                     if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1 &&
                         results[i].org.value.split('#')[1] === this.labs[this.current_user.lab]) {
@@ -339,7 +356,7 @@
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
-                } else if ('con' in results[i]) {
+                } else if ('con' in results[i]) { // Fill contributor values
                     var conType = results[i].con.value.split('#')[1];
                     if (!(conType in contributors)) {
                         contributors[conType] = [];
@@ -372,7 +389,7 @@
                         element: $li,
                         index: parseInt(results[i].personIndex.value)
                     });
-                } else if ('project' in results[i]) {
+                } else if ('project' in results[i]) {       //Fill project values
                     var $list = $('#project-editable', this.element);
                     var $li = $('<li id="' + results[i].project.value + '" class="project-item list-group-item" draggable="false" style="float:left" title="' + results[i].projectName.value + '"></li>');
 
@@ -380,7 +397,7 @@
                     $li.html(results[i].projectName.value);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
-                } else if ('tag' in results[i]) {
+                } else if ('tag' in results[i]) {           // Fill tag values
                     var $list = $('#tag-editable', this.element);
                     var $li = $('<li id="' + results[i].tag.value + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
 
@@ -388,7 +405,7 @@
                     $li.html(results[i].tag.value);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
-                } else {
+                } else {                        // Fill the rest of the values
                     for (key in results[i]) {
                         if ('creationDate' === key) {
                             this.creationDate = results[i].creationDate.value;
@@ -405,6 +422,7 @@
                         }
                     }
                 }
+                // Sort the contributors based on the order
                 for (key in contributors) {
                     var $conEditable = $('#' + key + '-editable', this.element);
                     contributors[key].sort(function(a, b) { return a.index - b.index });
@@ -415,7 +433,12 @@
                 }
             }
         },
-        //Get Categories
+        
+        /**
+         * Makes a request to retrieve the categories from Blazegraph
+         * 
+         * @return {Object} A jqXHR object
+         */
         getCategories: function() {
             return $.ajax({
 
@@ -439,6 +462,7 @@
                     var category_tree = {};
                     results = response.results.bindings;
 
+                    // Transforms the array return to a tree based on subclasses
                     function array_to_tree(array, father) {
                         var tree = {};
                         for (let i = 0; i < array.length; i++) {
@@ -464,7 +488,11 @@
                     console.error(response);
                 });
         },
-        //Get Tags from Database
+        /**
+         * Makes a request to retrieve the tags from Blazegraph
+         * 
+         * @return {Object} A jqXHR object
+         */
         getTags: function() {
             tags = [];
             return $.ajax({
@@ -488,7 +516,11 @@
                     console.error(response);
                 });
         },
-        //Get Data Properties of Categories
+        /**
+         * Makes a request to retrieve the data properties from Blazegraph
+         * 
+         * @return {Object} A jqXHR object
+         */
         getDataProperties: function() { //NOTE: PRESS V3
             return $.ajax({
                     dataType: 'json',
@@ -534,7 +566,11 @@
                 });
             // this.fields = fields;
         },
-        //Insert Lab Field using typeahead.js and sortable.js
+        /**
+         * Adds the Organization Field using typeahead and sortable.js
+         * 
+         * @param  {Object} labs The available organiations/labs
+         */
         insertLabs: function(labs) {
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
                 'id="lab-input" data-label="' + this.organization_label + '" type="text" placeholder="Search..."/>');
@@ -622,7 +658,13 @@
                 }, 10);
             });
         },
-        //Insert Category Fields
+        /**
+         * Creates the Category and Subcategory fields and adds trigger events
+         * to display their fields on change
+         * 
+         * @param  {Object} category_tree An object that contains categories and
+         * subcategories as subclasses
+         */
         insertCategories: function(category_tree) {
             this.cat = $('<select class="form-control input-sm" id="category"></select>');
             this.subcat = $('<select class="form-control input-sm" id="subcategory" disabled></select>');
@@ -703,7 +745,16 @@
 
             }, this));
         },
-        //Insert Person/Contributor field, using typeahead.js and sortable.js
+
+        /**
+         * Adds a contributor field using typeahead and sortable.js
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'author', label: 'Authors'}
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertPersonField: function(field, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -728,7 +779,7 @@
 
             $group.append($label);
             $group.append($d);
-            if (Object.keys(this.bloodhounds).length === 0) {
+            if (Object.keys(this.bloodhounds).length === 0) {   // Multiple bloodhounds, one for each author group (internal, external)
                 for (key in this.authorGroups) {
                     this.bloodhounds[key] = new Bloodhound({
                         queryTokenizer: Bloodhound.tokenizers.whitespace,
@@ -790,14 +841,14 @@
                                     return tr;
                                 }
                             })(key),
-                            cache: false //NOTE: Sure about this?
+                            cache: false
                         }
                     });
                 }
             }
             var datasets = [];
             var j = 0;
-            for (key in this.authorGroups) {
+            for (key in this.authorGroups) { // One dataset per group
 
                 datasets[j++] = {
                     source: this.bloodhounds[key],
@@ -822,6 +873,8 @@
                 highlight: false,
                 minLength: 3
             }, datasets);
+
+            // Create sortable
 
             var $ul = $('<ul id="' + field.id + '-editable" class="list-group editable" style="display:none"></ul>');
             $d.append($ul);
@@ -848,6 +901,7 @@
                 $ul.append(this.oldFields[$ul.attr('id')]);
                 $ul.show();
             }
+            
             //Add External Author Modal
             var $exAuthorsModal = $('#externalAuthorModal');
             if ($exAuthorsModal.length === 0) {
@@ -982,9 +1036,9 @@
                         $list.append($li);
 
 
-                        if (ev.type === 'keypress') {
+                        if (ev.type === 'keypress') {   //On empty enter
                             $exAuthorsModal.modal();
-                        } else {
+                        } else {    //Add author
                             var author_group = "";
                             for (key in that.authorGroups) {
                                 if (suggestion.group === key && ('span' in that.authorGroups[key])) {
@@ -1009,7 +1063,17 @@
 
             return $group;
         },
-        //Insert Literal Fields
+        
+        /**
+         * Adds a literal text field
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'book', label: 'Book'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertLiteralField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1026,7 +1090,17 @@
             $d.append($d1);
             return $d;
         },
-        //Insert Number Fields
+        
+        /**
+         * Adds a number field
+         * 
+         * @param  {Object} field An object with the field id and label. e.g. {id: 'year', label: 'Year'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertNumberField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1043,9 +1117,19 @@
             $d.append($d1);
             return $d;
         },
-        //Insert Upload File Field
+
+        /**
+         * Adds a file input field
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'pdf, label: 'File'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertLocalField: function(field, size, isRequired = false) {
-            function return_bytes(val) {
+            function return_bytes(val) {        //Get the bytes of the max size
                 val = val.trim();
                 var last = val.toLowerCase().substring(val.length-1);
                 val = parseInt(val);
@@ -1077,7 +1161,16 @@
             $d.append($d1);
             return $d;
         },
-        //Insert Project Field, using typeahead.js and sortable.js
+        /**
+         * Adds a project field using typeahead and sortable.js
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'prj', label: 'Project'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertProjectField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1183,7 +1276,16 @@
 
             return $group;
         },
-        //Insert tag field using typeahead.js and sortable.js
+        /**
+         * Adds a project field using typeahead and sortable.js
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'prj', label: 'Project'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertTagField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1267,7 +1369,17 @@
             });
             return $taggroup;
         },
-        //Insert Date field using daterangepicker.js
+
+        /**
+         * Adds a date field using daterangepicker.js
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'prj', label: 'Project'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertDate: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1339,7 +1451,16 @@
             $d.append($d1);
             return $d;
         },
-        //Insert Long Literal (textarea) field
+        /**
+         * Adds a literal textarea field
+         * 
+         * @param  {Object} field An object with the field id and label. {id: 'abstr', label: 'Abstract'}
+         * @param {number} size A number indicatiing the bootstrap column size
+         * @param {boolean} isRequired A boolean indicating if the field is a 
+         * required field
+         *
+         * @return {Object} A jQuery element object containing the new field
+         */
         insertLongField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
@@ -1351,7 +1472,7 @@
             var $input = $('<textarea rows="1" class="form-control input-sm" id="' + field.id + '" style="resize:none"></textarea>');
             if (this.oldFields[field.id])
                 $input.val(this.oldFields[field.id]);
-            $input.focus(function() {
+            $input.focus(function() {       // Resize on focus
                 $(this).animate({
                     height: '+=120'
                 }, 'slow');
@@ -1364,7 +1485,14 @@
             $d.append($d1);
             return $d;
         },
-        //Insert All fields based on ontology data property range
+        
+        /**
+         * Adds all the fields based on the ontology data properties
+         * 
+         * @param  {[type]}
+         * @param  {[type]}
+         * @return {[type]}
+         */
         insertFields: function(fields, requiredFields) { //NOTE: PRESS V3
 
             function printFields(field, depth, fieldGroup) {
@@ -1423,7 +1551,9 @@
             }
             printFields.call(this, fields, 1, $('<div class="form-group"></div>'));
         },
-        //Clear Form action
+        /**
+         * Clears the form input values
+         */
         clearForm: function() {
             $('.has-error').removeClass('has-error');
             $('[data-original-title]').popover('destroy');
@@ -1433,7 +1563,12 @@
             $('.editable').not('#lab-editable').hide()
             this.oldFields = {};
         },
-        //Validate form values for requirements
+        /**
+         * Validates the form for the required fields and if the user is not a Power
+         * User, checks if their name is a contributor
+         * 
+         * @return {boolean} Returns True if the fields are filled correctly, False otherwise
+         */
         validateForm: function() {
             $('.has-error').removeClass('has-error');
             $('[data-original-title]').popover('destroy');
@@ -1528,6 +1663,13 @@
             }
             return correct;
         },
+
+        /**
+         * Creates the query and makes the request to Blazegraph to add/edit/delete
+         * the publication
+         * 
+         * @param  {boolean} del Indicates if the publication is going to be deleted
+         */
         submitPublication: function(del = false) {
             if (!del) {
                 if (!this.validateForm.call(this)) {
@@ -1536,11 +1678,20 @@
                 }
             }
 
+            /**
+             * Gets called after the addition of the Publication in Drupal and
+             * constructs the query based on the uuid provided
+             * 
+             * @param  {Object} response The response from drupal containing the
+             * new uuid and url of the publication, the url of the uploaded file
+             * @param  {boolean} del Indicates if the publication is going to be deleted
+             * @return {string} The sparql query
+             */
             function constructQuery(response, del) {
                 prefix = this.prefix;
                 var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
 
-                if (this.editMode) { //NOTE: PRESS V3
+                if (this.editMode) {
                     query += 'DELETE { \n';
                     query += '?pub ?p ?o. \n';
                     query += '?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
@@ -1574,11 +1725,12 @@
                         query = query + "<" + prefix + "belongsTo> <" + prefix + 'Organization/' + $(this).attr('id') + ">; \n";
                     })
 
+                    // Traverse the fields of the page to add the sparql triples
                     function traverseFields(field) {
                         var prefix = this.prefix;
                         for (let i = 0; i < field.length; i++) {
                             if (!Array.isArray(field[i])) {
-                                if (field[i] in this.personFields) { //NOTE: PRESS V3
+                                if (field[i] in this.personFields) {
                                     var length = 0;
                                     $('.' + field[i] + '-contributor-name').each(function() {
                                         query += '<' + prefix + 'hasContributor> [ rdf:type <' + prefix + 'Contributor_Slot>; \n';
@@ -1623,6 +1775,12 @@
                 return query;
             }
 
+            /**
+             * An ajax request wrapper
+             * 
+             * @param  {Object} options The AJAX options
+             * @return {[type]}
+             */
             function ajax(options) {
                 var settings = {
                     method: 'POST',
@@ -1650,6 +1808,13 @@
                 xhttp.send(settings.data);
             };
 
+            /**
+             * Creates the static page of the publication and calls the PRESS API
+             * to add the publication to drupal. If it succeeds, it calls the 
+             * constructQuery() function to upload the publication to Blazegraph
+             * 
+             * @param  {boolean} del Indicates if the publication is goind to be deleted
+             */
             function beginUpload(del) {
                 // console.log($('#'+this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
                 var pkg = new FormData();
@@ -1812,6 +1977,13 @@
             this.loader.show();
             beginUpload.call(this, del);
         },
+        /**
+         * Makes a POST request to Blazegraph with the query param to insert a
+         * new external author
+         * 
+         * @param  {string} updateQuery The query to be POSTed
+         * @return {Object} A jqXHR object
+         */
         insertExternalAuthor: function(updateQuery) {
             return $.ajax({
                     dataType: 'html',
@@ -1828,7 +2000,9 @@
                     console.error(response);
                 });
         },
-        //Insert form Buttons
+        /**
+         * Inserts the buttons of the form, Clear, DOI and submit button
+         */
         insertButtons: function() {
             var $doiButton = $('<button>', {
                 text: 'Add By DOI',
@@ -1912,7 +2086,12 @@
 
             this.rightButtonArea.append($submitButton);
         },
-        //Fill fields by DOI Import
+
+        /**
+         * Fills the fields of the form based on the DOI API response
+         * 
+         * @param  {Object} response The response from the DOI API
+         */
         fillFieldsByDOI: function(response) {
             var item = response.message;
             //Category Selection
@@ -1926,7 +2105,7 @@
                 this.subcat.val(categories[1]);
                 this.subcat.change();
             } else {
-                this.cat.val('Other'); //TODO: Fix Hardcoded Categories
+                this.cat.val('Other');
                 this.cat.change();
                 this.subcat.val('Miscellaneous');
                 this.subcat.change();
@@ -1999,6 +2178,7 @@
             }
             // query += optionals;
             query += '}';
+
             //Find DOI authors in Database
             $.when(this.getQuery(query)).done((function(that) {
                 return function(response) {
@@ -2150,7 +2330,11 @@
                 $('#' + value).val(item[key]);
             })
         },
-        //Get DOI Response
+
+        /**
+         * Makes a request to the DOI API and on success calls the fillFieldsByDOI()
+         * function to fill the fields
+         */
         getDOI: function() {
             var doi = document.getElementById('doi-input').value;
             var xhr = new XMLHttpRequest();
@@ -2167,7 +2351,11 @@
             }).bind(this);
             xhr.send();
         },
-        //Modal for DOI Import
+        /**
+         * Creates and returns a jQuery element object of the Add by DOI modal
+         * 
+         * @return {Object} A jQuery element object
+         */
         createDOImodal() {
             var $modal = $('<div id="doiModal" class="modal fade" role="dialog">' +
                 '<div class="modal-dialog">' +
@@ -2205,6 +2393,15 @@
             })(this));
             return $modal;
         },
+
+        /**
+         * Adds limit and offset to a query and makes the request to Blazegraph.
+         * 
+         * @param  {string} q The Query 
+         * @param  {number} limit The limit of the query
+         * @param  {number} offset The offset of the query
+         * @return {Object} A jqXHR object
+         */
         getQuery: function(q, limit, offset) {
             if (typeof limit === 'undefined') {
                 limit = 0;
@@ -2236,6 +2433,7 @@
         },
     };
 
+    // We add the library to jQuery functions
     $.fn.press = function(options, callback) {
         this.each(function() {
             var el = $(this);

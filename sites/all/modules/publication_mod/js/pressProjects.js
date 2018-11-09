@@ -1,3 +1,12 @@
+/**
+ * @fileOverview Creates the query based on the Project fields to add a new Project and makes
+ * the requests
+ */
+
+/**
+ * @param  {string} ontologyPrefix The prefix of the Ontology
+ * @param  {string} dbURL The API url of Blazegraph
+ */
 function initProjects(ontologyPrefix, dbURL){
     jQuery(document).ready(function($) {
         $i = $("#startDate");
@@ -19,27 +28,6 @@ function initProjects(ontologyPrefix, dbURL){
         });
         $i.val("");
 
-        // $.ajax({ 
-        //  
-        // dataType: "json", 
-        // method: "GET", 
-        // url: "'. $dbURL .'", 
-        // data: { 
-        // query: "prefix press: <'. $ontologyPrefix .'>"+ 
-        // " SELECT ?s ?p WHERE {"+ 
-        // " ?s press:projectName ?p}" 
-        // } 
-        // }) 
-        // .done(function(response){ 
-        // console.log(response); 
-        // var arr = []; 
-        // for(var i =0; i<response.results.bindings.length; i++){ 
-        // arr[i] = response.results.bindings[i].p.value; 
-        // } 
-        // }) 
-        // .fail(function(response){ 
-        // alert(response); 
-        // }); 
         function submitQuery() {
             if ($.trim($("#projectId").val()) === "" ||
                 $.trim($("#projectName").val()) === "" ||

@@ -1,3 +1,13 @@
+/**
+ * @fileOverview Creates the Edit Projects configuration page
+ * 
+ * @requires typeahead.js
+ * @requires datatables.js
+ */
+
+/**
+ * The main function to create the PRESSEditProjects Library
+ */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD. Make globaly available as well
@@ -19,6 +29,13 @@
   }
 }(this, function($) {
 
+    /**
+     * The init function of the library
+     * 
+     * @param {string} element The name of the Element that the page is going to be created
+     * @param {Object} options The options of the element
+     * @param {Function} cb
+     */
     var PRESSEditProjects = function(element, options, cb) {
       this.dbURL = "";
       this.prefix = "";
@@ -41,7 +58,6 @@
 
       this.loader = $('<div id="loader">');
       this.filterLoader = $('<div id="filterLoader">');
-      // element.append(this.loader);
 
       element.append(this.getProjectField());
     };
@@ -49,8 +65,12 @@
     PRESSEditProjects.prototype = {
       constructor: PRESSEditProjects,
 
-      //Get Project Field using typeahead.js and sortable.js
-      getProjectField: function() {  //Typeahead Field for searching Projects
+      /**
+       * Creates Project text input using typeahead.js
+       *
+       * @returns {Object} A jQuery element object containing the new field
+       */
+      getProjectField: function() {
 
         var $group = $('<div class="form-group" id="project-bloodhound"></div>');
         var $label = $('<label class="col-sm-2 control-label" for="project-input" style="float:left;padding: 4px 2px;">Project Name:</label>');
@@ -106,10 +126,6 @@
                   tr[i] = {
                     uuid: results[i].uuid.value,
                     projectName: results[i].projectName.value,
-                    // projectStatus: results[i].projectStatus.value,
-                    // projectDateStart: results[i].projectDateStart.value,
-                    // projectDateEnd: results[i].projectDateEnd.value,
-                    // projectId: results[i].projectId.value
                   };
                   if('projectStatus' in results[i]){
                     tr[i].projectStatus = results[i].projectStatus.value;
@@ -128,7 +144,7 @@
                 return tr;
               };
             })(),
-            // cache: false    //NOTE Sure about this?
+            // cache: false
           }
         });
 
@@ -175,6 +191,10 @@
         return $group;
       },
 
+      /**
+       * Creates the search query for the projects and calls getProjectsTable()
+       * to create the table
+       */
       searchProjects: function(){
         console.log('pressed');
         var queries = $('#project-input').val().split(' ');
@@ -198,6 +218,12 @@
           this.getProjectsTable(a.results.bindings);
         }).bind(this));
       },
+
+      /**
+       * Creates the Project table for displaying the results
+       * 
+       * @param  {Object} response The response from Blazegraph containing the Project Data
+       */
       getProjectsTable: function(response){
         $('#myTable_wrapper').remove();
         $table = $('<table id="myTable" class="display"><thead><tr><th>Project Name</th><th>Project ID</th>'+
@@ -257,6 +283,7 @@
           }
         );
 
+        // Open editable field on double click
         $('#myTable tbody').on('dblclick', 'td:not(.input-open)', function(){
           var cell = table.cell(this);
           var index = cell.index();
@@ -267,18 +294,6 @@
             $(this).addClass('input-open');
             $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
             if(['projectDateStart', 'projectDateEnd'].includes(columnName)){
-              /*$(this).find('input').daterangepicker({
-                singleDatePicker: true,
-                showDropdowns: true,
-                "locale": {
-                  format: "YYYY-MM-DD",
-                  cancelLabel: 'Clear'
-                }
-              });
-              $(this).find('input').on('cancel.daterangepicker', function(ev, picker) {
-                //do something, like clearing an input
-                $(this).val('');
-              });*/
               $(this).find('input').datepicker({
                 'dateFormat': 'yy-mm-dd'
               });
@@ -315,6 +330,14 @@
         });
       },
 
+      /**
+       * Adds limit and offset to a query and makes the request to Blazegraph.
+       * 
+       * @param  {string} q The Query 
+       * @param  {number} limit The limit of the query
+       * @param  {number} offset The offset of the query
+       * @return {Object} A jqXHR object
+       */
       getQuery: function(q, limit, offset){
         console.log('getQuery');
         if (typeof limit === 'undefined'){
@@ -346,6 +369,15 @@
         });
       },
 
+      /**
+       * Creates the query based on the uuids provided and makes the request to 
+       * delete the projects
+       * 
+       * @param  {Array} uuids An array of the projects' uuids that are going to
+       * be deleted
+       * 
+       * @return {Object} A jqXHR object
+       */
       deleteProjects: function(uuids){
         prefix = this.prefix;
         var query = 'prefix press: <'+prefix+'> \n';
@@ -389,6 +421,16 @@
         });
       },
 
+      /**
+       * Creates the query based on the uuid, editKey and editValue provided and
+       * makes the request to edit the project
+       * 
+       * @param  {string} uuid The uuid of the editing project
+       * @param  {string} editKey The field key that is going to be edited
+       * @param  {string} editValue The new value
+       * 
+       * @return {Object} A jqXHR object
+       */
       editProject: function(uuid, editKey, editValue){
         console.log('uuid:', uuid);
         console.log('editKey:', editKey);
@@ -430,6 +472,7 @@
       }
     };
 
+    // We add the library to jQuery functions
     $.fn.pressEditProjects = function(options, callback) {
       this.each(function() {
         var el = $(this);
