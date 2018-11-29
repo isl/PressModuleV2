@@ -1154,13 +1154,13 @@
                             }
                         }
                     } else {
-                        for (var filterKey in stateObj.filters) {
-                            var index = 0;
-                            for (var filterVal in stateObj.filters[filterKey]) {
-                                if (filterVal !== 'filterIntro')
-                                    search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
-                            }
-                        }
+                        // for (var filterKey in stateObj.filters) {
+                        //     var index = 0;
+                        //     for (var filterVal in stateObj.filters[filterKey]) {
+                        //         if (filterVal !== 'filterIntro')
+                        //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
+                        //     }
+                        // }
                     }
                 }
                 search = search.substring(0, search.length - 1);
@@ -1467,13 +1467,13 @@
                     if (key !== 'filters') {
                         search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
                     } else {
-                        for (var filterKey in stateObj.filters) {
-                            var index = 0;
-                            for (var filterVal in stateObj.filters[filterKey]) {
-                                if (filterVal !== 'filterIntro')
-                                    search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
-                            }
-                        }
+                        // for (var filterKey in stateObj.filters) {
+                        //     var index = 0;
+                        //     for (var filterVal in stateObj.filters[filterKey]) {
+                        //         if (filterVal !== 'filterIntro')
+                        //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
+                        //     }
+                        // }
                     }
                 }
                 search = search.substring(0, search.length - 1);
