@@ -251,20 +251,20 @@ function publication_mod_import_pubs_form($form, &$form_state){
 	'#type' => 'submit',
 	'#value' => t('Import from Blazegraph'),
 
-	'#ajax' => array(
-	  'callback' => 'publication_mod_import_submit_callback',
-	  'wrapper' => 'import-wrapper',
-	  'progress' => array(
-		  'type' => 'bar',
-		  'message' => t('Starting import...'),
-		  'url' => 'import_pubs/progress', //url to fetch current progress percentage
-		  'interval' => '1000' //progress bar will refresh in 1 second
-	  )
-	)
+	// '#ajax' => array(
+	//   'callback' => 'publication_mod_import_submit_callback',
+	//   'wrapper' => 'import-wrapper',
+	//   'progress' => array(
+	// 	  'type' => 'bar',
+	// 	  'message' => t('Starting import...'),
+	// 	  'url' => 'import_pubs/progress', //url to fetch current progress percentage
+	// 	  'interval' => '1000' //progress bar will refresh in 1 second
+	//   )
+	// )
   );
 
   $form['delete_publication_urls'] = array(
-  	'#type' => 'submit',
+  	'#type' => 'button',
   	'#value' => t('Delete publication pages/nodes & urls from Blazegraph'),
 
   	'#ajax' => array(
@@ -348,6 +348,145 @@ where {
   // foreach ($result as $row) {
   //   $nids[] = $row->nid;
   // }
+}
+
+function publication_mod_import_pubs_form_submit($form, $form_state){
+  global $base_url;
+
+  $per = 20;
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  //Get all pubs without a publicationUrl
+
+  $query = 'prefix press: <'. $ontologyPrefix. '>
+      select * where{
+        ?pub rdf:type [rdfs:subClassOf* press:Publication].
+        FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
+        ?pub rdf:type ?type.
+      }';
+
+  $q = http_build_query(array('query' => $query));
+
+  $options = array(
+  'headers' => array(
+    'Accept'=>'application/sparql-results+json',
+    'content-type'=> 'application/x-www-form-urlencoded'),
+  'method' => 'POST',
+  'data' => $q
+  );
+
+  $result = drupal_http_request($dbURL, $options);
+
+  $obj = json_decode($result->data);
+  $pub_count = count($obj->results->bindings);
+  $pubs = array();
+  foreach ($obj->results->bindings as $pub) {
+    $pubs[] = array('uri'=> $pub->pub->value, 'type'=>explode('#', $pub->type->value)[1]);
+  }
+  $array_chunks = array_chunk($pubs, $per);
+  $operations = array();
+  // $operations_cp = array();
+  for ($i=0; $i < count($array_chunks); $i++) { 
+    $operations[] = array('publication_mod_batch_import_run', array($array_chunks, $pub_count));
+    // $operations_cp[] = array('publication_mod_batch_import_run', array('$pubs', $i*20, $per));
+  }
+
+  // watchdog('publication_mod', 'pubs <br> <pre>%pubs</pre>', array(
+  //     '%pubs' => print_r($pubs, true),
+  //   ), WATCHDOG_DEBUG);
+
+  // watchdog('publication_mod', 'operations <br> <pre>%operations</pre>', array(
+  //     '%operations' => print_r($operations_cp, true),
+  //   ), WATCHDOG_DEBUG);
+
+  $batch = array(
+    'operations' => array(array('publication_mod_batch_import_run', array($array_chunks, $pub_count))),
+    'finished' => 'publication_mod_batch_import_finished',
+    'title' => t('Publication Batch Import'),
+    'init_message' => t('Publication Batch Import is starting.'),
+    'progress_message' => t('Imported @current out of @total.'),
+    'error_message' => t('Publication Import Batch has encountered an error.'),
+    'file' => drupal_get_path('module', 'publication_mod') . '/publication_mod.admin.inc'
+  );
+
+  batch_set($batch);
+}
+
+
+function publication_mod_batch_import_run($pubs, $max, &$context){
+  if (!isset($context['sandbox']['progress'])){
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['current_chunk'] = 0;
+    $context['sandbox']['max'] = $max;
+  }
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  // watchdog('publication_mod', 'pubs <br> <pre>%pubs</pre>', array(
+  //   '%pubs' => print_r($pubs[$context['sandbox']['current_chunk']], true),
+  // ), WATCHDOG_DEBUG);
+
+  // for ($i=$start_index; $i < $start_index+$per_pubs && $i < $context['sandbox']['max']; $i++) { 
+  foreach($pubs[$context['sandbox']['current_chunk']] as $pub){
+
+    // $pub_uri = $pubs[$i]['uri'];
+    // $pub_type = $pubs[$i]['type'];
+    $pub_uri = $pub['uri'];
+    $pub_type = $pub['type'];
+
+    $pub_page = _publication_mod_create_page_body($pub_uri);
+
+    $new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
+
+    //Add publicationUrl to created publication.
+    $update = 'prefix press: <'. $ontologyPrefix. '>
+        delete{
+          ?pub press:publicationUrl ?old_url.
+        }
+        insert{
+          ?pub press:publicationUrl "'.$new_node_info['path'].'".
+        }
+        where{
+          BIND (<'. $pub_uri .'> as ?pub).
+          OPTIONAL {?pub press:publicationUrl ?old_url}.
+        }';
+
+    $q = http_build_query(array('update' => $update));
+
+    $options = array(
+      'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'),
+      'method' => 'POST',
+      'data' => $q
+    );
+
+    $update_results = drupal_http_request($dbURL, $options);
+
+    $context['sandbox']['progress']++;
+    $context['results'][] = $pub_uri;
+    $context['message'] = t('Now processing "%title" from chunk = %chunk', array('%title'=>$pub_page['title'], '%chunk' => $context['sandbox']['current_chunk']));
+  }
+  $context['sandbox']['current_chunk']++;
+  if($context['sandbox']['progress'] != $context['sandbox']['max']){
+    $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+  }
+}
+
+function publication_mod_batch_import_finished($success, $results, $operations){
+  if ($success) {
+    $message = t('@count items successfully processed:', array('@count' => count($results)));
+    drupal_set_message($message);
+  }else{
+    $error_operation = reset($operations);
+    $message = t('An error occured while processign %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
+    drupal_set_message($message, 'error');
+  }
 }
 
 /**
