@@ -21,10 +21,10 @@ Publication management systems can be instrumental in disseminating research res
 
 #### Module Configuration
 
-* When you enable for the first time the PRESS Publication Module, it adds three fields for the user account and one user role called "Power User"
-  * You have to be a Power User to add a Publication without being a contributor. The module assigns automatically the admin as Power User
-  * You will also have to fill the above fields for your account in order to use the module.
 * Go at "[yourwebsite]/admin/config/publications/publication_mod"
   * Add Blazegraph REST API URL
   * Add the Ontology Prefix
   * Import the Organizations. Go to Configuration -> PRESS Publication Module -> Edit Organizations Tab (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then click on "Import Organizations from Blazegraph" and then "Submit Changes"
+* When you enable for the first time the PRESS Publication Module, it adds three fields for the user account and one user role called "Power User"
+  * You have to be a Power User to add a Publication without being a contributor. The module assigns automatically the admin as Power User
+  * You will also have to fill the above fields for your account in order to use the module.
