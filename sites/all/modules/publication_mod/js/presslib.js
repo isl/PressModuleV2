@@ -1745,7 +1745,7 @@
                                 } else if (field[i] === 'localLink'){
                                     if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
                                         query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
-                                    }else if(!!this.localLink){
+                                    }else if(this.editMode && !!this.localLink){
                                         query += '<' + this.prefix + 'localLink> "' + this.localLink + '"; \n';
                                     }
                                 } else if (field[i] === 'tag') {
