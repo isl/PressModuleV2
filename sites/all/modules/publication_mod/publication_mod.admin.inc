@@ -242,25 +242,23 @@ function _tags_edit(){
 /**
  * Page argument: Form constructor for the Import Publications Configuration page
  * 
- * @see publication_mod_import_submit_callback()
- * 
+ * @see publication_mod_import_pubs_form_submit()
+ * @see publication_mod_delete_pub_pages_urls_callback()
  */
 function publication_mod_import_pubs_form($form, &$form_state){
+
+  $form['chunk_size'] = array(
+    '#type' => 'select',
+    '#title' => 'Imports per operation',
+    '#options' => array(
+      '20' => '20',
+      '40' => '40',
+    ),
+  );
 
   $form['submit_button'] = array(
 	'#type' => 'submit',
 	'#value' => t('Import from Blazegraph'),
-
-	// '#ajax' => array(
-	//   'callback' => 'publication_mod_import_submit_callback',
-	//   'wrapper' => 'import-wrapper',
-	//   'progress' => array(
-	// 	  'type' => 'bar',
-	// 	  'message' => t('Starting import...'),
-	// 	  'url' => 'import_pubs/progress', //url to fetch current progress percentage
-	// 	  'interval' => '1000' //progress bar will refresh in 1 second
-	//   )
-	// )
   );
 
   $form['delete_publication_urls'] = array(
@@ -350,10 +348,19 @@ where {
   // }
 }
 
+/**
+ * Submit callback for the Import Publication Form. Reads the Import Chunk size
+ * and starts the batch job for importing the publications.
+ * Uses Batch API for the importing
+ * 
+ * @see  publication_mod_import_pubs_form()
+ * @see  publication_mod_batch_import_run()
+ * @see  publication_mod_batch_import_finished()
+ */
 function publication_mod_import_pubs_form_submit($form, $form_state){
   global $base_url;
 
-  $per = 20;
+  $per = (int) $form_state['values']['chunk_size'];
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -386,21 +393,9 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
   foreach ($obj->results->bindings as $pub) {
     $pubs[] = array('uri'=> $pub->pub->value, 'type'=>explode('#', $pub->type->value)[1]);
   }
+
+  // Split into chunks of size $per
   $array_chunks = array_chunk($pubs, $per);
-  $operations = array();
-  // $operations_cp = array();
-  for ($i=0; $i < count($array_chunks); $i++) { 
-    $operations[] = array('publication_mod_batch_import_run', array($array_chunks, $pub_count));
-    // $operations_cp[] = array('publication_mod_batch_import_run', array('$pubs', $i*20, $per));
-  }
-
-  // watchdog('publication_mod', 'pubs <br> <pre>%pubs</pre>', array(
-  //     '%pubs' => print_r($pubs, true),
-  //   ), WATCHDOG_DEBUG);
-
-  // watchdog('publication_mod', 'operations <br> <pre>%operations</pre>', array(
-  //     '%operations' => print_r($operations_cp, true),
-  //   ), WATCHDOG_DEBUG);
 
   $batch = array(
     'operations' => array(array('publication_mod_batch_import_run', array($array_chunks, $pub_count))),
@@ -415,7 +410,13 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
   batch_set($batch);
 }
 
-
+/**
+ * Batch operation for importing the publications.
+ * 
+ * @param Array $pubs All the publications splited into chunks
+ * @param int $max The number of publications to be imported
+ * @param Array &$context The batch context array
+ */
 function publication_mod_batch_import_run($pubs, $max, &$context){
   if (!isset($context['sandbox']['progress'])){
     $context['sandbox']['progress'] = 0;
@@ -427,15 +428,8 @@ function publication_mod_batch_import_run($pubs, $max, &$context){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  // watchdog('publication_mod', 'pubs <br> <pre>%pubs</pre>', array(
-  //   '%pubs' => print_r($pubs[$context['sandbox']['current_chunk']], true),
-  // ), WATCHDOG_DEBUG);
-
-  // for ($i=$start_index; $i < $start_index+$per_pubs && $i < $context['sandbox']['max']; $i++) { 
+  //Import only the current chunk
   foreach($pubs[$context['sandbox']['current_chunk']] as $pub){
-
-    // $pub_uri = $pubs[$i]['uri'];
-    // $pub_type = $pubs[$i]['type'];
     $pub_uri = $pub['uri'];
     $pub_type = $pub['type'];
 
@@ -468,107 +462,34 @@ function publication_mod_batch_import_run($pubs, $max, &$context){
 
     $update_results = drupal_http_request($dbURL, $options);
 
+    // Update the progress
     $context['sandbox']['progress']++;
     $context['results'][] = $pub_uri;
     $context['message'] = t('Now processing "%title" from chunk = %chunk', array('%title'=>$pub_page['title'], '%chunk' => $context['sandbox']['current_chunk']));
   }
   $context['sandbox']['current_chunk']++;
+  // Update the progress
   if($context['sandbox']['progress'] != $context['sandbox']['max']){
     $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
   }
 }
 
+/**
+ * Callback called when the batch process finishes
+ * 
+ * @param boolean $success Indicates wheter the batch has completed successfully
+ * @param Array $results The value set in $context['results']
+ * @param Array $operations If $success is False, contains the operations that remained unprocessed
+ */
 function publication_mod_batch_import_finished($success, $results, $operations){
   if ($success) {
     $message = t('@count items successfully processed:', array('@count' => count($results)));
     drupal_set_message($message);
   }else{
     $error_operation = reset($operations);
-    $message = t('An error occured while processign %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
+    $message = t('An error occured while processing %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
     drupal_set_message($message, 'error');
   }
-}
-
-/**
- * Create Pages for each publication
- * 
- * Callback for publication_mod_import_pubs_form()
- * 
- * @return string
- * 	 Result of importing
- */
-function publication_mod_import_submit_callback($form, $form_state){
-  global $base_url;
-  set_time_limit(0);
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  //Get all pubs without a publicationUrl
-
-  $query = 'prefix press: <'. $ontologyPrefix. '>
-			select * where{
-			  ?pub rdf:type [rdfs:subClassOf* press:Publication].
-			  FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
-			  ?pub rdf:type ?type.
-			}';
-
-  $q = http_build_query(array('query' => $query));
-
-  $options = array(
-	'headers' => array(
-	  'Accept'=>'application/sparql-results+json',
-	  'content-type'=> 'application/x-www-form-urlencoded'),
-	'method' => 'POST',
-	'data' => $q
-  );
-
-  $result = drupal_http_request($dbURL, $options);
-
-  $obj = json_decode($result->data);
-  $pub_count = count($obj->results->bindings);
-  $count = 0;
-  
-  variable_set('publication_mod_import_message', 'Importing...');
-  foreach($obj->results->bindings as $pub){
-		$pub_uri = $pub->pub->value;
-		$pub_type = explode("#", $pub->type->value)[1];
-
-		$pub_page = _publication_mod_create_page_body($pub_uri);
-
-		$new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
-
-		//Add publicationUrl to created publication.
-		$update = 'prefix press: <'. $ontologyPrefix. '>
-				delete{
-				  ?pub press:publicationUrl ?old_url.
-				}
-				insert{
-				  ?pub press:publicationUrl "'.$new_node_info['path'].'".
-				}
-				where{
-				  BIND (<'. $pub_uri .'> as ?pub).
-				  OPTIONAL {?pub press:publicationUrl ?old_url}.
-				}';
-
-		$q = http_build_query(array('update' => $update));
-
-		$options = array(
-		  'headers' => array(
-			'Accept'=>'application/sparql-results+json',
-			'content-type'=> 'application/x-www-form-urlencoded'),
-		  'method' => 'POST',
-		  'data' => $q
-		);
-
-		$update_results = drupal_http_request($dbURL, $options);
-
-		//Update status bar
-		variable_set('publication_mod_import_status', round((++$count/$pub_count)*100));
-  }
-
-  variable_set('publication_mod_import_status', 0);
-  return 'Insertion Completed';
 }
 
 /**
