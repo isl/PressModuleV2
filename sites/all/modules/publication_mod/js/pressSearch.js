@@ -183,7 +183,7 @@
 
             last_line.append(this.getReviewedField().append($('<div class="col-sm-5"></div>').append(
                 $('<button>', {
-                    text: 'Clear',
+                    text: 'Clear Search',
                     id: 'searchClear',
                     type: 'button',
                     class: 'btn btn-default btn-sm',
@@ -2474,7 +2474,7 @@
             this.filters.append(projectsDiv);
 
             this.filters.append($('<button>', {
-                text: 'Clear',
+                text: 'Clear Filters',
                 id: 'filterClear',
                 type: 'button',
                 class: 'btn btn-default btn-sm',
