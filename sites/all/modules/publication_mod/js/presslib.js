@@ -1656,11 +1656,6 @@
                         }
                 }
             }
-            if ($('#project-input').val() !== '' && $.inArray($('#project-input').val(), project_name) === -1) {
-                $('#project-bloodhound').addClass('has-error');
-                console.error('Project validation Error!');
-                correct = false;
-            }
             return correct;
         },
 
