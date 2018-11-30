@@ -658,7 +658,7 @@ function _get_user_info_to_json(){
       'name' => $first_name . " " . $last_name,
       'mail' => $user_data->mail,
       'lab' => $org,
-      'roles' => array_values($user->roles)
+      'roles' => array_values($user_data->roles)
     );
   }else{
     $cu = array('anonymous' => TRUE);
