@@ -814,9 +814,6 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
 
   $ewrapper->pub_mod_field_category->set($category);
 
-  if(isset($uuid)){
-    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
-  }
   // Setting the body is a bit different from other properties or fields
   // because the body can have both its complete value and its
   // summary
@@ -868,7 +865,11 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
   }
   $ewrapper->save();
   header('Content-Type: application/json');
-  $ewrapper->pub_mod_field_blazegraph_uuid->set($ewrapper->value()->uuid);
+  if(isset($uuid) && !empty($uuid)){
+    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
+  }else{
+    $ewrapper->pub_mod_field_blazegraph_uuid->set("urn:uuid:" . $ewrapper->value()->uuid);
+  }
   $ewrapper->save();
   if(!isset($uuid) || empty($uuid)){
     $uuid = "urn:uuid:" . $ewrapper->value()->uuid;
@@ -981,12 +982,12 @@ function publication_mod_ajax_callback_edit_pub(){
     $entity = entity_create('node', $values);
     $new_entity = true;
   }
-  echo $delete;
   if ($delete === true){
     if ($entity)
       node_delete($entity->nid);
 
-    return;
+    echo '{"result": "success"}';
+    exit();
   }
   
   $ewrapper = entity_metadata_wrapper('node', $entity);
