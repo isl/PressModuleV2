@@ -320,6 +320,15 @@ function publication_mod_delete_pub_pages_urls_callback($form, $form_state){
   	variable_set('publication_mod_import_status', round(($i/$nids_count)*100));
   }
 
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+  libxml_use_internal_errors(true);
+  $doc = new DOMDocument();
+
+  $doc->loadHTML($blazegraph_info['all_pubs']);
+  $div = $doc->getElementById('all_pubs');
+  $div->nodeValue = "";
+  $html = $doc->saveHTML();
+  _publication_mod_set_blazegraph_info('all_pubs', $html);
 
   $sparql =  'prefix press: <'. $ontologyPrefix. '>
 delete {
