@@ -805,7 +805,12 @@
         getCategoryList: function() {
             var container = $('<div class="col-md-1"></div>');
 
-            var $listRoot = $('<div class="col-xs-12 col-sm-8 col-md-6" data-key="Publication"></div>');
+            var $listRoot = $('<div class="col-xs-12 col-sm-8" data-key="Publication"></div>');
+            if($('div.main-container div.region.region-content').width() < 992 && window.innerWidth > 992){
+                $listRoot.addClass('col-md-8');
+            }else{
+                $listRoot.addClass('col-md-6');
+            }
             $listRoot.append($('<h2>Browse By Category <button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>'));
             $('#close_by_category', $listRoot).on('click', (function(that) {
                 return function() {
