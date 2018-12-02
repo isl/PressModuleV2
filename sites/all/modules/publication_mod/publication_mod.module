@@ -1603,3 +1603,22 @@ function publication_mod_save_project($id, $name, $acronym) {
 
   return $result;
 }
+
+/**
+ * Implements hook_form_alter()
+ * Used here to disable for the user to change some values based on their role.
+ * @return type
+ */
+function publication_mod_form_alter(&$form, &$form_state, $form_id){
+  global $user;
+
+  
+  switch ($form_id) {
+    case 'user_profile_form':
+      if(!publication_mod_user_has_role('administrator')){
+        $form['pub_mod_field_organization']['#disabled'] = true;
+        $form['pub_mod_field_blazegraph_uuid']['#disabled'] = true;
+      }
+      break;
+  }
+}
