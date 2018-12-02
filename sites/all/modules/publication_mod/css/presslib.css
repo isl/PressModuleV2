@@ -277,3 +277,13 @@ button.has-error{
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+#search-publication input[type=number]#year-from::-webkit-inner-spin-button, 
+#search-publication input[type=number]#year-from::-webkit-outer-spin-button, 
+#search-publication input[type=number]#year-to::-webkit-inner-spin-button, 
+#search-publication input[type=number]#year-to::-webkit-outer-spin-button, 
+#add-publication input[type=number]#year::-webkit-inner-spin-button, 
+#add-publication input[type=number]#year::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
