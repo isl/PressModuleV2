@@ -983,8 +983,22 @@ function publication_mod_ajax_callback_edit_pub(){
     $new_entity = true;
   }
   if ($delete === true){
-    if ($entity)
+    if ($entity){
       node_delete($entity->nid);
+    }
+    $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
+    libxml_use_internal_errors(true);
+    $doc = new DOMDocument();
+
+    $doc->loadHTML($blazegraph_info['all_pubs']);
+    $div = $doc->getElementById('all_pubs');
+    $pub_div = $doc->getElementById($uuid);
+    
+    if($pub_div && $pub_div->parentNode){
+      $pub_div->parentNode->removeChild($pub_div);
+    }
+    $html = $doc->saveHTML();
+    _publication_mod_set_blazegraph_info('all_pubs', $html);
 
     echo '{"result": "success"}';
     exit();
