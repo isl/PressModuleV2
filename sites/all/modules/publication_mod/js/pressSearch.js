@@ -183,18 +183,31 @@
 
             last_line.append(this.getReviewedField().append($('<div class="col-sm-5"></div>').append(
                 $('<button>', {
+                    text: 'Search',
+                    id: 'advanced_search_search_button',
+                    class: 'btn btn-primary btn-sm advanced-search-btn',
+                    click: (function(that) {
+                        return function() {
+                            that.searchByFields();
+                            $('#category_list_button', that.element).css('visibility', '');
+                            $('#advanced_search_button', that.element).css('visibility', '');
+                        };
+                    })(this)
+                }))
+            .append(
+                $('<button>', {
                     text: 'Clear Search',
                     id: 'searchClear',
                     type: 'button',
-                    class: 'btn btn-default btn-sm',
-                    style: 'float:right;',
+                    class: 'btn btn-default btn-sm advanced-search-btn',
                     click: (function(that) {
                         return function() {
                             that.clearSearchInput();
                             that.clearAdvancedSearch();
                         };
                     })(this)
-                }))));
+                })
+                )));
             field_container.append(last_line);
             this.advanced_search.append(field_container);
             var close_button = $('<h2 style="margin-top:0;float:left;"><button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>');
