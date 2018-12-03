@@ -195,6 +195,9 @@
             this.doiModal = this.createDOImodal();
             this.element.append(this.doiModal);
 
+            this.copyrightModal = this.createCopyrightModal();
+            this.element.append(this.copyrightModal);
+
             var non_existing = [];
             var my_fields = this.fields;
 
@@ -1154,6 +1157,11 @@
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             var $input = $('<input class="form-control input-sm press-field" ' +
                 'id="' + field.id + '" type="file" data-label="Upload File"></input>');
+            $input.change(function(that) {
+                return function(){
+                    that.copyrightModal.modal();
+                }
+            }(this));
             if (this.oldFields[field.id])
                 $input.val(this.oldFields[field.id]);
             $d1.append($input);
@@ -2390,6 +2398,30 @@
                 }
             })(this));
             return $modal;
+        },
+
+        /**
+         * Creates a modal to show a warning about copyrights, when selecting a 
+         * file
+         * @return {Object} A jQuery element object of the modal
+         */
+        createCopyrightModal: function() {
+            var $copyrightModal = $('<div id="copyrightModal" class="modal fade" role="dialog"></div>');
+            var $divmod = $('<div class="modal-dialog modal-lg"></div>');
+            var $modcont = $('<div class="modal-content"></div>');
+            $modcont.append($('<div class="modal-header">' +
+                '<button type="button btn-md" class="close" data-dismiss="modal">&times;</button>' +
+                '<h4 class="modal-title">Copyright warning</h4>' +
+                '</div>' +
+                '<div class="modal-body">' +
+                '<p>Please be certain that you have the proper permissions to upload this file based on its Copyright</p>' +
+                '</div>'));
+            var $modfooter = $('<div class="modal-footer"><button type="button" class="btn btn-default btn-md" data-dismiss="modal">Close</button></div>');
+            $modcont.append($modfooter);
+            $divmod.append($modcont);
+            $copyrightModal.append($divmod);
+
+            return $copyrightModal;
         },
 
         /**
