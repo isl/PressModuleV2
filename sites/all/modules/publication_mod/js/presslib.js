@@ -192,6 +192,9 @@
             this.element.append(this.buttonArea);
             this.insertButtons();
 
+            var symbolExplaination = $('<small id="symbol-explaination" class="col-sm-6" style="color:red; margin-top: 10px;">(*) Required Field<br>(**) Fill at least one of these fields</small>');
+            this.element.append(symbolExplaination);
+            
             this.doiModal = this.createDOImodal();
             this.element.append(this.doiModal);
 
@@ -579,9 +582,11 @@
                 'id="lab-input" data-label="' + this.organization_label + '" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="lab-editable" class="list-group editable" style="display:none"></ul>');
             var $labgroup = $('<div id="lab-group" class="form-group"></div>');
+            var $div = $('<div class="required"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
-            $labgroup.append($('<label class="col-sm-2 control-label" for="lab-input"><span style="color:red">*</span>' + this.organization_label + ':</label>'));
-            $labgroup.append($col_div);
+            $div.append($('<label class="col-sm-2 control-label" for="lab-input">' + this.organization_label + ':</label>'));
+            $labgroup.append($div);
+            $div.append($col_div)
             $col_div.append($input);
             $col_div.append($ul);
 
@@ -673,17 +678,22 @@
             this.subcat = $('<select class="form-control input-sm" id="subcategory" disabled></select>');
 
             $catgroup = $('<div id="category-group" class="form-group"></div>');
+            $div = $('<div class="required"></div>');
             $col_div = $('<div class="col-sm-10"></div>');
-            $catgroup.append($('<label class="col-sm-2 control-label" for="category"><span style="color:red">*</span>Category:</label>'));
-            $catgroup.append($col_div);
+            $div.append($('<label class="col-sm-2 control-label" for="category">Category:</label>'));
+            $catgroup.append($div);
+            $div.append($col_div);
             $col_div.append(this.cat);
+
 
             this.element.append($catgroup);
 
             $subcatgroup = $('<div id="subcategory-group" class="form-group"></div>');
+            $sdiv = $('<div class="required"></div>');
             $sub_col_div = $('<div class="col-sm-10"></div>');
-            $subcatgroup.append($('<label class="col-sm-2 control-label" for="subcategory"><span style="color:red">*</span>Subcategory:</label>'));
-            $subcatgroup.append($sub_col_div);
+            $sdiv.append($('<label class="col-sm-2 control-label required" for="subcategory">Subcategory:</label>'));
+            $subcatgroup.append($sdiv);
+            $sdiv.append($sub_col_div);
             $sub_col_div.append(this.subcat);
 
             this.element.append($subcatgroup);
@@ -761,13 +771,13 @@
         insertPersonField: function(field, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $group = $('<div class="form-group"></div>')
+            var $group = $('<div class="form-group '+ required +'"></div>')
             $group.attr('id', field.id + '-bloodhound');
             var $label = $('<label class="col-sm-2 control-label"></label>');
             $label.attr('for', field.id + '-input');
-            $label.append(required);
+            // $label.append(required);
             $label.append(field.label + ':');
             var $d = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             var tooltip = 'Each word has to be at least 3 characters long to search.\nPress Enter to add a new External Contributor.';
@@ -1080,10 +1090,10 @@
         insertLiteralField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $d = $('<div></div>').append($('<label for="' +
-                field.id + '"class="col-sm-2 control-label">' + required + field.label + ':</label>'));
+            var $d = $('<div class="'+required+'"></div>').append($('<label for="' +
+                field.id + '"class="col-sm-2 control-label">' + field.label + ':</label>'));
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             var $input = $('<input class="form-control input-sm press-field" ' +
                 'id="' + field.id + '" data-label="' + field.label + '" type="text"></input>');
@@ -1107,10 +1117,10 @@
         insertNumberField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $d = $('<div></div>').append($('<label for="' +
-                field.id + '"class="col-sm-2 control-label">' + required + field.label + ':</label>'));
+            var $d = $('<div class="'+required+'"></div>').append($('<label for="' +
+                field.id + '"class="col-sm-2 control-label">' + field.label + ':</label>'));
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             var $input = $('<input class="form-control input-sm press-field" ' +
                 'id="' + field.id + '" type="number" data-label="' + field.label + '"></input>');
@@ -1150,10 +1160,10 @@
             }
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $d = $('<div></div>').append($('<label for="' +
-                field.id + '"class="col-sm-2 control-label">' + required + 'Upload File:</label>'));
+            var $d = $('<div class="'+required+'"></div>').append($('<label for="' +
+                field.id + '"class="col-sm-2 control-label">' + 'Upload File:</label>'));
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             var $input = $('<input class="form-control input-sm press-field" ' +
                 'id="' + field.id + '" type="file" data-label="Upload File"></input>');
@@ -1182,11 +1192,11 @@
         insertProjectField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $group = $('<div id="' + field.id + '-bloodhound"></div>')
+            var $group = $('<div class="'+required+'" id="' + field.id + '-bloodhound"></div>')
 
-            var $label = $('<label class="col-sm-2 control-label" for="' + field.id + '-input">' + required + field.label + ':</label>');
+            var $label = $('<label class="col-sm-2 control-label" for="' + field.id + '-input">' + field.label + ':</label>');
             var $d = $('<div class="col-sm-10"></div>');
             var $input = $('<input id="' + field.id + '-input" class="typeahead ' +
                 'form-control input-sm press-field" type="text" data-label="' + field.label + '" placeholder="Search..."/>');
@@ -1297,7 +1307,7 @@
         insertTagField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
             $input = $('<input class="typeahead form-control input-sm press-field tag-input" ' +
                 'id="tag-input" data-label="Tags" data-toggle="tooltip" type="text" placeholder="Search..."/>');
@@ -1309,9 +1319,9 @@
             $input.mouseover();
 
             $ul = $('<ul id="tag-editable" class="list-group editable" style="display:none"></ul>');
-            var $taggroup = $('<div id="tag-group" class="form-group"></div>');
+            var $taggroup = $('<div id="tag-group" class="form-group '+required+'"></div>');
             var $col_div = $('<div class="col-sm-10"></div>');
-            $taggroup.append($('<label class="col-sm-2 control-label" for="tag-input">' + required + 'Tags:</label>'));
+            $taggroup.append($('<label class="col-sm-2 control-label" for="tag-input">' + 'Tags:</label>'));
             $taggroup.append($col_div);
             $col_div.append($input);
             $col_div.append($ul);
@@ -1391,10 +1401,10 @@
         insertDate: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $d = $('<div></div>').append($('<label for="' +
-                field.id + '"class="col-sm-2 control-label">' + required + field.label + ':</label>'));
+            var $d = $('<div class="'+required+'"></div>').append($('<label for="' +
+                field.id + '"class="col-sm-2 control-label">' + field.label + ':</label>'));
 
 
             var $i = $('<input class="form-control input-sm press-field" id="' +
@@ -1472,10 +1482,10 @@
         insertLongField: function(field, size, isRequired = false) {
             var required = '';
             if (isRequired) {
-                required = '<span style="color:red">*</span>';
+                required = 'required';
             }
-            var $d = $('<div></div>').append($('<label for="' +
-                field.id + '"class="col-sm-2 control-label">' + required + field.label + ':</label>'));
+            var $d = $('<div class="'+required+'"></div>').append($('<label for="' +
+                field.id + '"class="col-sm-2 control-label">' + field.label + ':</label>'));
             var $d1 = $('<div class="col-sm-' + size + '"></div>');
             var $input = $('<textarea rows="1" class="form-control input-sm" id="' + field.id + '" style="resize:none"></textarea>');
             if (this.oldFields[field.id])
@@ -1502,7 +1512,7 @@
          * @return {[type]}
          */
         insertFields: function(fields, requiredFields) { //NOTE: PRESS V3
-
+            var hasDoi = false;
             function printFields(field, depth, fieldGroup) {
 
                 for (let i = 0; i < field.length; i++) {
@@ -1532,6 +1542,8 @@
                                     if (this.fields[field[i]].id === 'localLink') {
                                         fieldDiv = this.insertLocalField(this.fields[field[i]], size, required);
                                     } else {
+                                        if(this.fields[field[i]].id === 'doi')
+                                            hasDoi = true;
                                         fieldDiv = this.insertLiteralField(this.fields[field[i]], size, required);
                                     }
                                     break;
@@ -1558,6 +1570,10 @@
                 }
             }
             printFields.call(this, fields, 1, $('<div class="form-group"></div>'));
+            if ($.inArray('localLink', requiredFields) !== -1 && hasDoi){
+                this.fieldElement.find('label[for="localLink"]').parent().removeClass('required').addClass('required-pair');
+                this.fieldElement.find('label[for="doi"]').parent().removeClass('required').addClass('required-pair');
+            }
         },
         /**
          * Clears the form input values
@@ -1649,10 +1665,18 @@
                         break;
                     case 'localLink':
                         if (!this.editMode) {
-                            if (!$('#' + required[i]).val()) {
+                            if (!$('#' + required[i]).val() && !$('#doi').val()) {      //One of two required
                                 $('#' + required[i]).parent().parent().addClass('has-error');
+                                $('#doi').parent().parent().addClass('has-error');
                                 correct = false;
-                                console.error('File Upload validation Error!');
+                                console.error('File Upload & DOI validation Error!');
+                            }
+                        }else{
+                            if(!this.localLink && !$('#' + required[i]).val() && !$('#doi').val()){
+                                $('#' + required[i]).parent().parent().addClass('has-error');
+                                $('#doi').parent().parent().addClass('has-error');
+                                correct = false;
+                                console.error('File Upload & DOI validation Error!');
                             }
                         }
                         break;
