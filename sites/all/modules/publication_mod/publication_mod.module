@@ -1622,3 +1622,65 @@ function publication_mod_form_alter(&$form, &$form_state, $form_id){
       break;
   }
 }
+
+/**
+ * Checks if a user can edit a publication
+ * @param string $pub The uri of the publication
+ * @param string $user_uuid The uuid of the user
+ * @param string $user_org The org of the user
+ * @param bool $power_user If the user is a power user
+ * @return bool
+ */
+function publication_mod_can_user_edit($pub, $user_uuid, $user_org, $power_user){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+  $query = "prefix press:<". $blazegraph_info['blazegraph_prefix'] ."> \n".
+"select ?person ?org where { \n".
+" { \n".
+"   ?pub press:publicationUuid \"" . $pub . "\".  \n".
+"   ?pub press:hasContributor ?conSlot.  \n".
+"   ?con rdfs:subPropertyOf* press:contributorType.  \n".
+"   ?conSlot ?con ?person.  \n".
+" }UNION{ \n".
+"   ?pub press:publicationUuid \"" . $pub . "\".  \n".
+"   ?pub press:belongsTo ?org. \n".
+" } \n".
+"} \n";
+  
+  $q = http_build_query(array('query' => $query));
+
+  $options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  
+  $data = json_decode($result->data);
+
+  $belongsToOrg = FALSE;
+  $isContributor = FALSE;
+  
+  foreach ($data->results->bindings as $key => $value) {
+    if(!$belongsToOrg && property_exists($value, 'org')){
+      $ex_orgs = explode("/", $value->org->value);
+      if($ex_orgs[count($ex_orgs) - 1] == $user_org){
+        $belongsToOrg = TRUE;
+      }
+    }
+    if(!$isContributor && property_exists($value, 'person')){
+      if($value->person->value == $user_uuid){
+        $isContributor = TRUE;
+      }
+    }
+  }
+
+  if($power_user){
+    return $belongsToOrg;
+  }
+  return ($belongsToOrg && $isContributor);
+}

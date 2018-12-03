@@ -1724,16 +1724,16 @@
             if (!$.isArray(publications) || publications.length === 0) return;
             var query = 'prefix press: <' + this.prefix + '> \n';
             query += 'SELECT * WHERE { \n';
-            // query += '{\n';
-            // query += '?pub press:belongsTo ?org. \n';
-            // query += 'FILTER (';
-            // for (var i=0; i<publications.length; i++){
-            //   if (i>0) query += '||';
-            //   query += '?pub = <'+ publications[i] + '> ';
-            // }
-            // query += '). \n';
-            // query += '?org press:organizationName ?orgName. \n';
-            // query += '}UNION{ \n';
+            query += '{\n';
+            query += '?pub press:belongsTo ?org. \n';
+            query += 'FILTER (';
+            for (var i=0; i<publications.length; i++){
+              if (i>0) query += '||';
+              query += '?pub = <'+ publications[i] + '> ';
+            }
+            query += '). \n';
+            query += '?org press:organizationName ?orgName. \n';
+            query += '}UNION{ \n';
             query += '?pub press:tag ?tag. \n';
             query += 'FILTER (';
             for (var i = 0; i < publications.length; i++) {
@@ -1742,7 +1742,7 @@
             }
             query += '). \n';
             query += '} \n';
-            // query += '}\n';
+            query += '}\n';
 
             return this.getQuery(query, 0, 0);
         },
@@ -2017,7 +2017,7 @@
                 }
                 contributors[contributorResults[i].pub.value][conType].push(contributorResults[i]);
             }
-            console.log(contributors);
+            // console.log(contributors);
             for (var key in contributors) {
                 for (var typeKey in contributors[key]) {
                     contributors[key][typeKey].sort(function(a, b) {
@@ -2033,8 +2033,8 @@
                     multipleFields[field.pub.value] = {};
                 }
                 var type = '';
-                if ('orgName' in field) {
-                    type = 'orgName';
+                if ('org' in field) {
+                    type = 'org';
                 } else if ('tag' in field) {
                     type = 'tag';
                 }
@@ -2042,9 +2042,14 @@
                     multipleFields[field.pub.value][type] = [];
                 }
 
-                multipleFields[field.pub.value][type].push(field[type].value);
+                if(type === 'org'){
+                    var res = field[type].value.split('/');
+                    multipleFields[field.pub.value][type].push(res[res.length-1]);
+                }else{
+                    multipleFields[field.pub.value][type].push(field[type].value);
+                }
             }
-
+            // console.log(multipleFields);
             var $container = $('<div></div>');
             //Start inserting results
             for (var i = 0; i < results.length; i++) {
@@ -2117,7 +2122,14 @@
                 $icons.append($info_icon);
 
                 var addEdit = false;
-                if (!this.current_user.anonymous && $.inArray('Publication Mod Power User', this.current_user.roles) > -1) {
+                if ($.inArray('administrator', this.current_user.roles) > -1 || 
+                    (!this.current_user.anonymous && 
+                        $.inArray('Publication Mod Power User', this.current_user.roles) > -1 &&
+                        (multipleFields[current_pub.pub.value] &&
+                            'org' in multipleFields[current_pub.pub.value] && 
+                            $.inArray(this.current_user['lab'], multipleFields[current_pub.pub.value]['org']) > -1)
+                        )
+                    ) {
                     addEdit = true;
                 }
 
@@ -2134,7 +2146,7 @@
                                 var current_contributor = contributors[current_pub.pub.value][current_contributor_type][x];
 
                                 if (!this.current_user.anonymous && addEdit === false) {
-                                    console.log(current_contributor);
+                                    // console.log(current_contributor);
                                     if (this.current_user.uuid === current_contributor.person.value) {
                                         addEdit = true;
                                     }

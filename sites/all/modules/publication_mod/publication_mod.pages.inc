@@ -115,6 +115,7 @@ function publication_mod_page_search_publication(){
  */
 function publication_mod_page_edit_publication(){
   global $base_url;
+  global $user;
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -123,6 +124,7 @@ function publication_mod_page_edit_publication(){
   if (empty($_GET['uuid']) && empty($_GET['category'])){
     return "You didn't specify a Publication and/or it's Category";
   }
+
   $uuid = $_GET['uuid'];
   if (substr($uuid, 0, 9) !== 'urn:uuid:'){
     if (uuid_is_valid($uuid)){
@@ -131,9 +133,20 @@ function publication_mod_page_edit_publication(){
   }
   $category = $_GET['category'];
   
+  $user_data = user_load($user->uid);
+
+  if(!(in_array('administrator', array_values($user_data->roles)) || publication_mod_can_user_edit(
+    $uuid,
+    $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'],
+    $user_data->pub_mod_field_organization['und'][0]['option'],
+    in_array('Publication Mod Power User', array_values($user_data->roles))
+  ))){
+    drupal_access_denied();
+    exit();
+  }
+
   _add_presslib_library();
 
-  global $user;
   $current_user = _get_user_info_to_json();
 
   $labs = _get_labs_to_json();

@@ -343,8 +343,9 @@
             for (var i = 0; i < results.length; i++) {
                 if ('org' in results[i]) { //Fill organization values
                     var $ul = $('#lab-editable', this.element);
-                    if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1 &&
-                        results[i].org.value.split('#')[1] === this.labs[this.current_user.lab]) {
+                    var splited_lab = results[i].org.value.split('/');
+                    if ($.inArray('administrator', this.current_user.roles) === -1 &&
+                        splited_lab[splited_lab.length -1] === this.labs[this.current_user.lab]) {
                         var valid = true;
                         $('.lab-item').each($.proxy(function(index, element) {
                             if ($(element).attr('id') === this.labs[this.current_user.lab]) {
@@ -634,9 +635,8 @@
                     }
                 }
             });
-            console.log(labs);
             if (!this.editMode) {
-                if ($.inArray('Publication Mod Power User', this.current_user.roles) === -1) {
+                if ($.inArray('administrator', this.current_user.roles) === -1) {
                     $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '</li>'));
                     $ul.show();
                 } else {
