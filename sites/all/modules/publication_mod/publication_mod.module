@@ -1117,6 +1117,20 @@ function publication_mod_ajax_callback_get_path(){
  * Implements hook_user_presave
  */
 function publication_mod_user_presave(&$edit, $account, $category){
+  $add_again_to_blzg = false;
+  $delete_from_blzg = false;
+  if($account->pub_mod_field_add_to_blzg['und'][0]['value'] == 0){  // Was 0
+    if($edit['pub_mod_field_add_to_blzg']['und'][0]['value'] == 0){  //Stays 0, do nothing with BLZG.
+      return;
+    }else{  // Becomes 1
+      $add_again_to_blzg = true;
+    }
+  }else{  // Was 1
+    if($edit['pub_mod_field_add_to_blzg']['und'][0]['value'] == 0){ // Becomes 0
+      // TODO: Delete from BLZG?
+      $delete_from_blzg = true;
+    }// else, Was 1, Becomes 1, continue with edit.
+  }
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
   
@@ -1294,36 +1308,87 @@ function publication_mod_user_presave(&$edit, $account, $category){
       $org = $account->pub_mod_field_organization['und'][0]['option'];
     }
 
-    if($needs_update){
+    if($needs_update || $delete_from_blzg){
+      $result_affected_pubs;
+
+      if($delete_from_blzg){
+        $sparql_getaffected = "prefix foaf: <http://xmlns.com/foaf/0.1/> ".
+          "prefix press:<". $prefix . "> ".
+          "SELECT distinct ?pub WHERE{ ".
+          "<". $uuid."> rdf:type foaf:Person. " .
+          "?slot ?c <". $uuid.">. ".
+          "?slot rdf:type press:Contributor_Slot. ".
+          "?pub press:hasContributor ?slot. }";
+
+          $q_getaffected = http_build_query(array('query' => $sparql_getaffected));
+
+          $options = array(
+            'headers' => array(
+              'Accept'=>'application/sparql-results+json',
+              'content-type'=> 'application/x-www-form-urlencoded'),
+            'method' => 'POST',
+            'data' => $q_getaffected
+          );
+
+          $result_affected_pubs = drupal_http_request($blazegraph_url, $options);
+      }
+
       $sparql = "prefix foaf: <http://xmlns.com/foaf/0.1/>".
       "prefix press:<". $prefix . ">".
       "DELETE {".
+        "<". $uuid."> rdf:type foaf:Person. " .
         "<". $uuid . "> foaf:familyName ?familyName. ".
         "<". $uuid . "> foaf:givenName ?givenName. ".
         "<". $uuid . "> foaf:mbox ?mbox. ".
+        "<". $uuid . "> press:username ?username.".
         "<". $uuid . "> press:personGroup ?group. ";
+
+      if($delete_from_blzg){
+        $sparql .= "?slot ?sp ?so. ".
+          "?pub ?hasCon ?slot. ";
+      }
 
       if(isset($org) && !empty($org)){
         $sparql .= "<". $uuid . "> press:memberOf ?org.";
       }
-      $sparql .= "}INSERT{".
-        "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
-        "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
-        "<". $uuid."> foaf:mbox \u0022mailto:". $mail . "\u0022. ".
-        "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ";
+      if(!$delete_from_blzg){
+        $sparql .= "}INSERT{".
+          "<". $uuid."> rdf:type foaf:Person. " .
+          "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
+          "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
+          "<". $uuid."> foaf:mbox \u0022mailto:". $mail . "\u0022. ".
+          "<". $uuid."> <". $prefix ."username> \u0022". $edit['name'] . "\u0022. ".
+          "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ";
 
-      if(isset($org) && !empty($org)){
-        $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
+        if(isset($org) && !empty($org)){
+          $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
+        }
       }
 
-      $sparql .= "} WHERE {".
-        "<". $uuid."> rdf:type foaf:Person;".
+      $sparql .= "} WHERE { ";
+
+      if($add_again_to_blzg){
+        $sparql .= "OPTIONAL{";
+      }
+       $sparql .= "<". $uuid."> rdf:type foaf:Person;".
         "foaf:familyName ?familyName;".
         "foaf:givenName ?givenName; ".
         "press:personGroup ?group. ". 
-        "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
-        "OPTIONAL{<". $uuid."> press:memberOf ?org.}".
-        "}";
+        "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}. ".
+        "OPTIONAL{<". $uuid."> press:username ?username.}. ".
+        "OPTIONAL{<". $uuid."> press:memberOf ?org.}";
+
+      if($delete_from_blzg){
+        $sparql .= "OPTIONAL{ ?slot ?p <". $uuid.">. ".
+          "?slot rdf:type press:Contributor_Slot .".
+          "?slot ?sp ?so. ".
+          "?pub ?hasCon ?slot. }";
+      }
+
+      if($add_again_to_blzg){
+        $sparql .= "}";
+      }
+      $sparql .= "}";
 
       $q = http_build_query(array('update' => $sparql));
 
@@ -1337,7 +1402,15 @@ function publication_mod_user_presave(&$edit, $account, $category){
 
       $result = drupal_http_request($blazegraph_url, $options);
 
+      if($delete_from_blzg){
+        $affected_pub_results = json_decode($result_affected_pubs->data);
+        $affected_pubs = array();
 
+        foreach ($affected_pub_results->results->bindings as $key => $value) {
+          $affected_pubs[] = $value->pub->value;
+        }
+        publication_mod_update_pubs($affected_pubs);
+      }
       watchdog("Blazegraph Person Update", print_r($result, true), array(), WATCHDOG_NOTICE);
     }
   }
@@ -1360,8 +1433,12 @@ function publication_mod_user_cancel($edit, $account, $method){
  */
 function publication_mod_user_insert(&$edit, $account, $category){
 
+  if($edit['pub_mod_field_add_to_blzg']['und'][0]['value'] == 0){
+    return;
+  }
+
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
-  
+
   // watchdog("publication_mod_user_insert", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
   //   '%edit' => print_r($edit, true),
   //   '%account' => print_r($account, true),
@@ -1413,6 +1490,7 @@ function publication_mod_user_insert(&$edit, $account, $category){
     "<". $uuid . "> foaf:familyName ?familyName. ".
     "<". $uuid . "> foaf:givenName ?givenName. ".
     "<". $uuid."> press:personGroup ?group. ".
+    "<". $uuid."> press:username ?username. ".
     "<". $uuid . "> foaf:mbox ?mbox.".
     "<". $uuid . "> press:memberOf ?org.";
 
@@ -1420,8 +1498,8 @@ function publication_mod_user_insert(&$edit, $account, $category){
     "<". $uuid."> foaf:familyName \u0022". $last_name ."\u0022. " .
     "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
     "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
-    "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ";
-
+    "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ".
+    "<". $uuid."> <". $prefix ."username> \u0022". $edit['name'] . "\u0022. ";
   if(isset($org) && !empty($org)){
     $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
   }
@@ -1432,6 +1510,7 @@ function publication_mod_user_insert(&$edit, $account, $category){
     "foaf:familyName ?familyName;".
     "foaf:givenName ?givenName.".
     "<". $uuid."> press:personGroup ?group. ".
+    "OPTIONAL{<". $uuid."> press:username ?username.}".
     "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}".
     "OPTIONAL{<". $uuid."> press:memberOf ?org.}}".
     "}";
@@ -1621,6 +1700,8 @@ function publication_mod_form_alter(&$form, &$form_state, $form_id){
         $form['pub_mod_field_blazegraph_uuid']['#disabled'] = true;
         $form['pub_mod_field_add_to_blzg']['#access'] = false;
       }
+      $module_path = drupal_get_path('module', 'publication_mod');
+      drupal_add_js($module_path . '/js/pressUserForm.js');
       break;
   }
 }
