@@ -2134,7 +2134,7 @@
                 }
 
                 var $pub_info = $('<div class="col-sm-10"></div>');
-
+                var firstCon = true;
                 if (current_pub.pub.value in contributors) { //NOTE: PRESS V3
                     jlength = this.contributorOrder[current_pub.typeID.value].length;
                     for (var j = 0; j < jlength; j++) {
@@ -2172,10 +2172,11 @@
                                         // that.clearAdvancedSearch(); //TODO: Check for workaround
                                     };
                                 })(this));
-                                $pub_info.append($author_link);
-                                if ((x < length - 1) || (j < jlength - 1)) {
+                                if(!firstCon){
                                     $pub_info.append(', ');
                                 }
+                                $pub_info.append($author_link);
+                                firstCon = false;
                             }
                         }
                     }
