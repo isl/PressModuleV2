@@ -190,6 +190,7 @@ function publication_mod_uninstall() {
     'pub_mod_field_organization',
     'pub_mod_field_first_name',
     'pub_mod_field_last_name',
+    'pub_mod_field_add_to_blzg',
   );
 
   foreach($fields as $field){
