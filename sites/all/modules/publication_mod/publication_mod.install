@@ -396,6 +396,51 @@ function publication_mod_enable() {
     field_create_instance($instance);
   }
 
+  // Check if our field is not already created.
+  if (!field_info_field('pub_mod_field_add_to_blzg')) {
+    $field = array(
+      'field_name' => 'pub_mod_field_add_to_blzg',
+      'type' => 'list_boolean',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => '',
+          1 => '',
+        )
+      )
+    );
+    field_create_field($field);
+
+  }
+  // Create the instance on the bundle.
+  if(!field_info_instance('user', 'pub_mod_field_add_to_blzg', 'user')){
+    $instance = array(
+      'field_name' => 'pub_mod_field_add_to_blzg',
+      'entity_type' => 'user',
+      'label' => 'Add user to Publication Mod Blazegraph DB',
+      'bundle' => 'user',
+      'required' => 0,
+      'settings' => array(
+        // Here you inform either or not you want this field showing up on the registration form.
+        'user_register_form' => 1,
+      ),
+      'widget' => array(
+        'weight' => '4',
+        'type' => 'options_onoff',
+        'settings' => array(
+          'display_label' => 1,
+        ),
+      ),
+      'default_value' => array(array('value' => 1)),
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'hidden',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+
   if (empty(user_role_load_by_name('Publication Mod Power User'))){
     $role = new stdClass();
     $role->name = 'Publication Mod Power User';
