@@ -908,6 +908,8 @@ function publication_mod_ajax_callback($title='', $category='', $body='', $summa
 
 function publication_mod_update_pubs($blazegraph_uris = array()){
   if(empty($blazegraph_uris)){
+    if(!in_array('blazegraph_uris', $_POST))
+      return;
     $blazegraph_uris = $_POST['blazegraph_uris'];
     $function_called = false;
   }
