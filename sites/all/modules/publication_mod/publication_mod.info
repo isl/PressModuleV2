@@ -9,5 +9,6 @@ dependencies[] = entity
 dependencies[] = jquery_update
 dependencies[] = pathauto
 dependencies[] = uuid
+dependencies[] = list
 
 configure = admin/config/publications/publication_mod
