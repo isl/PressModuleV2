@@ -285,6 +285,90 @@ function publication_mod_menu(){
       menu_link_save($link);
     }
   }
+
+  // RESTful API urls & callbacks
+  
+  $menu['ajax/publications/get_publication_info'] = array(
+    'title' => '',
+    'page callback' => '_get_publication_info',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/get_categories'] = array(
+    'title' => '',
+    'page callback' => '_get_categories',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/get_tags'] = array(
+    'title' => '',
+    'page callback' => '_get_tags',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/get_data_properties'] = array(
+    'title' => '',
+    'page callback' => '_get_data_properties',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/search_author'] = array(
+    'title' => '',
+    'page callback' => '_search_author',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/get_uuid'] = array(
+    'title' => '',
+    'page callback' => '_get_uuid',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/add_external_author'] = array(
+    'title' => '',
+    'page callback' => '_add_external_author',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/search_project'] = array(
+    'title' => '',
+    'page callback' => '_search_project',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/add_publication'] = array(
+    'title' => '',
+    'page callback' => '_add_publication',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
   menu_cache_clear_all();
 
   return $menu;
