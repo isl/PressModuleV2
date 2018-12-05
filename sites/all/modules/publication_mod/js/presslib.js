@@ -408,19 +408,7 @@
 
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: "prefix press: <" + this.prefix + "> " +
-                            'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ' +
-                            '(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel ' +
-                            "WHERE { " +
-                            "?low rdfs:subClassOf* press:Publication. " +
-                            "OPTIONAL {?low rdfs:label ?lowlabel}. " +
-                            "OPTIONAL {?low press:optgroup ?optgroup}. " +
-                            "OPTIONAL {?low rdfs:subClassOf ?superclass . " +
-                            "?superclass rdfs:label ?superlabel} " +
-                            "} ORDER BY ?label"
-                    }
+                    url: '/ajax/publications/get_categories',
                 })
                 .done($.proxy(function(response) {
                     var category_tree = {};
@@ -462,12 +450,7 @@
             return $.ajax({
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: 'prefix press: <' + this.prefix + '> ' +
-                            'SELECT distinct ?tag WHERE { ' +
-                            '?pub press:tag ?tag} '
-                    }
+                    url: '/ajax/publications/get_tags',
                 })
                 .done($.proxy(function(response) {
                     for (var i = 0; i < response.results.bindings.length; i++) {
@@ -489,23 +472,7 @@
             return $.ajax({
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: "prefix press: <" + this.prefix + "> " +
-                            'SELECT DISTINCT (strafter(str(?p), "#") AS ?pid) ?label (strafter(str(?type), "#") AS ?ptype) ?range ' +
-                            "WHERE { " +
-                            "?class ^rdfs:domain ?p . " +
-                            "?p rdf:type ?type . " +
-                            "FILTER (?type = owl:DatatypeProperty || ?type = owl:ObjectProperty) . " +
-                            "OPTIONAL{?p rdfs:label ?label }. " +
-                            "OPTIONAL {?p rdfs:range ?range}" +
-                            "{" +
-                            "?class rdfs:subClassOf* press:Publication." +
-                            "}union{" +
-                            "?class rdfs:subClassOf* press:Contributor_Slot." +
-                            "}" +
-                            "}order by ?p "
-                    }
+                    url: '/ajax/publications/get_data_properties',
                 })
                 .done($.proxy(function(response) {
                     results = response.results.bindings;
@@ -756,34 +723,21 @@
                         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tokens'),
                         sufficient: 500,
                         remote: {
-                            url: this.dbURL,
+                            url: '/ajax/publications/search_author',
                             wildcard: '%QUERY',
                             // rateLimitBy: 'throttle',
                             // rateLimitWait: 0,
                             prepare: (function(groupKey, prefix) {
                                 return function(query, settings) {
-                                    // console.log(settings);
 
                                     var queries = query.split(' ');
-
-                                    BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' +
-                                        'prefix press: <' + prefix + '> \n' +
-                                        'SELECT ?uuid (CONCAT(?givenName, \" \", ?familyName) ' +
-                                        'AS ?fullName) ?givenName ?familyName (substr(?mbox, 8) as ?mail) WHERE { \n';
-                                    for (var i = 0; i < queries.length; i++) {
-                                        if (queries[i].length < 3) return false;
-                                        BDSquery += '?o' + i + ' bds:search "' + queries[i] + '*". \n' +
-                                            '?uuid ?p' + i + ' ?o' + i + ' . \n' +
-                                            'filter(?p' + i + ' = foaf:familyName || ?p' + i + ' = foaf:givenName). \n';
-                                    }
-
-                                    BDSquery += '?uuid foaf:familyName ?familyName. \n' +
-                                        '?uuid foaf:givenName ?givenName. \n' +
-                                        'optional{?uuid foaf:mbox ?mbox}. \n' +
-                                        '?uuid press:personGroup "' + groupKey + '". }';
+                                    queries = queries.filter(function(value, index, arr){
+                                        return value.length > 2;
+                                    });
 
                                     settings.data = {
-                                        query: BDSquery,
+                                        terms: queries,
+                                        groupKey: groupKey,
                                     }
                                     return settings;
                                 }
@@ -914,25 +868,26 @@
                     class: 'btn btn-primary btn-md',
                     click: (function() {
 
-                        $.get(this.dbURL + '?uuid')
+                        $.get('/ajax/publications/get_uuid')
                             .done($.proxy(function(response) {
                                 var uuid = 'urn:uuid:' + response;
                                 var query = 'prefix foaf: <http://xmlns.com/foaf/0.1/>\n';
                                 var firstName = $('#externalFirstName').val();
                                 var lastName = $('#externalLastName').val();
-                                query += 'INSERT{ \n';
-                                query += '?uuid rdf:type foaf:Person; \n';
-                                query += '<' + this.prefix + 'personGroup> "External_Author"; \n';
-                                query += 'foaf:familyName "' + lastName + '"; \n';
-                                query += 'foaf:givenName "' + firstName + '"; \n';
-                                query += 'foaf:mbox "mailto:' + $('#externalAuthorMail').val() + '"; \n';
-                                query += '<' + this.prefix + 'personUuid> ?struuid . \n';
-                                query += '}WHERE{\n';
-                                query += 'SELECT ?uuid ?struuid WHERE {BIND(<' + uuid + '> as ?uuid). BIND(str(?uuid) as ?struuid)} \n';
-                                query += '}';
+                                var mail = $('#externalAuthorMail').val();
+                                // query += 'INSERT{ \n';
+                                // query += '?uuid rdf:type foaf:Person; \n';
+                                // query += '<' + this.prefix + 'personGroup> "External_Author"; \n';
+                                // query += 'foaf:familyName "' + lastName + '"; \n';
+                                // query += 'foaf:givenName "' + firstName + '"; \n';
+                                // query += 'foaf:mbox "mailto:' + $('#externalAuthorMail').val() + '"; \n';
+                                // query += '<' + this.prefix + 'personUuid> ?struuid . \n';
+                                // query += '}WHERE{\n';
+                                // query += 'SELECT ?uuid ?struuid WHERE {BIND(<' + uuid + '> as ?uuid). BIND(str(?uuid) as ?struuid)} \n';
+                                // query += '}';
 
                                 this.loader.show();
-                                $.when(this.insertExternalAuthor(query)).done($.proxy(function(a) {
+                                $.when(this.insertExternalAuthor(uuid, firstName, lastName, mail)).done($.proxy(function(a) {
                                         this.loader.hide();
                                         var $alert = $('<div class="alert alert-success alert-dismissable fade in">' +
                                             '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>' +
@@ -1166,23 +1121,15 @@
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.obj.whitespace('projectID name'),
                 remote: {
-                    url: this.dbURL,
+                    url: '/ajax/publications/search_project',
                     wildcard: '%QUERY',
                     prepare: (function(prefix) {
                         return function(query, settings) {
 
                             var queries = query.split(' ');
 
-                            BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' +
-                                'prefix press: <' + prefix + '> \n' +
-                                'SELECT ?projectID ?name WHERE { \n' +
-                                '?name bds:search "' + queries + '*". \n' +
-                                '?name bds:matchAllTerms "true". \n' +
-                                '?projectID press:projectName ?name. \n' +
-                                '} ';
-
                             settings.data = {
-                                query: BDSquery,
+                                query: queries.toString(),
                             }
                             return settings;
                         }
@@ -1971,13 +1918,16 @@
          * @param  {string} updateQuery The query to be POSTed
          * @return {Object} A jqXHR object
          */
-        insertExternalAuthor: function(updateQuery) {
+        insertExternalAuthor: function(uuid, firstName, lastName, mail) {
             return $.ajax({
                     dataType: 'html',
                     method: "POST",
-                    url: this.dbURL,
+                    url: '/ajax/publications/add_external_author',
                     data: {
-                        update: updateQuery
+                        uuid: uuid,
+                        firstName: firstName,
+                        lastName: lastName,
+                        mail: mail, 
                     }
                 })
                 .done(function(response) {
