@@ -241,6 +241,7 @@
                 except.push('project');
                 except.push('tag');
 
+                console.log(pubFields);
                 // Query for getting all the fields of a publication based on category
                 var query = 'prefix press: <' + this.prefix + '>'; 
                 query += 'SELECT * WHERE{ \n';
