@@ -1,6 +1,7 @@
 ; Copyright FORTH-ICS, Emmanouil Dermitzakis
 name = PRESS Organization Field
 description = A field for organizations
+version = 7.x-dev
 core = 7.x
 package = Publications
 dependencies[] = field
