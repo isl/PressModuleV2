@@ -13,19 +13,19 @@ function publication_mod_settings_page(){
 
 	$markup .= '<h3>Edit Authors</h3>';
 	$markup .= '<ul>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/internal_authors">Edit Internal Authors</a></li>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/external_authors">Edit External Authors</a></li>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/merge_authors">Merge Authors</a></li>';
+	$markup .= '<li>'. l('Edit Internal Authors', 'admin/config/publications/publication_mod/internal_authors'). '</li>';
+	$markup .= '<li>'. l('Edit External Authors','admin/config/publications/publication_mod/external_authors') . '</li>';
+	$markup .= '<li>'. l('Merge Authors', 'admin/config/publications/publication_mod/merge_authors') . '</li>';
 	$markup .= '</ul>';
 	$markup .= '<h3>Edit Content</h3>';
 	$markup .= '<ul>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/projects">Edit Projects</a></li>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/tags">Edit Tags</a></li>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/edit_orgs">Edit Organizations</a></li>';
+	$markup .= '<li>'. l('Edit Projects', 'admin/config/publications/publication_mod/projects') . '</li>';
+	$markup .= '<li>'. l('Edit Tags','admin/config/publications/publication_mod/tags'). '</li>';
+	$markup .= '<li>'. l('Edit Organizations', 'admin/config/publications/publication_mod/edit_orgs'). '</li>';
 	$markup .= '</ul>';
 	$markup .= '<h3>Import Content</h3>';
 	$markup .= '<ul>';
-	$markup .= '<li><a href="/admin/config/publications/publication_mod/import_pubs">Import Publications</a></li>';
+	$markup .= '<li>'. l('Import Publications', 'admin/config/publications/publication_mod/import_pubs') . '</li>';
 	$markup .= '</ul>';
 	$page = array(
 		'form' => drupal_get_form('publication_mod_settings_form'),
