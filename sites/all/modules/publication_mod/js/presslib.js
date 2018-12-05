@@ -235,60 +235,15 @@
                         }
                     }
                 }
-                var pubFields = findFields(categories, this.editPublication.category);
 
-                var except = Object.keys(this.personFields);
-                except.push('project');
-                except.push('tag');
 
-                console.log(pubFields);
-                // Query for getting all the fields of a publication based on category
-                var query = 'prefix press: <' + this.prefix + '>'; 
-                query += 'SELECT * WHERE{ \n';
-                query += '{?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += 'OPTIONAL {?pub press:creationDate ?creationDate.}. \n';
-                query += 'OPTIONAL {?pub press:modifiedDate ?modifiedDate.}. \n';
-                for (var i = 0; i < pubFields.length; i++) {
-                    if (typeof pubFields[i] === 'string') {
-                        if (!except.includes(pubFields[i]))
-                            query += 'OPTIONAL {?pub press:' + pubFields[i] + ' ?' + pubFields[i] + '}. \n';
-                    } else {
-                        for (var j = 0; j < pubFields[i].length; j++) {
-                            if (typeof pubFields[i][j] === 'string') {
-                                if (!except.includes(pubFields[i]))
-                                    query += 'OPTIONAL {?pub press:' + pubFields[i][j] + ' ?' + pubFields[i][j] + '}. \n';
-                            }
-                        }
-                    }
-                }
+                var pubFields = [].concat.apply([], findFields(categories, this.editPublication.category));
 
-                query += '}UNION{';
+                pubFields = pubFields.filter(function(value, index, arr){
+                    return value !== 'project' && value !== 'tag';
+                });
 
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:appearsIn ?project. \n';
-                query += '?project press:projectName ?projectName. \n';
-                query += '}UNION{ \n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:hasContributor ?conSlot. \n';
-                // query += '?conList press:slot ?conSlot. \n';
-                query += '?con rdfs:subPropertyOf* press:contributorType. \n';
-                query += '?conSlot ?con ?person. \n';
-                query += '?conSlot press:listIndex ?personIndex. \n';
-                query += '?person foaf:familyName ?familyName. \n';
-                query += '?person press:personGroup ?group. \n';
-                query += 'OPTIONAL {?person foaf:givenName ?givenName.}. \n';
-                query += 'OPTIONAL {?person foaf:mbox ?mbox.}. \n';
-                query += '}UNION{ \n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:belongsTo ?org. \n';
-                query += '?org press:organizationName ?orgName. \n';
-                query += '} UNION {\n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:tag ?tag. \n';
-                query += '} \n';
-                query += '} \n';
-
-                this.getPublicationInfo(query);
+                this.getPublicationInfo(this.editPublication.uuid, pubFields);
             }
 
         }, this));
@@ -303,13 +258,14 @@
          * 
          * @param {string} query The query to be requested 
          */
-        getPublicationInfo: function(query) {
+        getPublicationInfo: function(uuid, pubFields) {
             $.ajax({
                     dataType: 'json',
                     method: 'GET',
-                    url: this.dbURL,
+                    url: '/ajax/publications/get_publication_info',
                     data: {
-                        query: query
+                        uuid: uuid,
+                        pubFields: pubFields,
                     }
                 }).done($.proxy(function(response) {
                     this.insertData(response);
