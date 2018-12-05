@@ -26,7 +26,7 @@ function publication_mod_page_add_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+      "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
@@ -81,7 +81,7 @@ function publication_mod_page_search_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#search-publication').pressSearch({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+      "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE))."', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
@@ -156,7 +156,7 @@ function publication_mod_page_edit_publication(){
   $internalJS = "jQuery(document).ready(function($){ \n" .
     "$('#add-publication').press({ \n" .
       "base_url: '". $base_url . "', \n" .
-      "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+      "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE))."', \n" .
       "prefix: '" . $ontologyPrefix . "', \n" .
       "authorGroups: { \n".
         "FORTH_ICS_Author: { \n".
