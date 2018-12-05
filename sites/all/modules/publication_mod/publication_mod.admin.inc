@@ -114,7 +114,7 @@ function _external_authors_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-external-author').pressExternalAuthors({ \n" .
-	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+	  "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -143,7 +143,7 @@ function _internal_authors_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-internal-author').pressInternalAuthors({ \n" .
-	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+	  "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -172,7 +172,7 @@ function _merge_authors(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-author').pressMergeAuthors({ \n" .
-	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+	  "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -201,7 +201,7 @@ function _projects_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-project').pressEditProjects({ \n" .
-	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+	  "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";
@@ -229,7 +229,7 @@ function _tags_edit(){
 
   $internalJS = "jQuery(document).ready(function($){ \n" .
 	"$('#search-tag').pressEditTags({ \n" .
-	  "dbURL: '/ajax/pub_mod_blazegraph', \n" .
+	  "dbURL: '". url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) ."', \n" .
 	  "prefix: '" . $ontologyPrefix . "', \n" .
 	"}); \n".
   "}); \n";

@@ -198,7 +198,7 @@ function publication_mod_page_add_project(){
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
   $inlineJS = 'jQuery(document).ready(function($){';
-  $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "/ajax/pub_mod_blazegraph");'; 
+  $inlineJS .= 'initProjects("'.$ontologyPrefix.'", "'. url('ajax/pub_mod_blazegraph', array('absolute' => TRUE)) .'");'; 
   $inlineJS .= '}); ';
   drupal_add_js($inlineJS, 'inline');
 
