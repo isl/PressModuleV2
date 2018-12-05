@@ -221,7 +221,7 @@ function publication_mod_menu(){
     'link_title' => 'Add Publication',
     'menu_name' => 'main-menu',
     'plid' => $mlid,
-    'weight' => 1
+    'weight' => 2
   );
 
   $menu['publication/search-pub'] = array(
@@ -256,6 +256,23 @@ function publication_mod_menu(){
     'weight' => 11
   );
 
+  $menu['publication/my-pubs'] = array(
+    'title' => 'My Publications',
+    'description' => 'My Publications',
+    'page callback' => 'publication_mod_dummy_page',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+  );
+
+  $menu_links[3] = array(
+    'link_path' => 'publication/my-pubs',
+    'link_title' => 'My Publications',
+    'menu_name' => 'main-menu',
+    'module' => 'publication_mod',
+    'plid' => $mlid,
+    'weight' => 1
+  );
+
   foreach ($menu_links as $link) {
     $found = FALSE;
     foreach ($current_links as $current) {
@@ -271,6 +288,48 @@ function publication_mod_menu(){
   menu_cache_clear_all();
 
   return $menu;
+}
+
+
+/**
+ * Dummy page callback for publication/my-pubs
+ */
+function publication_mod_dummy_page(){
+  return;
+}
+
+/**
+ * Implements hook_menu_link_alter
+ * Used to create the my publication menu link
+ */
+function publication_mod_menu_link_alter(&$link){
+  if ($link['link_path'] == 'publication/my-pubs' && $link['module'] == 'publication_mod'){
+    $link['options']['alter'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_translated_menu_link_alter
+ * Used to create the my publication menu link
+ */
+function publication_mod_translated_menu_link_alter(&$link){
+  global $user;
+
+  if ($link['link_path'] == 'publication/my-pubs' && $link['module'] == 'publication_mod' && !user_is_anonymous()){
+    $user_data = user_load($user->uid);
+    if($user_data->pub_mod_field_add_to_blzg['und'][0]['value'] && !empty($user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'])){
+      $link['href'] = 'publication/search-pub';
+      $link['localized_options'] = array(
+        'query' => array(
+          'type' => 'advanced',
+          'reviewed' => 'false',
+          'authors0' => $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'],
+        ),
+      );
+    }else{
+      $link['hidden'] = 1;
+    }
+  }
 }
 
 function publication_mod_ajax_callback_blazegraph(){
