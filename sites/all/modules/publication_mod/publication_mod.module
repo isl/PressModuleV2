@@ -315,6 +315,15 @@ function publication_mod_menu(){
     'type' => MENU_CALLBACK
   );
 
+  $menu['ajax/publications/search_tag'] = array(
+    'title' => '',
+    'page callback' => '_search_tag',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
   $menu['ajax/publications/get_data_properties'] = array(
     'title' => '',
     'page callback' => '_get_data_properties',

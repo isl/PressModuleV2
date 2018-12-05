@@ -173,8 +173,9 @@
         
         //Retreive from blazegraph the tags, categories, data properties(fields)
         // On success, start inserting the fields
-        $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
-            if (!(a1[1] === "success" && a2[1] === "success" && a3[1] === "success")) {
+        // $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
+        $.when(this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2) {
+            if (!(a1[1] === "success" && a2[1] === "success")) {
                 console.error('GET was unsuccesfull');
                 return;
             }
@@ -1232,8 +1233,30 @@
 
             var tagsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
-                datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: this.tags
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tag'),
+                remote: {
+                    url: '/ajax/publications/search_tag',
+                    prepare: (function(prefix) {
+                        return function(query, settings) {
+                            var queries = query.split(' ');
+                            settings.data = {
+                                query: queries.toString(),
+                            }
+                            return settings;
+                        }
+                    })(this.prefix),
+                    transform: function(response) {
+                        if (typeof response !== 'object') return [];
+                        var tr = [];
+                        var results = response.results.bindings;
+                        for (let i = 0; i < results.length; i++) {
+                            tr[i] = {
+                                tag: results[i].tag.value,
+                            }
+                        }
+                        return tr;
+                    }
+                }
             });
 
             $input.typeahead({
@@ -1243,7 +1266,8 @@
             }, {
                 limit: 100,
                 name: 'tags',
-                source: tagsBlood
+                source: tagsBlood,
+                display: 'tag'
             });
 
             var sortable = Sortable.create($ul[0], {

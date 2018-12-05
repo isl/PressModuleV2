@@ -128,6 +128,42 @@ function _get_tags(){
   echo $result->data;
 }
 
+function _search_tag(){
+	if(empty($_GET['query'])){
+		return;
+	}
+
+	$terms = $_GET['query'];
+
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> ";
+	$query .= "prefix bds: <http://www.bigdata.com/rdf/search#> \n";
+	$query .= "SELECT distinct ?tag WHERE { \n";
+	$query .= "?tag bds:search \"" . $terms . "*\". \n";
+	$query .= "?pub press:tag ?tag . \n";
+	$query .= "}";
+
+	$q = http_build_query(array('query'=>$query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  foreach ($result->headers as $key => $value) {
+    header($key . ':' . $value);
+  }
+  http_response_code($result->code);
+  // watchdog('publication_mod', '$result: <pre>%result</pre>', array('%result'=>print_r($result, TRUE)), WATCHDOG_DEBUG);
+  echo $result->data;
+}
+
 function _get_data_properties(){
 	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 
