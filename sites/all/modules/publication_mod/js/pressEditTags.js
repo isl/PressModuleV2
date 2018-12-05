@@ -291,7 +291,7 @@
           var prevVal = cell.data();
           if(cell.index().column < 1){
             $(this).addClass('input-open');
-            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'" style="width:100%"></input>');
             $(this).find('input').select();
 
             $(this).find('input').keyup(function(ev){

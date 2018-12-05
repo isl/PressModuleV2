@@ -305,7 +305,7 @@
           var prevVal = cell.data();
           if(cell.index().column !== 3){
             $(this).addClass('input-open');
-            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'" style="width:100%"></input>');
             $(this).find('input').select();
             $(this).keyup(function(ev){
               if(ev.which == 13 || ev.keyCode == 13){

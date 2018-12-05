@@ -292,7 +292,7 @@
           var prevVal = cell.data();
           if(['projectName', 'projectDateStart', 'projectDateEnd'].includes(columnName)){
             $(this).addClass('input-open');
-            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'"></input>');
+            $(this).html('<input class="form-text" type="text" value="'+cell.data()+'" style="width:100%"></input>');
             if(['projectDateStart', 'projectDateEnd'].includes(columnName)){
               $(this).find('input').datepicker({
                 'dateFormat': 'yy-mm-dd'
