@@ -378,6 +378,15 @@ function publication_mod_menu(){
     'type' => MENU_CALLBACK
   );
 
+  $menu['ajax/publications/edit_publication'] = array(
+    'title' => '',
+    'page callback' => '_edit_publication',
+    'access callback' => 'publication_mod_user_has_role',
+    'access arguments' => array('authenticated user'),
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
   menu_cache_clear_all();
 
   return $menu;

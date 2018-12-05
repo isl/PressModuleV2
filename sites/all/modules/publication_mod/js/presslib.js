@@ -1292,12 +1292,17 @@
                 if (ev.type === 'keypress' && ev.which != 13) {
                     return;
                 }
+                if(typeof suggestion === 'object'){
+                    suggestion = suggestion.tag;
+                }
+
                 var valid = true;
                 $('.tag-item').each(function() {
                     if ($(this).attr('id') === suggestion) {
                         return valid = false;
                     }
                 });
+
                 if (valid) {
                     var $li;
                     if (ev.type === 'keypress') {
@@ -1307,7 +1312,7 @@
                         $li = $('<li id="' + suggestion + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
                     }
                     $list.append($li);
-                    $li.html(suggestion);
+                    $li.text(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
                 }
@@ -1730,6 +1735,70 @@
                 return query;
             }
 
+            function constructOptions(response, del){
+                var options = {};
+                if(this.editMode){
+                    options['uuid'] = this.editPublication.uuid;
+                }else{
+                    options['uuid'] = response.uuid;
+                }
+                options['delete'] = !!del;
+                if(options['delete']) return options;
+
+                options['publicationUrl'] = response.path;
+                options['belongsTo'] = [];
+                $('#lab-editable li').each(function() {
+                    options['belongsTo'].push($(this).attr('id'));
+                });
+                
+                options['contributors'] = {};
+
+                function traverseFields(field) {
+                    for (let i = 0; i < field.length; i++) {
+                        if (!Array.isArray(field[i])) {
+                            if (field[i] in this.personFields) {
+                                options['contributors'][field[i]] = [];
+                                $('.' + field[i] + '-contributor-name').each(function() {
+                                    options['contributors'][field[i]].push($(this).attr('data-uuid'));
+                                });
+                            } else if (field[i] === 'project') {
+                                options['project'] = [];
+                                $('.project-item').each(function() {
+                                    options['project'].push($(this).attr('id'));
+                                });
+                            } else if (field[i] === 'localLink'){
+                                if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
+                                    options['localLink'] = response.file_url;
+                                }else if(this.editMode && !!this.localLink){
+                                    options['localLink'] = this.localLink;
+                                }
+                            } else if (field[i] === 'tag') {
+                                options['tag'] = [];
+                                $('.tag-item').each(function() {
+                                    options['tag'].push($(this).attr('id'));
+                                });
+                            } else if ($('#' + field[i]).val().trim() !== '') {
+                                options[field[i]] = $('#' + field[i]).val();
+                            }
+                        } else {
+                            traverseFields.call(this, field[i]);
+                        }
+                    }
+                }
+
+                var fields;
+                if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
+                    fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
+                } else {
+                    fields = this.JSONfields[this.cat.val()][this.subcat.val()];
+                }
+                traverseFields(fields);
+
+                options['category'] = this.subcat.val();
+                
+                return options;
+            }
+
             /**
              * An ajax request wrapper
              * 
@@ -1905,7 +1974,10 @@
                         // console.log(res);
                         response = JSON.parse(res);
                         // console.log(response);
+                        
                         var updateQuery = constructQuery.call(this, response, del);
+                        var serviceOptions = constructOptions.call(this, response, del);
+                        console.log(serviceOptions);
                         var href = '/publication/search-pub';
                         if (!del) {
                             href = response.path;
@@ -1913,15 +1985,14 @@
 
                         base_url = this.base_url;
                         $.ajax({
-                                dataType: 'html',
+                                dataType: 'text',
                                 method: "POST",
-                                url: this.dbURL,
-                                data: {
-                                    update: updateQuery
-                                }
+                                url: base_url + '/ajax/publications/add_publication',
+                                data: serviceOptions
                             })
                             .done(function(response) {
-                                window.location.href = base_url + '/' + href;
+                                console.log(response);
+                                // window.location.href = base_url + '/' + href;
                             })
                             .fail(function(response) {
                                 console.error(response);

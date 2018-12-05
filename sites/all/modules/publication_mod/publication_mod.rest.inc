@@ -354,7 +354,93 @@ function _search_project(){
   echo $result->data;
 }
 
-function _add_publication(){
+function _create_insert_query($properties, $edit=FALSE){
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$currentDate = date_iso8601(time());
 
+	$query = "INSERT DATA { \n";
+	$query .= "<" . $properties['uuid'] . "> rdf:type press:". $properties['category'] . "; \n";
+	if($edit){
+		$query .= "press:creationDate \"" . $properties['creationDate'] . "\"^^xsd:dateTime; \n";
+	}else{
+		$query .= "press:creationDate \"" . $currentDate . "\"^^xsd:dateTime; \n";
+	}
+	$query .= "press:modifiedDate \"". $currentDate . "\"^^xsd:dateTime; \n";
+	$query .= "press:publicationUuid \"". $properties['uuid'] . "\"; \n";
+
+	$except = array('uuid', 'category', 'delete');
+
+	foreach ($properties as $property => $value) {
+		switch ($property) {
+			case "belongsTo":
+				foreach ($value as $org) {
+					$query .= "press:belongsTo <". $blazegraph_info['blazegraph_prefix'] . "Organization/" . $org . ">; \n";
+				}
+				break;
+			case "contributors":
+				foreach ($value as $con_type => $cons) {
+					foreach ($cons as $index => $con) {
+						$query .= "press:hasContributor [rdf:type press:Contributor_Slot; \n";
+						$query .= "press:" . $con_type . " <". $con .">; \n";
+						$query .= "press:listIndex ". $index . "; ]; \n";
+					}
+				}
+				break;
+			case "project":
+				foreach ($value as $projectID) {
+					$query .= "press:appearsIn <". $projectID . ">; \n";
+				}
+				break;
+			case "localLink":
+				$query .= "press:localLink \"". $value . "\"; \n";
+				break;
+			case "tag":
+				foreach ($value as $tag) {
+					$query .= "press:tag \"". $tag ."\"; \n";
+				}
+				break;
+			default:
+				if(!in_array($property, $except)){
+					$query .= "press:" . $property . " \"". addslashes($value) ."\"; \n";
+				}
+				break;
+		}
+	}
+	$query .= ".}\n";
+
+	return $query;
 }
 
+function _add_publication(){
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> \n";
+	$query .= "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
+	$query .= _create_insert_query($_POST);
+	echo $query;
+}
+
+function _edit_publication(){
+	if(empty($_POST['uuid'])){
+		return;
+	}
+
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> \n";
+	$query .= "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
+	$query .= "DELETE { \n";
+	$query .= "?pub ?p ?o. \n";
+	$query .= "?pub press:hasContributor ?conSlot. \n";
+	$query .= "?conSlot ?y ?z. \n";
+	$query .= "}\n";
+	$query .= "WHERE{ \n";
+	$query .= "?pub press:publicationUuid \"" . $_POST['uuid'] . "\". \n";
+	$query .= "?pub ?p ?o. \n";
+	$query .= "OPTIONAL{?pub press:hasContributor ?conSlot. \n";
+	$query .= "OPTIONAL{?conSlot ?y ?z.}} \n";
+	$query .= "}\n";
+
+	$query .= _create_insert_query($_POST, true);
+
+	echo $query;
+}
