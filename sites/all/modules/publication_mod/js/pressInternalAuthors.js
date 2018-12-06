@@ -275,7 +275,7 @@
                 },
               },
               {
-                text: 'Change Group on Selected Authors',
+                text: 'Make Authors External Authors',
                 className: 'changeGroupButton',
                 action: function(e, dt, button, config){
                   var items = '';
@@ -290,7 +290,7 @@
                   if (uuids.length === 0){
                     alert('No Authors Selected!');
                   }
-                  else if(confirm('Are you sure you want to change the group on the selected authors?\n\n'+
+                  else if(confirm('Are you sure you want to make the selected authors External Authors?\n\n'+
                     items)){
                       $.when(that.changeAuthorsGroup(uuids)).done(function(a){
                         console.log(selected);
