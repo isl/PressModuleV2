@@ -317,7 +317,8 @@ function publication_mod_translated_menu_link_alter(&$link){
 
   if ($link['link_path'] == 'publication/my-pubs' && $link['module'] == 'publication_mod' && !user_is_anonymous()){
     $user_data = user_load($user->uid);
-    if($user_data->pub_mod_field_add_to_blzg['und'][0]['value'] && !empty($user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'])){
+    if(isset($user_data->pub_mod_field_add_to_blzg['und'][0]['value']) && $user_data->pub_mod_field_add_to_blzg['und'][0]['value'] &&
+      isset($user_data->pub_mod_field_blazegraph_uuid['und'][0]['value']) && !empty($user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'])){
       $link['href'] = 'publication/search-pub';
       $link['localized_options'] = array(
         'query' => array(
@@ -1178,15 +1179,26 @@ function publication_mod_ajax_callback_get_path(){
 function publication_mod_user_presave(&$edit, $account, $category){
   $add_again_to_blzg = false;
   $delete_from_blzg = false;
-  if($account->pub_mod_field_add_to_blzg['und'][0]['value'] == 0){  // Was 0
-    if($edit['pub_mod_field_add_to_blzg']['und'][0]['value'] == 0){  //Stays 0, do nothing with BLZG.
+  
+  $account_add_to_blazegraph = 0;
+  $edit_add_to_blazegraph = 0;
+
+  if(isset($account->pub_mod_field_add_to_blzg['und'][0]['value'])){
+    $account_add_to_blazegraph = $account->pub_mod_field_add_to_blzg['und'][0]['value'];
+  }
+  
+  if(isset($edit['pub_mod_field_add_to_blzg']['und'][0]['value'])){
+    $edit_add_to_blazegraph = $edit['pub_mod_field_add_to_blzg']['und'][0]['value'];
+  }
+  
+  if($account_add_to_blazegraph == 0){  // Was 0
+    if($edit_add_to_blazegraph == 0){  //Stays 0, do nothing with BLZG.
       return;
     }else{  // Becomes 1
       $add_again_to_blzg = true;
     }
   }else{  // Was 1
-    if($edit['pub_mod_field_add_to_blzg']['und'][0]['value'] == 0){ // Becomes 0
-      // TODO: Delete from BLZG?
+    if($edit_add_to_blazegraph == 0){ // Becomes 0
       $delete_from_blzg = true;
     }// else, Was 1, Becomes 1, continue with edit.
   }
