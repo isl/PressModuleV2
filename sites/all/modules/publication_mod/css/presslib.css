@@ -288,6 +288,15 @@ button.has-error{
   margin: 0; 
 }
 
+#search-publication input[type=number]#year-from, 
+#search-publication input[type=number]#year-from, 
+#search-publication input[type=number]#year-to, 
+#search-publication input[type=number]#year-to, 
+#add-publication input[type=number]#year, 
+#add-publication input[type=number]#year{ 
+  -moz-appearance: textfield;
+}
+
 #add-publication div.form-group .required label:before{
   content: '*';
   color: red;
