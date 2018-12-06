@@ -568,7 +568,7 @@ function _publication_mod_set_blazegraph_info($key, $value){
   }
 }*/
 
-function _publication_mod_create_page_body($pub_uri){
+function _publication_mod_create_page_body_from_uri($pub_uri){
   global $base_url;
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
@@ -1090,7 +1090,7 @@ function publication_mod_update_pubs($blazegraph_uris = array()){
 
   foreach($ids as $id){
     $entity = node_load($id);
-    $pub_page = _publication_mod_create_page_body($entity->pub_mod_field_blazegraph_uuid['und'][0]['value']);
+    $pub_page = _publication_mod_create_page_body_from_uri($entity->pub_mod_field_blazegraph_uuid['und'][0]['value']);
 
     $entity->title= $pub_page['title'];
     $entity->body['und'][0]['value'] = $pub_page['html'];
