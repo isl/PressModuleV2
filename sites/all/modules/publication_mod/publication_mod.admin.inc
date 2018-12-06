@@ -411,7 +411,7 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
     'finished' => 'publication_mod_batch_import_finished',
     'title' => t('Publication Batch Import'),
     'init_message' => t('Publication Batch Import is starting.'),
-    'progress_message' => t('Imported @current out of @total.'),
+    'progress_message' => '',
     'error_message' => t('Publication Import Batch has encountered an error.'),
     'file' => drupal_get_path('module', 'publication_mod') . '/publication_mod.admin.inc'
   );
@@ -474,7 +474,13 @@ function publication_mod_batch_import_run($pubs, $max, &$context){
     // Update the progress
     $context['sandbox']['progress']++;
     $context['results'][] = $pub_uri;
-    $context['message'] = t('Now processing "%title" from chunk = %chunk', array('%title'=>$pub_page['title'], '%chunk' => $context['sandbox']['current_chunk']));
+    $context['message'] = t('Now processing chunk %chunk, imported %progress from %max',
+      array(
+        '%title'=>$pub_page['title'],
+        '%chunk' => $context['sandbox']['current_chunk'],
+        '%progress' => $context['sandbox']['progress'],
+        '%max' => $context['sandbox']['max'],
+      ));
   }
   $context['sandbox']['current_chunk']++;
   // Update the progress
@@ -496,7 +502,7 @@ function publication_mod_batch_import_finished($success, $results, $operations){
     drupal_set_message($message);
   }else{
     $error_operation = reset($operations);
-    $message = t('An error occured while processing %error_operation with arguments: @arguments', array('%error_operation' => $error_operation[0], '@arguments' => print_r($error_operation[1], TRUE)));
+    $message = t('An error occured while processing %error_operation', array('%error_operation' => $error_operation[0]));
     drupal_set_message($message, 'error');
   }
 }
