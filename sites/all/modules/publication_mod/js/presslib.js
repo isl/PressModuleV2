@@ -1637,6 +1637,121 @@
                     return;
                 }
             }
+            var pkg = new FormData();
+
+            function constructOptions(del){
+                var options = {};
+                if(this.editMode){
+                    options['uuid'] = this.editPublication.uuid;
+                    options['creationDate'] = this.creationDate;
+                }else{
+                    // options['uuid'] = response.uuid;
+                }
+                options['delete'] = !!del;
+                if(options['delete']) return options;
+
+                // options['publicationUrl'] = response.path;
+                options['belongsTo'] = [];
+                $('#lab-editable li').each(function() {
+                    options['belongsTo'].push($(this).attr('id'));
+                });
+                
+                options['contributors'] = {};
+
+                function traverseFields(field) {
+                    for (let i = 0; i < field.length; i++) {
+                        if (!Array.isArray(field[i])) {
+                            if (field[i] in this.personFields) {
+                                options['contributors'][field[i]] = [];
+                                $('.' + field[i] + '-contributor-name').each(function() {
+                                    options['contributors'][field[i]].push({
+                                        name: $(this).text(),
+                                        uri: $(this).attr('data-uuid')
+                                    });
+                                });
+                            } else if (field[i] === 'project') {
+                                options['project'] = [];
+                                $('.project-item').each(function() {
+                                    options['project'].push($(this).attr('id'));
+                                });
+                            } else if (field[i] === 'localLink'){
+                                if($('#' + field[i]).val().trim() !== '') {
+                                    pkg.append('myfile', $('#localLink', this.element)[0].files[0]);
+                                }else if(this.editMode && !!this.localLink){
+                                    options['localLink'] = this.localLink;
+                                }
+                            } else if (field[i] === 'tag') {
+                                options['tag'] = [];
+                                $('.tag-item').each(function() {
+                                    options['tag'].push($(this).attr('id'));
+                                });
+                            } else if ($('#' + field[i]).val().trim() !== '') {
+                                options[field[i]] = $('#' + field[i]).val();
+                            }
+                        } else {
+                            traverseFields.call(this, field[i]);
+                        }
+                    }
+                }
+
+                var fields;
+                if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
+                    fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
+                } else {
+                    fields = this.JSONfields[this.cat.val()][this.subcat.val()];
+                }
+                traverseFields(fields);
+
+                options['category'] = this.subcat.val();
+                
+                return options;
+            }
+            var base_url = this.base_url;
+            if(del){
+                $.ajax({
+                    dataType: 'text',
+                    method: "POST",
+                    url: base_url + '/ajax/publications/delete_publication',
+                    data: {
+                        'uuid': this.editPublication.uuid,
+                    }
+                })
+                .done(function(response) {
+                    window.location.href = base_url + '/publication/search-pub';
+                })
+                .fail(function(response) {
+                    console.error(response);
+                });
+                return;
+            }
+
+            var submitOptions = constructOptions.call(this, del);
+            console.log(submitOptions);
+            pkg.append('options', JSON.stringify(submitOptions));
+
+            var remote_url = '/ajax/publications/add_publication';
+            if(this.editMode){
+                remote_url = '/ajax/publications/edit_publication';
+            }
+            
+            $.ajax({
+                dataType: 'text',
+                method: "POST",
+                url: base_url + remote_url,
+                data: pkg,
+                processData: false,
+                contentType: false,
+                cache: false,
+            })
+            .done(function(response) {
+                console.log(response);
+                // window.location.href = base_url + '/' + href;
+            })
+            .fail(function(response) {
+                console.error(response);
+            });
+
+            return;
 
             /**
              * Gets called after the addition of the Publication in Drupal and
@@ -1735,69 +1850,7 @@
                 return query;
             }
 
-            function constructOptions(response, del){
-                var options = {};
-                if(this.editMode){
-                    options['uuid'] = this.editPublication.uuid;
-                }else{
-                    options['uuid'] = response.uuid;
-                }
-                options['delete'] = !!del;
-                if(options['delete']) return options;
 
-                options['publicationUrl'] = response.path;
-                options['belongsTo'] = [];
-                $('#lab-editable li').each(function() {
-                    options['belongsTo'].push($(this).attr('id'));
-                });
-                
-                options['contributors'] = {};
-
-                function traverseFields(field) {
-                    for (let i = 0; i < field.length; i++) {
-                        if (!Array.isArray(field[i])) {
-                            if (field[i] in this.personFields) {
-                                options['contributors'][field[i]] = [];
-                                $('.' + field[i] + '-contributor-name').each(function() {
-                                    options['contributors'][field[i]].push($(this).attr('data-uuid'));
-                                });
-                            } else if (field[i] === 'project') {
-                                options['project'] = [];
-                                $('.project-item').each(function() {
-                                    options['project'].push($(this).attr('id'));
-                                });
-                            } else if (field[i] === 'localLink'){
-                                if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
-                                    options['localLink'] = response.file_url;
-                                }else if(this.editMode && !!this.localLink){
-                                    options['localLink'] = this.localLink;
-                                }
-                            } else if (field[i] === 'tag') {
-                                options['tag'] = [];
-                                $('.tag-item').each(function() {
-                                    options['tag'].push($(this).attr('id'));
-                                });
-                            } else if ($('#' + field[i]).val().trim() !== '') {
-                                options[field[i]] = $('#' + field[i]).val();
-                            }
-                        } else {
-                            traverseFields.call(this, field[i]);
-                        }
-                    }
-                }
-
-                var fields;
-                if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
-                    fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
-                } else {
-                    fields = this.JSONfields[this.cat.val()][this.subcat.val()];
-                }
-                traverseFields(fields);
-
-                options['category'] = this.subcat.val();
-                
-                return options;
-            }
 
             /**
              * An ajax request wrapper

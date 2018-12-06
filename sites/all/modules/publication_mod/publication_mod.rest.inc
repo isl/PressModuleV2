@@ -168,7 +168,7 @@ function _get_data_properties(){
 	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 
 	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> ";
-	$query .= 'SELECT DISTINCT (strafter(str(?p), "#") AS ?pid) ?label (strafter(str(?type), "#") AS ?ptype) ?range ';
+	$query .= 'select DISTINCT (strafter(str(?p), "#") AS ?pid) ?label (strafter(str(?type), "#") AS ?ptype) ?range ';
 	$query .= "WHERE { ";
 	$query .= "?class ^rdfs:domain ?p . ";
 	$query .= "?p rdf:type ?type . ";
@@ -381,7 +381,7 @@ function _create_insert_query($properties, $edit=FALSE){
 				foreach ($value as $con_type => $cons) {
 					foreach ($cons as $index => $con) {
 						$query .= "press:hasContributor [rdf:type press:Contributor_Slot; \n";
-						$query .= "press:" . $con_type . " <". $con .">; \n";
+						$query .= "press:" . $con_type . " <". $con['uri'] .">; \n";
 						$query .= "press:listIndex ". $index . "; ]; \n";
 					}
 				}
@@ -392,7 +392,8 @@ function _create_insert_query($properties, $edit=FALSE){
 				}
 				break;
 			case "localLink":
-				$query .= "press:localLink \"". $value . "\"; \n";
+				if($value != '')
+					$query .= "press:localLink \"". $value . "\"; \n";
 				break;
 			case "tag":
 				foreach ($value as $tag) {
@@ -413,18 +414,158 @@ function _create_insert_query($properties, $edit=FALSE){
 
 function _add_publication(){
 	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+	$label_query = <<<EOT
+	prefix press:<http://www.ics.forth.gr/Press#>
+
+SELECT ?property ?label where{
+  ?property rdf:type ?type.
+  FILTER(?type = owl:DatatypeProperty || ?type = owl:ObjectProperty).
+  ?property rdfs:label ?label.
+}
+EOT;
+	
+	$q = http_build_query(array('query'=>$label_query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $label_result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  $labels = array();
+  $label_data = json_decode($label_result->data);
+
+  foreach ($label_data->results->bindings as $pair) {
+  	if(strpos($pair->property->value, "#") !== false){
+  		$exploded = explode("#", $pair->property->value);
+	  	$prop = $exploded[count($exploded)-1];
+	  }else if(strpos($pair->property->value, ":")){
+	  	$exploded = explode("#", $pair->property->value);
+	  	$prop = $exploded[count($exploded)-1];
+	  }else{
+	  	$prop = $pair->property->value;
+	  }
+  	$labels[$prop] = $pair->label->value;
+  }
+	$postOptions = json_decode($_POST['options'], true);
+  $pub_page_contents = _create_publication_page_body($postOptions, $labels);
+
+  $pub_page_info = publication_mod_add_publication(
+  	$pub_page_contents['title'],
+  	$pub_page_contents['summary'],
+  	$pub_page_contents['body'],
+  	$postOptions['category'],
+  	$postOptions['contributors'],
+  	$_FILES
+  );
+
+  $publication_options = $postOptions;
+  $publication_options['uuid'] = $pub_page_info['uuid'];
+  $publication_options['publicationUrl'] = $pub_page_info['path'];
+  $publication_options['localLink'] = $pub_page_info['file_url'];
+
 	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> \n";
 	$query .= "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
-	$query .= _create_insert_query($_POST);
-	echo $query;
+	
+	$query .= _create_insert_query($publication_options);
+
+	$q = http_build_query(array('update'=>$query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  foreach ($result->headers as $key => $value) {
+    header($key . ':' . $value);
+  }
+  http_response_code($result->code);
+  // watchdog('publication_mod', '$result: <pre>%result</pre>', array('%result'=>print_r($result, TRUE)), WATCHDOG_DEBUG);
+  print_r($labels);
+  echo "\n";
+  echo $query;
+  echo "\n";
+  print_r($pub_page_contents);
+  echo "\n";
+  print_r($pub_page_info);
+  echo "\n";
+  echo $result->data;
 }
 
 function _edit_publication(){
-	if(empty($_POST['uuid'])){
+	if(empty($_POST['options'])){
 		return;
 	}
 
 	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+	$label_query = <<<EOT
+	prefix press:<http://www.ics.forth.gr/Press#>
+
+SELECT ?property ?label where{
+  ?property rdf:type ?type.
+  FILTER(?type = owl:DatatypeProperty || ?type = owl:ObjectProperty).
+  ?property rdfs:label ?label.
+}
+EOT;
+	
+	$q = http_build_query(array('query'=>$label_query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $label_result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  $labels = array();
+  $label_data = json_decode($label_result->data);
+
+  foreach ($label_data->results->bindings as $pair) {
+  	if(strpos($pair->property->value, "#") !== false){
+  		$exploded = explode("#", $pair->property->value);
+	  	$prop = $exploded[count($exploded)-1];
+	  }else if(strpos($pair->property->value, ":")){
+	  	$exploded = explode("#", $pair->property->value);
+	  	$prop = $exploded[count($exploded)-1];
+	  }else{
+	  	$prop = $pair->property->value;
+	  }
+  	$labels[$prop] = $pair->label->value;
+  }
+
+	$postOptions = json_decode($_POST['options'], true);
+
+  $pub_page_contents = _create_publication_page_body($postOptions, $labels);
+
+  $pub_page_info = publication_mod_edit_publication(
+		$postOptions['uuid'],
+  	$pub_page_contents['title'],
+  	$pub_page_contents['summary'],
+  	$pub_page_contents['body'],
+  	$postOptions['category'],
+  	$postOptions['contributors'],
+  	$_FILES
+  );
+
+  $publication_options = $postOptions;
+  $publication_options['uuid'] = $pub_page_info['uuid'];
+	$publication_options['publicationUrl'] = $pub_page_info['path'];
+	if($pub_page_info['file_url'] !== '')
+  	$publication_options['localLink'] = $pub_page_info['file_url'];
 
 	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> \n";
 	$query .= "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
@@ -434,13 +575,99 @@ function _edit_publication(){
 	$query .= "?conSlot ?y ?z. \n";
 	$query .= "}\n";
 	$query .= "WHERE{ \n";
-	$query .= "?pub press:publicationUuid \"" . $_POST['uuid'] . "\". \n";
+	$query .= "?pub press:publicationUuid \"" . $postOptions['uuid'] . "\". \n";
 	$query .= "?pub ?p ?o. \n";
 	$query .= "OPTIONAL{?pub press:hasContributor ?conSlot. \n";
 	$query .= "OPTIONAL{?conSlot ?y ?z.}} \n";
-	$query .= "}\n";
+	$query .= "};\n";
 
-	$query .= _create_insert_query($_POST, true);
+	$query .= _create_insert_query($publication_options, true);
 
-	echo $query;
+	$q = http_build_query(array('update'=>$query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  foreach ($result->headers as $key => $value) {
+    header($key . ':' . $value);
+  }
+	http_response_code($result->code);
+	
+	echo $result->data;
+}
+
+function _delete_publication(){
+	if(empty($_POST['uuid'])){
+		return;
+	}
+	$uuid = $_POST['uuid'];
+
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+
+	$delete_query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] ."> \n";
+	$delete_query .= "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
+	$delete_query .= "DELETE { \n";
+	$delete_query .= "?pub ?p ?o. \n";
+	$delete_query .= "?pub press:hasContributor ?conSlot. \n";
+	$delete_query .= "?conSlot ?y ?z. \n";
+	$delete_query .= "}\n";
+	$delete_query .= "WHERE{ \n";
+	$delete_query .= "?pub press:publicationUuid \"" . $uuid . "\". \n";
+	$delete_query .= "?pub ?p ?o. \n";
+	$delete_query .= "OPTIONAL{?pub press:hasContributor ?conSlot. \n";
+	$delete_query .= "OPTIONAL{?conSlot ?y ?z.}} \n";
+	$delete_query .= "}\n";	
+
+	$query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'publication_mod_publications')
+    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
+
+  $result = $query->execute();
+  if(isset($result['node']) && count($result['node']) == 1){
+  	$ids = array_keys($result['node']);
+  	$entity = node_load($ids[0]);
+  }
+
+  if ($entity){
+  	node_delete($entity->nid);
+  }
+  libxml_use_internal_errors(true);
+  $doc = new DOMDocument();
+
+  $doc->loadHTML($blazegraph_info['all_pubs']);
+  $div = $doc->getElementById('all_pubs');
+  $pub_div = $doc->getElementById($uuid);
+  
+  if($pub_div && $pub_div->parentNode){
+    $pub_div->parentNode->removeChild($pub_div);
+  }
+  $html = $doc->saveHTML();
+  _publication_mod_set_blazegraph_info('all_pubs', $html);
+
+
+  $q = http_build_query(array('update'=>$delete_query));
+
+	$options = array(
+    'headers' => array(
+      'Accept'=>'application/sparql-results+json',
+      'content-type'=> 'application/x-www-form-urlencoded'
+    ),
+    'method' => 'POST',
+    'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+  foreach ($result->headers as $key => $value) {
+    header($key . ':' . $value);
+  }
+  http_response_code($result->code);
+  echo $result->data;
 }
