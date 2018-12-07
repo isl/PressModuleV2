@@ -672,3 +672,57 @@ function _delete_publication(){
 		'blzg_response' => $result->data,
 	));
 }
+
+function _search_publication(){
+	$searchField = isset($_GET['searchField']) ? $_GET['searchField'] : '';
+	$authors = isset($_GET['authors']) ? $_GET['authors'] : array();
+	$orgs = isset($_GET['orgs']) ? $_GET['orgs'] : array();
+	$yearFrom = isset($_GET['yearFrom']) ? $_GET['yearFrom'] : '';
+	$yearTo = isset($_GET['yearTo']) ? $_GET['yearTo'] : '';
+	$tags = isset($_GET['tags']) ? $_GET['tags'] : array();
+	$category = isset($_GET['category']) ? $_GET['category'] : '';
+	$subcategory = isset($_GET['subcategory']) ? $_GET['subcategory'] : '';
+	$peerReviewed = isset($_GET['peerReviewed']) && $_GET['peerReviewed'] == 'true';
+	$method = isset($_GET['method']) ? $_GET['method'] : 'advanced';
+	$filters = isset($_GET['filters']) ? $_GET['filters'] : array();
+
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+	$prefixes = <<<EOT
+	prefix bds: <http://www.bigdata.com/rdf/search#>
+	prefix press: <$blzg_prefix>
+	prefix org: <{$blzg_prefix}Organization/>
+	SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
+		?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
+EOT;
+	
+	$authorQuery = '';
+	foreach ($authors as $key => $author) {
+		$authorQuery .= <<<EOT
+		?con$key rdfs:subPropertyOf* press:contributorType. 
+		?slot$key ?con$key <$author>.
+		?pub press:hasContribytor ?slot$key.
+
+EOT;
+	}
+	
+	$orgQuery = '';
+	if(count($orgs) > 0){
+		$orgQuery = "?pub press:belongsTo ?org. \nFILTER(";
+		
+		foreach ($orgs as $key => $org) {
+			if($key > 0){
+				$orgQuery .= '|| ';
+			}
+			$orgQuery .= "?org = org:". $org;
+		}
+	}
+
+	$tagQuery = '';
+	if(count($tags) > 0){
+		foreach ($tags as $tag){
+			$tagQuery = "?pub press:tag \"" . $tag . "\".\n";
+		}
+	}
+
+}

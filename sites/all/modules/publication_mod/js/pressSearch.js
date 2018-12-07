@@ -1412,7 +1412,22 @@
             // console.log(subcategory);
             // console.log(reviewed);
             this.lastSearchLabel = searchLabel;
-
+            // base_url = this.base_url;
+            // $.ajax({
+            //     dataType: 'json',
+            //     method: "GET",
+            //     url: base_url + 'ajax/search_publication',
+            //     data: {
+            //         query: q
+            //     }
+            // })
+            // .done(function(response) {
+            //     console.log(response);
+            // })
+            // .fail(function(response) {
+            //     // alert("Oops! There was an error with getting query! See console for more info.");
+            //     console.error(response);
+            // });
             // Make the query and call the displaying results function & filter function on success
             $.when(this.getQuery(completeQuery, 10, offset),
                 this.getCount(prefixes, countQuery)).done((function(a1, a2) {
