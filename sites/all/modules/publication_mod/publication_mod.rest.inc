@@ -368,7 +368,7 @@ function _create_insert_query($properties, $edit=FALSE){
 	$query .= "press:modifiedDate \"". $currentDate . "\"^^xsd:dateTime; \n";
 	$query .= "press:publicationUuid \"". $properties['uuid'] . "\"; \n";
 
-	$except = array('uuid', 'category', 'delete');
+	$except = array('uuid', 'category', 'delete', 'creationDate');
 
 	foreach ($properties as $property => $value) {
 		switch ($property) {
@@ -387,8 +387,8 @@ function _create_insert_query($properties, $edit=FALSE){
 				}
 				break;
 			case "project":
-				foreach ($value as $projectID) {
-					$query .= "press:appearsIn <". $projectID . ">; \n";
+				foreach ($value as $project) {
+					$query .= "press:appearsIn <". $project['uri'] . ">; \n";
 				}
 				break;
 			case "localLink":
@@ -491,15 +491,11 @@ EOT;
   }
   http_response_code($result->code);
   // watchdog('publication_mod', '$result: <pre>%result</pre>', array('%result'=>print_r($result, TRUE)), WATCHDOG_DEBUG);
-  print_r($labels);
-  echo "\n";
-  echo $query;
-  echo "\n";
-  print_r($pub_page_contents);
-  echo "\n";
-  print_r($pub_page_info);
-  echo "\n";
-  echo $result->data;
+  
+  echo json_encode(array(
+		'blzg_response' => $result->data,
+		'pub_url' => $publication_options['publicationUrl']
+	));
 }
 
 function _edit_publication(){
@@ -600,7 +596,10 @@ EOT;
   }
 	http_response_code($result->code);
 	
-	echo $result->data;
+	echo json_encode(array(
+		'blzg_response' => $result->data,
+		'pub_url' => $publication_options['publicationUrl']
+	));
 }
 
 function _delete_publication(){
@@ -669,5 +668,7 @@ function _delete_publication(){
     header($key . ':' . $value);
   }
   http_response_code($result->code);
-  echo $result->data;
+  echo json_encode(array(
+		'blzg_response' => $result->data,
+	));
 }

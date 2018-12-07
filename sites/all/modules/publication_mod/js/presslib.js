@@ -1672,7 +1672,10 @@
                             } else if (field[i] === 'project') {
                                 options['project'] = [];
                                 $('.project-item').each(function() {
-                                    options['project'].push($(this).attr('id'));
+                                    options['project'].push({
+                                        name: $(this).attr('title'),
+                                        uri: $(this).attr('id')
+                                    });
                                 });
                             } else if (field[i] === 'localLink'){
                                 if($('#' + field[i]).val().trim() !== '') {
@@ -1700,7 +1703,7 @@
                 } else {
                     fields = this.JSONfields[this.cat.val()][this.subcat.val()];
                 }
-                traverseFields(fields);
+                traverseFields.call(this,fields);
 
                 options['category'] = this.subcat.val();
                 
@@ -1726,16 +1729,17 @@
             }
 
             var submitOptions = constructOptions.call(this, del);
-            console.log(submitOptions);
             pkg.append('options', JSON.stringify(submitOptions));
+            console.log(submitOptions);
 
             var remote_url = '/ajax/publications/add_publication';
             if(this.editMode){
                 remote_url = '/ajax/publications/edit_publication';
             }
-            
+            this.loader.show();
+            var loader = this.loader;
             $.ajax({
-                dataType: 'text',
+                dataType: 'json',
                 method: "POST",
                 url: base_url + remote_url,
                 data: pkg,
@@ -1744,320 +1748,16 @@
                 cache: false,
             })
             .done(function(response) {
-                console.log(response);
-                // window.location.href = base_url + '/' + href;
+                loader.hide();
+                // console.log(response);
+                window.location.href = base_url + '/' + response.pub_url;
             })
             .fail(function(response) {
+                loader.hide();
+                var mode = this.editMode ? 'editing' : 'adding';
+                alert('There was an error with ' + mode + ' the publication.');
                 console.error(response);
             });
-
-            return;
-
-            /**
-             * Gets called after the addition of the Publication in Drupal and
-             * constructs the query based on the uuid provided
-             * 
-             * @param  {Object} response The response from drupal containing the
-             * new uuid and url of the publication, the url of the uploaded file
-             * @param  {boolean} del Indicates if the publication is going to be deleted
-             * @return {string} The sparql query
-             */
-            function constructQuery(response, del) {
-                prefix = this.prefix;
-                var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
-
-                if (this.editMode) {
-                    query += 'DELETE { \n';
-                    query += '?pub ?p ?o. \n';
-                    query += '?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
-                    query += '?conSlot ?y ?z. \n';
-                    query += '}\n';
-                    query += 'WHERE{ \n';
-                    query += '?pub <' + this.prefix + 'publicationUuid> "' + this.editPublication.uuid + '". \n';
-                    query += '?pub ?p ?o. \n';
-                    query += 'OPTIONAL{?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
-                    query += 'OPTIONAL{?conSlot ?y ?z.}} \n';
-                    query += '}';
-                    if (!del)
-                        query += '; \n';
-                }
-                if (!del) {
-                    var currentDate = new Date();
-                    var formattedDate = currentDate.toISOString();
-                    query += "INSERT DATA { \n";
-                    query += "<" + response.uuid + "> rdf:type <" + this.prefix + this.subcat.val() + ">; \n";
-                    if (this.editMode) {
-                        query += '<' + prefix + 'creationDate> "' + this.creationDate + '"^^xsd:dateTime; \n';
-                    } else {
-                        query += '<' + prefix + 'creationDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    }
-                    query += '<' + prefix + 'modifiedDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    query += '<' + prefix + 'publicationUuid> "' + response.uuid + '"; \n';
-                    query += '<' + prefix + 'publicationUrl> "' + response.path + '"; \n';
-
-
-                    $('#lab-editable li').each(function() {
-                        query = query + "<" + prefix + "belongsTo> <" + prefix + 'Organization/' + $(this).attr('id') + ">; \n";
-                    })
-
-                    // Traverse the fields of the page to add the sparql triples
-                    function traverseFields(field) {
-                        var prefix = this.prefix;
-                        for (let i = 0; i < field.length; i++) {
-                            if (!Array.isArray(field[i])) {
-                                if (field[i] in this.personFields) {
-                                    var length = 0;
-                                    $('.' + field[i] + '-contributor-name').each(function() {
-                                        query += '<' + prefix + 'hasContributor> [ rdf:type <' + prefix + 'Contributor_Slot>; \n';
-                                        query += '<' + prefix + field[i] + '> <' + $(this).attr('data-uuid') + '>; \n' +
-                                            '<' + prefix + 'listIndex> ' + ++length + '; \n' +
-                                            ']; \n';
-                                    });
-                                } else if (field[i] === 'project') {
-                                    $('.project-item').each(function() {
-                                        query = query + '<' + prefix + 'appearsIn> <' + $(this).attr('id') + '>; \n';
-                                    });
-                                } else if (field[i] === 'localLink'){
-                                    if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
-                                        query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
-                                    }else if(this.editMode && !!this.localLink){
-                                        query += '<' + this.prefix + 'localLink> "' + this.localLink + '"; \n';
-                                    }
-                                } else if (field[i] === 'tag') {
-                                    $('.tag-item').each(function() {
-                                        query = query + '<' + prefix + 'tag> "' + $(this).attr('id') + '"; \n';
-                                    });
-                                } else if ($('#' + field[i]).val().trim() !== '') {
-                                    query = query + '<' + prefix + field[i] + '> "' + $('#' + field[i]).val().escapeSpecialChars() + '"; \n';
-                                }
-
-                            } else {
-                                traverseFields.call(this, field[i]);
-                            }
-                        }
-                    }
-
-                    var fields;
-                    if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
-                        fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
-                    } else {
-                        fields = this.JSONfields[this.cat.val()][this.subcat.val()];
-                    }
-                    traverseFields(fields);
-
-                    query += '.}\n';
-                }
-                return query;
-            }
-
-
-
-            /**
-             * An ajax request wrapper
-             * 
-             * @param  {Object} options The AJAX options
-             * @return {[type]}
-             */
-            function ajax(options) {
-                var settings = {
-                    method: 'POST',
-                    data: null,
-                    done: function() {},
-                    fail: function() {},
-                    complete: function() {}
-                };
-
-                if (options)
-                    for (option in options) settings[option] = options[option];
-
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (xhttp.readyState == 4) {
-                        if (xhttp.status == 200) {
-                            settings.done(xhttp.responseText);
-                        } else {
-                            settings.fail(xhttp.responseText);
-                        };
-                        settings.complete(xhttp.responseText);
-                    };
-                };
-                xhttp.open(settings.method, settings.url, true);
-                xhttp.send(settings.data);
-            };
-
-            /**
-             * Creates the static page of the publication and calls the PRESS API
-             * to add the publication to drupal. If it succeeds, it calls the 
-             * constructQuery() function to upload the publication to Blazegraph
-             * 
-             * @param  {boolean} del Indicates if the publication is goind to be deleted
-             */
-            function beginUpload(del) {
-                // console.log($('#'+this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
-                var pkg = new FormData();
-                if (!del) {
-                    var $body = $('<div></div>');
-                    var $contributors = $('<div class="col-sm-12"></div>');
-                    var $summary = $('<div></div>');
-                    var contributors = {};
-                    $('.contributor').each(function() {
-                        if (!Array.isArray(contributors[$(this).attr('data-field')]))
-                            contributors[$(this).attr('data-field')] = [];
-                        contributors[$(this).attr('data-field')].push($(this));
-                    });
-                    var length = Object.keys(contributors).length;
-                    var j = 0;
-                    var contributors_all_pubs = {};
-                    for (key in contributors) {
-                        console.log(this.fields);
-                        console.log(key);
-                        var $concat = $('<div class="col-sm-3"><h3>' + this.fields[key].label + '</h3></div>');
-                        contributors_all_pubs[this.fields[key].label] = [];
-                        for (let i = 0; i < contributors[key].length; i++) {
-                            $contributor = '<a href="' + this.base_url + '/publication/search-pub?type=advanced' +
-                                '&reviewed=false' +
-                                '&authors0=' + encodeURIComponent(contributors[key][i].attr('data-uuid')) +
-                                '">' + contributors[key][i].text() + '</a>';
-                            $concat.append($contributor + '<br/>');
-                            // console.log(contributors[key][i]);
-                            $summary.append(contributors[key][i].text());
-
-                            contributors_all_pubs[this.fields[key].label].push({
-                                uri: contributors[key][i].attr('data-uuid'),
-                                name: contributors[key][i].text()
-                            });
-                            if (j !== length - 1 || i !== contributors[key].length - 1) {
-                                $summary.append(', ');
-                            }
-                        }
-                        $contributors.append($concat);
-                        j++;
-                    }
-                    $body.append($contributors);
-                    // console.log(this.fields);
-                    fields = this.fields;
-                    var $abstracts = $('<div class="col-sm-12"></div>');
-                    var abstractExists = false;
-                    $('[id$=Abstract]').each(function() {
-                        if ($(this).val().trim() !== '') {
-                            abstractExists = true;
-                            var abstract = $('<div class="col-sm-12"><h3>' + fields[$(this).attr('id')].label + '</h3></div>');
-                            abstract.append('<p>' + $(this).val().trim() + '</p>');
-                            $abstracts.append(abstract);
-                            if ($(this).attr('id') === 'englishAbstract') {
-                                $summary.append('<br/>');
-                                var abstractSummary = $(this).val().trim().split(' ', 40);
-                                $summary.append('<br/>' + abstractSummary.join(' ') + '...');
-                            }
-                        }
-                    });
-                    if (abstractExists)
-                        $body.append($abstracts);
-
-                    var $restOfFields = $('<div class="col-xs-12"><p>&nbsp;</p></div>');
-                    var fieldLabel = $('<table class="table table-hover"></table>')
-                    $('input.press-field:not(.typeahead, [id$=Abstract], #englishTitle, #localLink)').each((function(that) {
-                        return function() {
-                            if ($(this).val() !== '') {
-                                var val = $(this).val();
-                                if($(this).attr('id') === 'doi'){
-                                    val = '<a href="https://doi.org/'+val+'" target="_blank">'+val+'</a>';
-                                }
-                                fieldLabel.append('<tr><td>' + $(this).attr('data-label') + '</td><td>' + val + '</td>');
-                                // $restOfFields.append('<h4>'+$(this).attr('data-label')+'</h4>');
-                                // $restOfFields.append('<p>'+$(this).val()+'</p><br/>');
-                            }
-                        }
-                    })(this));
-                    var tagsField = '';
-                    var foundTags = false;
-                    $('li.tag-item.list-group-item').each((function(that){
-                        return function(){
-                            if ($(this).attr('id') !== '') {
-                                var val = $(this).attr('id');
-                                if(foundTags){
-                                    tagsField += ', ';
-                                }else{
-                                    foundTags = true;
-                                }
-                                val = '<a href="/publication/search-pub?type=advanced&reviewed=false&tags0=' + val +'" target="_blank">'+ val + '</a>';
-                                tagsField += val;                                
-                                // $restOfFields.append('<h4>'+$(this).attr('data-label')+'</h4>');
-                                // $restOfFields.append('<p>'+$(this).val()+'</p><br/>');
-                            }   
-                        }
-                    }))
-                    if(foundTags){
-                        fieldLabel.append('<tr><td>Tags</td><td>' + tagsField + '</td>');
-                    }
-                    $restOfFields.append(fieldLabel);
-                    var div = $('<div class="col-xs-12"></div>');
-                    div.append($restOfFields);
-                    $body.append(div);
-
-
-                    if ($('#localLink', this.element)[0].files[0]) {
-                        pkg.append('myfile', $('#localLink', this.element)[0].files[0]);
-                    }
-
-                    pkg.append('title', $('#' + this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
-                    pkg.append('body', $body.html());
-                    pkg.append('summary', $summary.html());
-                    pkg.append('category', $('#subcategory').val());
-                    pkg.append('contributors', JSON.stringify(contributors_all_pubs));
-                    pkg.append('delete', false);
-                } else {
-                    pkg.append('delete', true);
-                }
-
-                var ajax_url = this.base_url + '/ajax/add_publication_page'; //TODO: Remove Hardcoded URL
-                if (this.editMode) {
-                    var uuid = this.editPublication.uuid
-                    // if (this.editPublication.uuid.startsWith('urn:uuid:')) {
-                    //     uuid = uuid.substring(9);
-                    // }
-                    pkg.append('uuid', uuid);
-                    ajax_url = this.base_url + '/ajax/edit_publication_page';
-                }
-
-                ajax({
-                    url: ajax_url,
-                    data: pkg,
-                    done: (function(res) {
-                        // console.log(res);
-                        response = JSON.parse(res);
-                        // console.log(response);
-                        
-                        var updateQuery = constructQuery.call(this, response, del);
-                        var serviceOptions = constructOptions.call(this, response, del);
-                        console.log(serviceOptions);
-                        var href = '/publication/search-pub';
-                        if (!del) {
-                            href = response.path;
-                        }
-
-                        base_url = this.base_url;
-                        $.ajax({
-                                dataType: 'text',
-                                method: "POST",
-                                url: base_url + '/ajax/publications/add_publication',
-                                data: serviceOptions
-                            })
-                            .done(function(response) {
-                                console.log(response);
-                                // window.location.href = base_url + '/' + href;
-                            })
-                            .fail(function(response) {
-                                console.error(response);
-                            });
-                    }).bind(this),
-                    fail: (function(res){
-                        console.error(res);
-                    })
-                });
-            };
-            this.loader.show();
-            beginUpload.call(this, del);
         },
         /**
          * Makes a POST request to Blazegraph with the query param to insert a

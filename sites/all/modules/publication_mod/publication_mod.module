@@ -608,7 +608,7 @@ function _create_publication_page_body($options, $labels){
   $tags = '<tr><td>Tags</td></tr>';
   $tagsExist = false;
 
-  $except = array('uuid', 'category', 'delete', 'contributors');
+  $except = array('uuid', 'category', 'delete', 'contributors', 'creationDate', 'modifiedDate');
   
   foreach ($options as $property => $value) {
     if(in_array($property, $except)){
@@ -1197,7 +1197,7 @@ function publication_mod_edit_publication($uuid, $title, $summary, $body, $categ
   }
   $file_real_path;
   $file_path = '';
-  if($fwrapper = file_stream_wrapper_get_instance_by_uri($file_temp->uri)){
+  if(isset($file_temp) && $fwrapper = file_stream_wrapper_get_instance_by_uri($file_temp->uri)){
     $file_real_path = $fwrapper->realpath();
     $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
   }
