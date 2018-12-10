@@ -70,16 +70,37 @@ function _get_publication_info(){
 function _get_categories(){
 	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 
+	$withCounter = isset($_GET['counter']) && strtolower($_GET['counter']) != 'false' ? true : false;
+	
+
 	$query = "prefix press: <" . $blazegraph_info['blazegraph_prefix'] . "> ";
-	$query .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ';
+	$query .= 'select (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter';
 	$query .= '(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel ';
-	$query .= "WHERE { ";
-	$query .= "?low rdfs:subClassOf* press:Publication. ";
-	$query .= "OPTIONAL {?low rdfs:label ?lowlabel}. ";
-	$query .= "OPTIONAL {?low press:optgroup ?optgroup}. ";
-	$query .= "OPTIONAL {?low rdfs:subClassOf ?superclass . ";
-	$query .= "?superclass rdfs:label ?superlabel} ";
-	$query .= "} ORDER BY ?label";
+
+	if($withCounter){
+		$query .= <<<EOT
+		WHERE {
+			{
+				SELECT (COUNT(?pub) as ?pubCounter) ?low
+				WHERE {
+					?low rdfs:subClassOf* press:Publication.
+					OPTIONAL { ?pub rdf:type [rdfs:subClassOf* ?low]}.
+				} GROUP BY ?low
+			}
+			OPTIONAL {?low rdfs:label ?lowlabel}.
+			OPTIONAL {?low press:optgroup ?optgroup}.
+			OPTIONAL {?low rdfs:subClassOf ?superclass}.
+		}
+EOT;
+	}else{
+		$query .= "WHERE { ";
+		$query .= "?low rdfs:subClassOf* press:Publication. ";
+		$query .= "OPTIONAL {?low rdfs:label ?lowlabel}. ";
+		$query .= "OPTIONAL {?low press:optgroup ?optgroup}. ";
+		$query .= "OPTIONAL {?low rdfs:subClassOf ?superclass . ";
+		$query .= "?superclass rdfs:label ?superlabel} ";
+		$query .= "} ORDER BY ?label";
+	}
 
 	$q = http_build_query(array('query'=>$query));
 
@@ -673,27 +694,34 @@ function _delete_publication(){
 	));
 }
 
-function _search_publication(){
-	$searchField = isset($_GET['searchField']) ? $_GET['searchField'] : '';
-	$authors = isset($_GET['authors']) ? $_GET['authors'] : array();
-	$orgs = isset($_GET['orgs']) ? $_GET['orgs'] : array();
-	$yearFrom = isset($_GET['yearFrom']) ? $_GET['yearFrom'] : '';
-	$yearTo = isset($_GET['yearTo']) ? $_GET['yearTo'] : '';
-	$tags = isset($_GET['tags']) ? $_GET['tags'] : array();
-	$category = isset($_GET['category']) ? $_GET['category'] : '';
-	$subcategory = isset($_GET['subcategory']) ? $_GET['subcategory'] : '';
-	$peerReviewed = isset($_GET['peerReviewed']) && $_GET['peerReviewed'] == 'true';
-	$method = isset($_GET['method']) ? $_GET['method'] : 'advanced';
-	$filters = isset($_GET['filters']) ? $_GET['filters'] : array();
+function _create_search_query($options=array(), $blazegraph_info=array()){
+	if(empty($options)) return "";
 
-	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$searchField = isset($options['searchField']) && !empty($options['searchField']) ? $options['searchField'] : '';
+	$authors = isset($options['authors']) && !empty($options['authors']) ? $options['authors'] : array();
+	$orgs = isset($options['orgs']) && !empty($options['orgs']) ? $options['orgs'] : array();
+	$yearFrom = isset($options['yearFrom']) && !empty($options['yearFrom']) ? $options['yearFrom'] : '';
+	$yearTo = isset($options['yearTo']) && !empty($options['yearTo']) ? $options['yearTo'] : '';
+	$tags = isset($options['tags']) && !empty($options['tags']) ? $options['tags'] : array();
+	$category = isset($options['category']) && !empty($options['category']) ? $options['category'] : '';
+	$subcategory = isset($options['subcategory']) && !empty($options['subcategory']) ? $options['subcategory'] : '';
+	$peerReviewed = isset($options['peerReviewed']) && $options['peerReviewed'] == 'true';
+	$method = isset($options['method']) && !empty($options['method']) ? $options['method'] : 'advanced';
+	$filters = isset($options['filters']) && !empty($options['filters']) ? $options['filters'] : array();
+
+	if(empty($blazegraph_info)){
+		$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	}
 	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
 	$prefixes = <<<EOT
 	prefix bds: <http://www.bigdata.com/rdf/search#>
 	prefix press: <$blzg_prefix>
 	prefix org: <{$blzg_prefix}Organization/>
+EOT;
+	$select = <<<EOT
 	SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
 		?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
+
 EOT;
 	
 	$authorQuery = '';
@@ -701,7 +729,7 @@ EOT;
 		$authorQuery .= <<<EOT
 		?con$key rdfs:subPropertyOf* press:contributorType. 
 		?slot$key ?con$key <$author>.
-		?pub press:hasContribytor ?slot$key.
+		?pub press:hasContributor ?slot$key.
 
 EOT;
 	}
@@ -716,6 +744,7 @@ EOT;
 			}
 			$orgQuery .= "?org = org:". $org;
 		}
+		$orgQuery .= "). \n";
 	}
 
 	$tagQuery = '';
@@ -725,4 +754,606 @@ EOT;
 		}
 	}
 
+	$yearQuery = '';
+	if($yearFrom != '' || $yearTo != ''){
+		$yearQuery = "?pub press:year ?year. \n";
+		$yearQuery .= "FILTER (";
+		if($yearFrom != '' && $yearTo != ''){
+			$yearQuery .= "xsd:integer(?year) >= " . $yearFrom . " && xsd:integer(?year) <= " . $yearTo;
+		}else if($yearFrom != ''){
+			$yearQuery .= "xsd:integer(?year) >= " . $yearFrom;
+		}else if($yearTo != ''){
+			$yearQuery .= "xsd:integer(?year) <= " . $yearTo;
+		}
+		$yearQuery .= "). \n";
+	}
+
+	$reviewedQuery = '';
+
+	if($category == '' && $peerReviewed){
+		$reviewedQuery = <<<EOT
+		?pub rdf:type ?type.
+		?type rdfs:subClassOf* ?ancClass.
+		FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+
+EOT;
+	}else if($category != ''){
+		if(!$peerReviewed){
+			if($subcategory != ''){
+				$reviewedQuery .= <<<EOT
+				?pub rdf:type ?type.
+				?type rdfs:subClassOf* press:$subcategory.
+EOT;
+			}else{
+				$reviewedQuery .= <<<EOT
+				?type rdfs:subClassOf* press:$category.
+EOT;
+			}
+		}else {
+			if($subcategory !== ''){
+				$reviewedQuery .= <<<EOT
+				?pub rdf:type ?type.
+				?type rdfs:subClassOf* press:$subcategory.
+EOT;
+			}else{
+				$reviewedQuery .= <<<EOT
+				?pub rdf:type ?type.
+				?type rdfs:subClassOf* press:$category.
+				?type rdfs:subClassOf* ?ancClass.
+				FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+EOT;
+			}
+		}
+	}
+
+	$fieldQuery = '';
+	$multipleFieldsQuery = '';
+	$authorFieldsQuery = '';
+
+	if($searchField != ''){
+		$fieldQuery = <<<EOT
+		{
+			?searchField bds:search "$searchField".
+			?searchField bds:relevance ?score.
+			?pub ?predicate ?searchField.
+			?pub rdf:type [rdfs:subClassOf* press:Publication].
+			MINUS {?pub press:englishAbstract ?searchField}.
+			MINUS {?pub press:publicationUrl ?searchField}.
+		}UNION{
+			?personSearchField bds:search "$searchField".
+			?personSearchField bds:relevance ?score.
+			?person ?s ?personSearchField.
+			?person rdf:type foaf:Person.
+			?con rdfs:subPropertyOf* press:contributorType.
+			?slot ?con ?person.
+			?pub press:hasContributor ?slot.
+		}
+EOT;
+		$multipleFieldsQuery = <<<EOT
+		{
+			?searchField bds:search "$searchField".
+			?searchField bds:relevance ?score.
+			?pub ?predicate ?searchField.
+			?pub rdf:type [rdfs:subClassOf* press:Publication].
+			MINUS {?pub press:englishAbstract ?searchField}.
+			MINUS {?pub press:publicationUrl ?searchField}.
+EOT;
+		$authorFieldsQuery = <<<EOT
+	}UNION{
+    ?personSearchField bds:search "$searchField".
+    ?personSearchField bds:relevance ?score.
+    ?person ?s ?personSearchField.
+    ?person rdf:type foaf:Person.
+    ?con rdfs:subPropertyOf* press:contributorType.
+    ?slot ?con ?person.
+    ?pub press:hasContributor ?slot.
+EOT;
+	}
+
+	$restOfFields = '';
+
+	if ($reviewedQuery == ''){
+		$restOfFields .= "?pub rdf:type ?type. \n";
+	}
+	if ($yearQuery == ''){
+		$restOfFields .= "?pub press:year ?year. \n";
+	}
+	if ($searchField == ''){
+		$restOfFields .= "BIND(concat(str(?year), str(?pub)) as ?order). \n";
+	}
+	$restOfFields .= <<<EOT
+	?type rdfs:subClassOf* press:Publication.
+	BIND(strafter(str(?type), "#") AS ?typeID).
+	OPTIONAL{?pub press:externalLink ?externalLink}.
+	OPTIONAL{?pub press:bookTitle ?bookTitle}.
+	OPTIONAL{?pub press:chapterTitle ?chapterTitle}.
+	OPTIONAL{?pub press:englishTitle ?englishTitle}.
+	OPTIONAL{?pub press:localLink ?localLink}.
+	OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
+EOT;
+
+	$closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
+	$closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
+	if($searchField != ''){
+		$closure .= "order by desc(?sumScore)";
+	}else{
+		$closure .= "order by desc(?order)";
+	}
+
+	$query = '';
+	if($searchField != ''){
+		$multipleFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+		$authorFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+	}else{
+		$query = $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+	}
+	
+	$filterQuery = '';
+	if(!empty($filters)){
+		$filterQuery .= "\n #FILTERS \n";
+	}
+	foreach($filters as $key => $filter){
+		switch ($key) {
+			case 'year':
+				$filterQuery .= "?pub press:year $filter. \n";
+				break;
+			case 'category':
+				$filterQuery .= "?pub rdf:type $filter. \n";
+				break;
+			case 'tags':
+				foreach ($filter as $value) {
+					$filterQuery .= "?pub press:tag $value. \n";
+				}
+				break;
+			case 'org':
+				foreach ($filter as $org){
+					$filterQuery .= "?pub press:belongsTo $org. \n";
+				}
+				break;
+			case 'project':
+				foreach ($filter as $project) {
+					$filterQuery .= "?pub press:appearsIn $project. \n";
+				}
+				break;
+			case 'contributor':
+				if(!empty($filter)){
+					$filterQuery .= "?filtercon rdfs:subPropertyOf* press:contributorType. \n";
+					foreach ($filter as $index => $con){
+						$filterQuery .= "?filterSlot$index ?filtercon $con. \n";
+						$filterQuery .= "?pub press:hasContributor ?filterSlot$index. \n";
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+
+
+
+
+	$q = '';
+	if($searchField != ''){
+		$q = $select . $multipleFieldsQuery . $filterQuery . $restOfFields . $authorFieldsQuery . $restOfFields . "} \n" . $closure;
+	}else{
+		$q = $select . $query . $filterQuery . $restOfFields . $closure;
+	}
+
+	return array(
+		'prefix' => $prefixes,
+		'query' => $q,
+		'options' => $options
+	);
+}
+
+function _search_publication(){
+	$searchField = isset($_GET['searchField']) && !empty($_GET['searchField']) ? $_GET['searchField'] : '';
+	$authors = isset($_GET['authors']) && !empty($_GET['authors']) ? $_GET['authors'] : array();
+	$orgs = isset($_GET['orgs']) && !empty($_GET['orgs']) ? $_GET['orgs'] : array();
+	$yearFrom = isset($_GET['yearFrom']) && !empty($_GET['yearFrom']) ? $_GET['yearFrom'] : '';
+	$yearTo = isset($_GET['yearTo']) && !empty($_GET['yearTo']) ? $_GET['yearTo'] : '';
+	$tags = isset($_GET['tags']) && !empty($_GET['tags']) ? $_GET['tags'] : array();
+	$category = isset($_GET['category']) && !empty($_GET['category']) ? $_GET['category'] : '';
+	$subcategory = isset($_GET['subcategory']) && !empty($_GET['subcategory']) ? $_GET['subcategory'] : '';
+	$peerReviewed = isset($_GET['peerReviewed']) && $_GET['peerReviewed'] == 'true';
+	$method = isset($_GET['method']) && !empty($_GET['method']) ? $_GET['method'] : 'advanced';
+	$filters = isset($_GET['filters']) && !empty($_GET['filters']) ? $_GET['filters'] : array();
+	$limit = isset($_GET['limit']) && !empty($_GET['limit']) ? intval($_GET['limit']) : 10;
+	$offset = isset($_GET['offset']) && !empty($_GET['offset']) ? intval($_GET['offset']) : 0;
+
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+
+	$query = _create_search_query($_GET, $blazegraph_info);
+
+	$prefixes = $query['prefix'];
+	$queryWithoutPrefix = $query['query'];
+	$completeQuery = $query['prefix'] . $query['query'];
+
+	if($limit > 0){
+		$completeQuery .= ' limit ' . $limit;
+	}
+	
+	if($offset > 0){
+		$completeQuery .= ' offset ' . $offset;
+	}
+
+	$countQuery = <<<EOT
+	$prefixes
+	select (count(?pub) as ?count) WITH {
+	$queryWithoutPrefix
+	} as %countSet
+	WHERE {
+		INCLUDE %countSet.
+	}
+EOT;
+
+	$ch1 = curl_init();
+	$ch2 = curl_init();
+
+	curl_setopt($ch1, CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($completeQuery));
+	curl_setopt($ch2, CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($countQuery));
+	curl_setopt($ch1, CURLOPT_POST, 1);
+	curl_setopt($ch2, CURLOPT_POST, 1);
+	curl_setopt($ch1, CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+	curl_setopt($ch2, CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+	curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+	// curl_setopt($ch1, CURLOPT_POSTFIELDS, array('query=' . urlencode($completeQuery)));
+	// curl_setopt($ch2, CURLOPT_POSTFIELDS, array('query=' . urlencode($countQuery)));
+	$mh = curl_multi_init();
+	curl_multi_add_handle($mh, $ch1);
+	curl_multi_add_handle($mh, $ch2);
+
+	$running = null;
+	do {
+		curl_multi_exec($mh, $running);
+	}while($running);
+
+	curl_multi_remove_handle($mh, $ch1);
+	curl_multi_remove_handle($mh, $ch2);
+	curl_multi_close($mh);
+
+	$pub_response = curl_multi_getcontent($ch1);
+	$count_response = curl_multi_getcontent($ch2);
+	$results = json_decode($pub_response, true);
+	$count = intval(json_decode($count_response, true)['results']['bindings'][0]['count']['value']);
+
+	if($count == 0){
+		echo json_encode(array(
+			'query' => $completeQuery,
+			'count' => 0
+		));
+		exit();
+	}
+	$contributorsQuery = <<<EOT
+	prefix press: <$blzg_prefix>
+	select * where {
+		?pub press:hasContributor ?slot.
+		FILTER(
+EOT;
+	foreach ($results['results']['bindings'] as $index => $pub) {
+		if($index > 0) $contributorsQuery .= '||';
+		$contributorsQuery .= ' ?pub = <' . $pub['pub']['value'] . '> ';
+	}
+	$contributorsQuery .= <<<EOT
+	).
+	?pub press:year ?year.
+	BIND(concat(str(?year), str(?pub)) as ?order).
+	?con rdfs:subPropertyOf* press:contributorType.
+	?slot ?con ?person.
+	BIND(strafter(str(?con), "#") AS ?type).
+	?slot press:listIndex ?personIndex.
+	OPTIONAL{?person foaf:givenName ?givenName}.
+	?person foaf:familyName ?familyName.
+}order by desc(?order)
+EOT;
+
+	$multipleFieldsQuery = <<<EOT
+	prefix press:<$blzg_prefix>
+	select * where {
+		{
+			?pub press:belongsTo ?org.
+			FILTER(
+EOT;
+	foreach ($results['results']['bindings'] as $index => $pub) {
+		if($index > 0) $multipleFieldsQuery .= '||';
+		$multipleFieldsQuery .= "?pub = <" . $pub['pub']['value'] . "> ";
+	}
+	$multipleFieldsQuery .= <<<EOT
+	).
+	?org press:organizationName ?orgName.
+}UNION{
+	?pub press:tag ?tag.
+	FILTER (
+EOT;
+	foreach ($results['results']['bindings'] as $index => $pub) {
+		if($index > 0) $multipleFieldsQuery .= '||';
+		$multipleFieldsQuery .= "?pub = <" . $pub['pub']['value'] . "> ";
+	}
+	$multipleFieldsQuery .= "). \n } \n }";
+
+	$ch1 = curl_init();
+	$ch2 = curl_init();
+
+	curl_setopt($ch1, CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($contributorsQuery));
+	curl_setopt($ch2, CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($multipleFieldsQuery));
+	curl_setopt($ch1, CURLOPT_POST, 1);
+	curl_setopt($ch2, CURLOPT_POST, 1);
+	curl_setopt($ch1, CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+	curl_setopt($ch2, CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+	curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+	
+	$mh = curl_multi_init();
+	curl_multi_add_handle($mh, $ch1);
+	curl_multi_add_handle($mh, $ch2);
+
+	$running = null;
+	do {
+		curl_multi_exec($mh, $running);
+	}while($running);
+
+	curl_multi_remove_handle($mh, $ch1);
+	curl_multi_remove_handle($mh, $ch2);
+	curl_multi_close($mh);
+
+	$con_response = curl_multi_getcontent($ch1);
+	$field_response = curl_multi_getcontent($ch2);
+	$con_results = json_decode($con_response, true);
+	$field_results = json_decode($field_response, true);
+
+	
+	$result_arr = array();
+	foreach ($results['results']['bindings'] as $key => $pub) {
+		if(!isset($result_arr[$pub['pub']['value']])){
+			$result_arr[$pub['pub']['value']] = array();
+		}
+
+		foreach ($pub as $prop_key => $value){
+			$result_arr[$pub['pub']['value']][$prop_key] = $value['value'];
+		}
+	}
+
+	foreach ($con_results['results']['bindings'] as $key => $con) {
+		if(!isset($result_arr[$con['pub']['value']]['contributors'])){
+			$result_arr[$con['pub']['value']]['contributors'] = array();
+		}
+		if(!isset($result_arr[$con['pub']['value']]['contributors'][$con['type']['value']])){
+			$result_arr[$con['pub']['value']]['contributors'][$con['type']['value']] = array();
+		}
+		$result_arr[$con['pub']['value']]['contributors'][$con['type']['value']][$con['personIndex']['value']] = array();
+		foreach($con as $con_key => $value){
+			$result_arr[$con['pub']['value']]['contributors'][$con['type']['value']][$con['personIndex']['value']][$con_key] = $value['value'];
+		}
+	}
+
+	foreach ($field_results['results']['bindings'] as $key => $field) {
+		if(array_key_exists('org', $field)){
+			if(!isset($result_arr[$field['pub']['value']]['org'])){
+				$result_arr[$field['pub']['value']]['org'] = array();
+			}
+			$result_arr[$field['pub']['value']]['org'][] = array(
+				'org' => $field['org']['value'],
+				'orgName' => $field['orgName']['value'],
+			);
+		}else if(array_key_exists('tag', $field)){
+			if(!isset($result_arr[$field['pub']['value']]['tag'])){
+				$result_arr[$field['pub']['value']]['tag'] = array();
+			}
+			$result_arr[$field['pub']['value']]['tag'][] = $field['tag']['value'];
+		}
+    }
+    $toSort = array_values($result_arr);
+    if($searchField != ''){
+        usort($toSort, function($a, $b){
+            if(intval($a['sumScore']) < intval($b['sumScore'])){
+                return 1;
+            }else if (intval($a['sumScore']) > intval($b['sumScore'])){
+                return -1;
+            }else{
+                return 0;
+            }
+        });
+    }else{
+        usort($toSort, function($a, $b){
+            return strcmp($b['order'], $a['order']);
+        });
+    }
+	$response = array(
+		'options' => $query['options'],
+		'query' => $completeQuery,
+		'results' => $toSort,
+		'count' => $count
+	);
+
+	echo json_encode($response);
+}
+
+function _get_filters(){
+    $offset = isset($_GET['offset']) && !empty($_GET['offset']) ? intval($_GET['offset']) : 0;
+	$limit = isset($_GET['limit']) && !empty($_GET['limit']) ? intval($_GET['limit']) : 10;
+    $filter_keys = isset($_GET['filter_keys']) && !empty($_GET['filter_keys']) ? $_GET['filter_keys'] : 'all';
+
+    if($filter_keys == 'all'){
+        $filter_keys = ['author', 'tag', 'year', 'org', 'category', 'project'];
+    }else{
+        $filter_keys = array($filter_keys);
+    }
+
+    $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+
+	$query = _create_search_query($_GET, $blazegraph_info);
+
+	$prefixes = $query['prefix'];
+	$queryWithoutPrefix = $query['query'];
+
+	if(strpos($prefixes, 'bds') === false){
+		$prefixes .= "\n prefix bds: <http://www.bigdata.com/rdf/search#> \n";
+    }
+    $ch = array();
+    $mh = curl_multi_init();
+    foreach ($filter_keys as $filter) {
+        switch ($filter) {
+            case 'author':
+                $authorFiltersQuery = <<<EOT
+$prefixes
+select ?contributoruuid ?contributorgivenName ?contributorfamilyName (count(?contributoruuid) as ?pubcount) WITH {
+    $queryWithoutPrefix
+} as %authorFilterSet WHERE {
+    include %authorFilterSet.
+    ?con rdfs:subPropertyOf* press:contributorType.
+    ?pub press:hasContributor ?slot.
+    ?slot ?con ?contributoruuid.
+    OPTIONAL{?contributoruuid foaf:givenName ?contributorgivenName}.
+    ?contributoruuid foaf:familyName ?contributorfamilyName.
+}group by ?contributoruuid ?contributorgivenName ?contributorfamilyName order by desc(?pubcount) limit $limit
+EOT;
+            
+                if($offset > 0 ){
+                    $authorFiltersQuery .= " offset $offset";
+                }
+
+                $ch['author'] = curl_init();
+                curl_setopt($ch['author'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($authorFiltersQuery));
+                curl_setopt($ch['author'], CURLOPT_POST, 1);
+                curl_setopt($ch['author'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['author'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['author']);
+                break;
+            case 'tag':
+                $tagFiltersQuery = <<<EOT
+$prefixes
+select ?tag (count(?tag) as ?Tagcount) WITH {
+    $queryWithoutPrefix
+} as %tagFilterSet WHERE {
+    include %tagFilterSet.
+    ?pub press:tag ?tag.
+}group by ?tag order by desc(?Tagcount) limit $limit
+EOT;
+        
+                if($offset > 0 ){
+                    $tagFiltersQuery .= " offset $offset";
+                }
+                
+                $ch['tag'] = curl_init();
+                curl_setopt($ch['tag'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($tagFiltersQuery));
+                curl_setopt($ch['tag'], CURLOPT_POST, 1);
+                curl_setopt($ch['tag'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['tag'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['tag']);
+            
+                break;
+            case 'year':
+                $yearFiltersQuery = <<<EOT
+$prefixes
+select ?year (count(?year) as ?pubcount) WITH {
+    $queryWithoutPrefix
+} as %yearFilterSet WHERE {
+    include %yearFilterSet.
+    ?pub press:year ?year.
+}group by ?year order by desc(?pubcount) limit $limit
+EOT;
+            
+                if($offset > 0 ){
+                    $yearFiltersQuery .= " offset $offset";
+                }
+
+                $ch['year'] = curl_init();
+                curl_setopt($ch['year'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($yearFiltersQuery));
+                curl_setopt($ch['year'], CURLOPT_POST, 1);
+                curl_setopt($ch['year'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['year'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['year']);
+                break;
+            case 'category':
+                $categoryFiltersQuery = <<<EOT
+$prefixes
+select ?type (count(?type) as ?pubcount) WITH {
+    $queryWithoutPrefix
+} as %typeFilterSet WHERE {
+    include %typeFilterSet.
+    ?pub rdf:type ?type.
+}group by ?type order by desc(?pubcount) limit $limit
+EOT;
+            
+                if($offset > 0 ){
+                    $categoryFiltersQuery .= " offset $offset";
+                }
+                
+                $ch['category'] = curl_init();
+                curl_setopt($ch['category'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($categoryFiltersQuery));
+                curl_setopt($ch['category'], CURLOPT_POST, 1);
+                curl_setopt($ch['category'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['category'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['category']);
+                break;
+            case 'org':
+                $orgFiltersQuery = <<<EOT
+$prefixes
+select ?org (count(?org) as ?pubcount) WITH {
+    $queryWithoutPrefix
+} as %orgFilterSet WHERE {
+    include %orgFilterSet.
+    ?pub press:belongsTo ?org.
+}group by ?org order by desc(?pubcount) limit $limit
+EOT;
+            
+                if($offset > 0 ){
+                    $orgFiltersQuery .= " offset $offset";
+                }
+                
+                $ch['org'] = curl_init();
+                curl_setopt($ch['org'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($orgFiltersQuery));
+                curl_setopt($ch['org'], CURLOPT_POST, 1);
+                curl_setopt($ch['org'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['org'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['org']);
+                break;
+            case 'project':
+                $projectFiltersQuery = <<<EOT
+$prefixes
+select ?projectUUID ?projectName (count(?projectUUID) as ?pubcount) WITH {
+    $queryWithoutPrefix
+} as %projectFilterSet WHERE {
+    include %projectFilterSet.
+    ?pub press:appearsIn ?projectUUID.
+    ?projectUUID press:projectName ?projectName.
+}group by ?projectUUID ?projectName order by desc(?pubcount) limit $limit
+EOT;
+            
+                if($offset > 0 ){
+                    $projectFiltersQuery .= " offset $offset";
+                }
+
+                $ch['project'] = curl_init();
+                curl_setopt($ch['project'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($projectFiltersQuery));
+                curl_setopt($ch['project'], CURLOPT_POST, 1);
+                curl_setopt($ch['project'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['project'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['project']);
+                break;
+            default:
+                break;
+        }
+    }
+
+    $running = null;
+    do {
+        curl_multi_exec($mh, $running);
+    }while($running);
+    
+    foreach ($ch as $key => $value) {
+        curl_multi_remove_handle($mh, $value);
+    }
+    curl_multi_close($mh);
+
+    $response = array();
+    foreach ($ch as $key => $value) {
+        $response[$key] = json_decode(curl_multi_getcontent($value), true);
+    }
+
+    echo json_encode($response);
 }

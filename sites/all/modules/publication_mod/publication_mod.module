@@ -396,6 +396,24 @@ function publication_mod_menu(){
     'type' => MENU_CALLBACK
   );
 
+  $menu['ajax/publications/search_publications'] = array(
+    'title' => '',
+    'page callback' => '_search_publication',
+    'access callback' => TRUE,
+    // 'access arguments' => TRUE,
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
+  $menu['ajax/publications/get_filters'] = array(
+    'title' => '',
+    'page callback' => '_get_filters',
+    'access callback' => TRUE,
+    // 'access arguments' => TRUE,
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
   menu_cache_clear_all();
 
   return $menu;
