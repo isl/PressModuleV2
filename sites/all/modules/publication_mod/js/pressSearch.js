@@ -860,30 +860,7 @@
 
             return $div;
         },
-        /**
-         * Gets the info of authors based on their uuids
-         * 
-         * @param  {Array} authoruuids An array containing the author uuids to be retreived
-         * @return {Object} A jqXHR object
-         */
-        getPredefinedAuthors: function(authoruuids) {
-            var query = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
-            query += 'prefix press: <' + this.prefix + '> \n';
-            query += 'SELECT ?uuid (CONCAT(?givenName, \" \", ?familyName) ';
-            query += 'AS ?fullName) ?givenName ?familyName (substr(?mbox, 8) as ?mail) ?group WHERE { \n';
-            query += '?uuid rdf:type foaf:Person. \n';
-            query += 'FILTER('
-            for (var i = 0; i < authoruuids.length; i++) {
-                if (i > 0) query += ' || ';
-                query += '?uuid = <' + authoruuids[i] + '>';
-            }
-            query += '). \n';
-            query += '?uuid foaf:familyName ?familyName. \n';
-            query += 'optional{?uuid foaf:givenName ?givenName.} \n';
-            query += 'optional{?uuid foaf:mbox ?mbox}. \n';
-            query += '?uuid press:personGroup ?group. }';
-            return this.getQuery(query);
-        },
+
         /**
          * Uses state of browser to implement back button & search with url params
          * @param  {Object} fields    The advanced search fields of the state
@@ -967,22 +944,13 @@
          * @param  {Object} stateObj  The state object
          */
         searchByFields: function(offset, filters, pushState, stateObj) {
-            var prefixes = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' + //Constructing Query
-                'prefix press: <' + this.prefix + '> \n';
-            var select = 'SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ' +
-                '?order ?type ?externalLink ?bookTitle ?chapterTitle ' +
-                '?typeID ?publicationUrl ?localLink WHERE{ \n';
-
             //Getting the available fields
             var field = $('#free-text', this.element).val();
             var yearFrom = $('#year-from', this.element).val();
-
             var yearTo = $('#year-to', this.element).val();
-
             var category = $('#category', this.element).val();
             var subcategory = $('#subcategory', this.element).val();
             var reviewed = $('#reviewed', this.element).is(':checked');
-
             var orgs = []; //Get orgs
             var orgIds = [];
             orgs = $('#org-editable li');
@@ -1021,17 +989,11 @@
                 offset = 0;
             }
 
-            if (typeof filters === 'undefined') {
-                filters = this.getFiltersValues(this.filters);
-
-            }
-
             // Create the search label to be displayed
             if (field !== '')
                 searchLabel += '"' + field + '"';
 
             // Add authors to query
-            var authorQuery = '';
             var authorIds = [];
             if (authors.length === 0) {
 
@@ -1046,10 +1008,6 @@
                 }
 
                 for (var i = 0; i < authors.length; i++) {
-                    authorQuery += '?con' + i + ' rdfs:subPropertyOf* press:contributorType. \n'; //NOTE: PRESS V3
-                    authorQuery += '?slot' + i + ' ?con' + i + ' <' + $(authors[i]).attr('data-uuid') + '>. \n';
-                    authorQuery += '?pub press:hasContributor ?slot' + i + '. \n';
-
                     authorIds.push($(authors[i]).attr('data-uuid'));
                     searchLabel += $(authors[i]).text();
                     if (i < authors.length - 1)
@@ -1058,14 +1016,12 @@
             }
 
             // Add orgs to query
-            var orgQuery = '';
+            
             if (orgs.length === 0) {
 
             } else if (orgs.length === 1) {
                 if (searchLabel !== '')
                     searchLabel += ', ';
-
-                orgQuery = '?pub press:belongsTo <' + this.prefix + 'Organization/' + orgs.attr('id') + '>. \n';
                 searchLabel += 'Organization: ' + orgs.contents().not(orgs.children()).text() + ', ';
                 orgIds.push(orgs.attr('id'));
             } else {
@@ -1073,23 +1029,17 @@
                     searchLabel += ', ';
 
                 searchLabel += 'Organizations: ' + $(orgs[0]).contents().not($(orgs[0]).children()).text();
-                orgQuery = '?pub press:belongsTo ?org. \n' +
-                    'FILTER(?org = press:' + $(orgs[0]).attr('id');
                 orgIds.push($(orgs[0]).attr('id'));
                 for (var i = 1; i < orgs.length; i++) {
-                    orgQuery += ' || ?org = press:' + $(orgs[i]).attr('id');
                     var text = $(orgs[i]).contents().not($(orgs[i]).children()).text();
                     searchLabel += text;
                     orgIds.push($(orgs[i]).attr('id'));
                     if (i < orgs.length - 1)
                         searchLabel += ', ';
                 }
-                orgQuery += '). \n';
             }
 
             // Add tags to query
-            var tagQuery = '';
-
             if (tags.length > 0) {
                 if (searchLabel !== '') {
                     searchLabel += ', ';
@@ -1102,7 +1052,6 @@
                 }
 
                 for (var i = 0; i < tags.length; i++) {
-                    tagQuery += '?pub press:tag "' + $(tags[i]).attr('id') + '". \n';
                     tagIds.push($(tags[i]).attr('id'));
                     searchLabel += $(tags[i]).attr('id');
                     if (i < tags.length - 1)
@@ -1164,21 +1113,16 @@
             })(this);
 
             // Add year to query
-            var yearQuery = '';
             if (yearFrom !== '' || yearTo !== '') {
                 if (searchLabel !== '')
                     searchLabel += ', ';
 
                 searchLabel += 'Year: ';
-                yearQuery = '?pub press:year ?year. \n';
-                yearQuery += 'FILTER (';
-                var yearAnd = '';
                 var sameYear = false;
                 var yearRange = '';
                 var toRange = '';
                 var fromRange = '';
                 if (yearFrom !== '' && yearTo !== '') {
-                    yearAnd = ' && ';
                     yearRange = ' - ';
                     if (yearFrom === yearTo) {
                         searchLabel += yearFrom;
@@ -1193,19 +1137,16 @@
                     }
                 }
                 if (yearFrom !== '') {
-                    yearQuery += '?year >= str(' + yearFrom + ')';
                     if (!sameYear) {
                         searchLabel += fromRange + yearFrom;
                     }
                 }
 
                 if (yearTo !== '') {
-                    yearQuery += yearAnd + '?year <= str(' + yearTo + ')';
                     if (!sameYear) {
                         searchLabel += toRange + yearRange + yearTo;
                     }
                 }
-                yearQuery += '). \n';
             }
 
             // Add if reviewed to query
@@ -1214,164 +1155,25 @@
                 if (searchLabel !== '')
                     searchLabel += ', ';
 
-                reviewedQuery = '?pub rdf:type ?type. \n';
-                reviewedQuery += '?type rdfs:subClassOf* ?ancClass. \n';
-                reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed). \n';
                 searchLabel += ' Peer Reviewed Only';
             } else if (category !== '') {
                 if (searchLabel !== '')
                     searchLabel += ', ';
                 if (!reviewed) {
                     if (subcategory !== '') {
-                        reviewedQuery += '?pub rdf:type ?type. \n';
-                        reviewedQuery += '?type rdfs:subClassOf* press:' + subcategory + '. \n';
                         searchLabel += this.category_labels[subcategory];
                     } else {
-                        reviewedQuery += '?pub rdf:type ?type. \n';
-                        reviewedQuery += '?type rdfs:subClassOf* press:' + category + '. \n';
                         searchLabel += this.category_labels[category];
                     }
                 } else {
                     if (subcategory !== '') {
-                        reviewedQuery += '?pub rdf:type ?type. \n';
-                        reviewedQuery += '?type rdfs:subClassOf* press:' + subcategory + '. \n';
                         searchLabel += this.category_labels[subcategory] + ', Peer Reviewed Only';
                     } else {
-                        reviewedQuery += '?pub rdf:type ?type. \n';
-                        reviewedQuery += '?type rdfs:subClassOf* press:' + category + '. \n';
-                        reviewedQuery += '?type rdfs:subClassOf* ?ancClass. \n';
-                        reviewedQuery += 'FILTER (?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed). \n';
                         searchLabel += this.category_labels[category] + ', Peer Reviewed Only';
                     }
                 }
             }
 
-            // Add text field to query
-            var fieldQuery = '';
-
-            if (field !== '') {
-
-                fieldQuery += '    { \n' + //NOTE: PRESS V3
-                    '       ?searchField bds:search "' + field + '". \n' +
-                    '       ?searchField bds:relevance ?score. \n' +
-                    '       ?pub ?predicate ?searchField. \n' +
-                    '       ?pub rdf:type [rdfs:subClassOf* press:Publication]. \n' +
-                    '       MINUS {?pub press:englishAbstract ?searchField}. \n' +
-                    '       MINUS {?pub press:publicationUrl ?searchField}. \n' +
-                    '     }UNION{\n' +
-                    '       ?personSearchField bds:search "' + field + '". \n' +
-                    '       ?personSearchField bds:relevance ?score. \n' +
-                    '       ?person ?s ?personSearchField. \n' +
-                    '       ?person rdf:type foaf:Person. \n' +
-                    '       ?con rdfs:subPropertyOf* press:contributorType. \n' +
-                    '       ?slot ?con ?person. \n' +
-                    '       ?pub press:hasContributor ?slot. \n' +
-                    '    } \n';
-                multipleFieldsQuery = '{ \n' +
-                    '?searchField bds:search "' + field + '". \n' +
-                    '?searchField bds:relevance ?score. \n' +
-                    '?pub ?predicate ?searchField. \n' +
-                    '?pub rdf:type [rdfs:subClassOf* press:Publication]. \n' +
-                    'MINUS {?pub press:englishAbstract ?searchField}. \n' +
-                    'MINUS {?pub press:publicationUrl ?searchField}. \n';
-                authorFieldsQuery = '     }UNION{\n' +
-                    '       ?personSearchField bds:search "' + field + '". \n' +
-                    '       ?personSearchField bds:relevance ?score. \n' +
-                    '       ?person ?s ?personSearchField. \n' +
-                    '       ?person rdf:type foaf:Person. \n' +
-                    '       ?con rdfs:subPropertyOf* press:contributorType. \n' +
-                    '       ?slot ?con ?person. \n' +
-                    '       ?pub press:hasContributor ?slot. \n';
-            }
-
-            // Add the rest of the fields that we need to be returned to the query
-            var restFields = '';
-            if (reviewedQuery === '') {
-                restFields += '?pub rdf:type ?type. \n';
-            }
-            if (yearQuery === '') {
-                restFields += '?pub press:year ?year. \n';
-            }
-            if (field === '') {
-                restFields += 'BIND(concat(str(?year), str(?pub)) as ?order). \n';
-            }
-            restFields += '?type rdfs:subClassOf* press:Publication. \n' +
-                'BIND(strafter(str(?type), "#") AS ?typeID). \n' +
-                'OPTIONAL{?pub press:externalLink ?externalLink}. \n' +
-                'OPTIONAL{?pub press:bookTitle ?bookTitle}. \n' +
-                'OPTIONAL{?pub press:chapterTitle ?chapterTitle}. \n' +
-                'OPTIONAL{?pub press:englishTitle ?englishTitle}. \n' +
-                'OPTIONAL{?pub press:localLink ?localLink}. \n' +
-                'OPTIONAL{?pub press:publicationUrl ?publicationUrl}. \n';
-
-            var closure = '';
-            if (field !== '') {
-                closure += '}group by ?pub ?year ?englishTitle ?order ?type ' +
-                    '?externalLink ?bookTitle ?chapterTitle ?typeID ?publicationUrl ' +
-                    '?localLink order by desc(?sumScore)';
-            } else {
-                closure += '}group by ?pub ?year ?englishTitle ?order ?type ' +
-                    '?externalLink ?bookTitle ?chapterTitle ?typeID ?publicationUrl ' +
-                    '?localLink order by desc(?order)';
-            }
-
-            // concat the queries
-            var searchQuery = '';
-            if (field !== '') {
-                multipleFieldsQuery += authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
-                authorFieldsQuery += authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
-            } else {
-                query = authorQuery + orgQuery + yearQuery + reviewedQuery + tagQuery;
-            }
-
-            for (key in filters) {
-                if (key !== 'contributors') {
-                    for (var filterVal in filters[key]) {
-                        if (field !== '') {
-                            multipleFieldsQuery += filters[key][filterVal];
-                            authorFieldsQuery += filters[key][filterVal];
-                        } else {
-                            query += filters[key][filterVal];
-                        }
-                    }
-                } else {
-                    if (filters.contributors.filterIntro) {
-                        if (field !== '') {
-                            multipleFieldsQuery += filters.contributors.filterIntro;
-                            authorFieldsQuery += filters.contributors.filterIntro;
-                        } else {
-                            query += filters.contributors.filterIntro;
-                        }
-                    }
-                    for (var filterVal in filters[key]) {
-                        if (field !== '') {
-                            multipleFieldsQuery += filters[key][filterVal];
-                            authorFieldsQuery += filters[key][filterVal];
-                        } else {
-                            query += filters[key][filterVal];
-                        }
-                    }
-                }
-            }
-
-
-
-
-            if (field !== '') {
-                var completeQuery = prefixes + select + multipleFieldsQuery + restFields +
-                    authorFieldsQuery + restFields + '} \n' + closure;
-                var countQuery = select + multipleFieldsQuery + restFields +
-                    authorFieldsQuery + restFields + '} \n' + closure;
-            } else {
-                completeQuery = prefixes + select + query + restFields + closure;
-                countQuery = select + query + restFields + closure;
-            }
-
-            // console.log (query);
-            // console.log(yearQuery);
-            //
-            // console.log(orgQuery);
-            //
             // console.log(field);
             // console.log(yearFrom);
             // console.log(yearTo);
@@ -1379,44 +1181,30 @@
             // console.log(subcategory);
             // console.log(reviewed);
             this.lastSearchLabel = searchLabel;
-            // base_url = this.base_url;
-            // $.ajax({
-            //     dataType: 'json',
-            //     method: "GET",
-            //     url: base_url + 'ajax/search_publication',
-            //     data: {
-            //         query: q
-            //     }
-            // })
-            // .done(function(response) {
-            //     console.log(response);
-            // })
-            // .fail(function(response) {
-            //     // alert("Oops! There was an error with getting query! See console for more info.");
-            //     console.error(response);
-            // });
-            // Make the query and call the displaying results function & filter function on success
+            var searchOptions = {
+                searchField: field,
+                yearFrom: yearFrom,
+                yearTo: yearTo,
+                category: category,
+                subcategory: subcategory,
+                peerReviewed: reviewed,
+                method: 'advanced',
+                authors: authorIds,
+                orgs: orgIds,
+                tags: tagIds,
+                filters: this.getFiltersValues2(this.filters),
+            };
             $.ajax({
                 datatype: 'text',
                 method: 'GET',
                 url: this.base_url + '/ajax/publications/search_publications',
-                data: {
-                    searchField: field,
-                    yearFrom: yearFrom,
-                    yearTo: yearTo,
-                    category: category,
-                    subcategory: subcategory,
-                    peerReviewed: reviewed,
-                    method: 'advanced',
-                    authors: authorIds,
-                    orgs: orgIds,
-                    tags: tagIds,
-                    filters: this.getFiltersValues2(this.filters),
-                }
+                data: searchOptions,
             }).done(function(that){
                 return function(response){
-                    console.log(JSON.parse(response));
-                    that.insertSearchResults2(JSON.parse(response), searchLabel);
+                    response = JSON.parse(response);
+
+                    that.insertSearchResults2(response, searchLabel);
+                    that.resultContainer.append(that.getPagination2(searchOptions, response.count, 0, searchLabel, stateObj));
                 }
             }(this)).fail(function(response){
                 console.error(response);
@@ -1438,39 +1226,11 @@
                 offset: 0
             };
             $.when(this.getFilters2(filterSearchOptions, 15, offset)).done((function(response){
-                this.insertFilters2(JSON.parse(response), filterSearchOptions)
+                this.insertFilters2(JSON.parse(response), filterSearchOptions);
             }).bind(this))
             .fail(function(respone){
                 console.error(response);
             });
-            /*
-            $.when(this.getQuery(completeQuery, 10, offset), // API Done
-                this.getCount(prefixes, countQuery)).done((function(a1, a2) {
-                var response = a1[0].results.bindings;
-                var pubs = [];
-                for (var i = 0; i < response.length; i++) {
-                    pubs[i] = response[i].pub.value;
-                }
-
-                var count = 0;
-                if (a2[0].results.bindings.length === 1 && 'count' in a2[0].results.bindings[0]) {
-                    var count = parseInt(a2[0].results.bindings[0].count.value);
-                }
-                if (count > 0) {
-                    $.when(this.getPublicationsContributors(pubs, this.personFields), this.getPublicationsMultipleFields(pubs)).done((function(a3, a4) {
-                        // this.insertSearchResults(a1[0], a3[0], a4[0], this.personFields, searchLabel, 0, count);
-                        this.resultContainer.append(this.getPagination(completeQuery, count, offset, this.personFields, searchLabel, stateObj));
-                    }).bind(this));
-                } else {
-                    // this.insertSearchResults(null, null, null, this.personFields, searchLabel, 0, 0);
-                }
-            }).bind(this));
-
-            $.when(this.getFilters(prefixes, countQuery),
-                this.getAuthorFilters(prefixes, countQuery), this.getProjectFilters(prefixes, countQuery), this.getTagFilters(prefixes, countQuery)).done((function(a1, a2, a3, a4) {
-                this.insertFilters(a1[0], a2[0], a3[0], a4[0], filters, prefixes, countQuery);
-            }).bind(this));
-            */
         },
         
         /**
@@ -1499,11 +1259,11 @@
                 pushState = false;
             }
 
-            var selectedFilters;
+            // var selectedFilters;
 
             if (typeof filterValues === 'undefined') {
-                selectedFilters = $('.search-filter[data-selected="selected"]', this.filters);
-                filterValues = this.getFiltersValues(this.filters);
+                // selectedFilters = $('.search-filter[data-selected="selected"]', this.filters);
+                filterValues = this.getFiltersValues2(this.filters);
             }
             this.resultContainer.find('*').not('#results').empty();
             var $element = $('#' + category_id, this.element);
@@ -1531,310 +1291,99 @@
 
 
 
-            window.onpopstate = (function(that) {
-                return function(event) {
-                    if (!event.state) {
-                        location.reload();
-                    } else {
-                        var currentState = event.state;
-                        that.searchByCategory(currentState.category, currentState.offset, currentState.filters, true);
-                    }
-                };
-            })(this);
+            // window.onpopstate = (function(that) {
+            //     return function(event) {
+            //         if (!event.state) {
+            //             location.reload();
+            //         } else {
+            //             var currentState = event.state;
+            //             that.searchByCategory(currentState.category, currentState.offset, currentState.filters, true);
+            //         }
+            //     };
+            // })(this);
             this.category_list.collapse("hide");
-            var $temp = $element;
-            var catpath = [$element.attr('id')];
-
-            while ($temp.attr('data-parent') !== 'Publication') { //Find Category Ancestors
-                catpath.unshift($temp.attr('data-parent'));
-                $temp = $('#' + $temp.attr('data-parent'));
-            }
-            var i = 0;
-            var fields = [];
-            var fieldObject = this.JSONfields;
-            var requiredFields = [];
-            var requiredObject = this.JSONrequiredFields;
-            while (i < catpath.length) {
-                fieldObject = fieldObject[catpath[i]];
-                requiredObject = requiredObject[catpath[i]];
-                i++;
-            }
-
-            //Get same required  fields for all categories & subcategories
-            var allRequired = {};
-
-            function getRequired(obj, array) {
-                if ($.isArray(obj)) {
-                    for (var i = 0; i < obj.length; i++) {
-                        if (!(obj[i] in array)) {
-                            array[obj[i]] = 0;
-                        }
-                        array[obj[i]]++;
-                    }
-                } else {
-                    for (var key in obj) {
-                        if (obj.hasOwnProperty(key)) {
-                            array = getRequired(obj[key], array);
-                        }
-                    }
-                }
-                return array;
-            }
-            allRequired = getRequired(requiredObject, allRequired);
-
-            var prefixes = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' + //Constructing Query
-                'prefix press: <' + this.prefix + '> \n';
-            var select = 'SELECT * WHERE { \n';
-            var selectorQuery = '?pub rdf:type [rdfs:subClassOf* press:' + $element.attr('id') + ']. \n';
-            selectorQuery += '?pub rdf:type ?type. \n' +
-                'BIND(strafter(str(?type), "#") AS ?typeID). \n';
-            for (key in filterValues) {
-                if (key !== 'contributors') {
-                    for (var filterVal in filterValues[key]) {
-                        selectorQuery += filterValues[key][filterVal];
-                    }
-                } else {
-                    if (filterValues.contributors.filterIntro)
-                        selectorQuery += filterValues.contributors.filterIntro;
-                    for (var filterVal in filterValues[key]) {
-                        selectorQuery += filterValues[key][filterVal];
-                    }
-                }
-            }
-            var fieldQuery = '?pub press:year ?year. \n' +
-                'BIND(concat(str(?year), str(?pub)) as ?order). \n' +
-                //  '?pub press:belongsTo ?org. \n'+
-                //  '?org press:organizationName ?orgName. \n'+
-                'OPTIONAL{?pub press:externalLink ?externalLink}. \n' +
-                'OPTIONAL{?pub press:bookTitle ?bookTitle}. \n' +
-                'OPTIONAL{?pub press:chapterTitle ?chapterTitle}. \n' +
-                'OPTIONAL{?pub press:englishTitle ?englishTitle}. \n' +
-                'OPTIONAL{?pub press:localLink ?localLink}. \n' +
-                'OPTIONAL{?pub press:publicationUrl ?publicationUrl}. \n';
-
-            var closure = '} order by desc(?order)';
-
-            var query = selectorQuery + fieldQuery;
-            var completeQuery = prefixes + select + query + closure;
-            var countQuery = select + query + closure;
+            
             this.loader.show();
-            this.lastSearchLabel = 'for ' + this.category_labels[$element.attr('id')] + ' Category';
+            var searchLabel = 'for ' + this.category_labels[category_id] + ' Category';
+            this.lastSearchLabel = searchLabel;
 
-            $.when(this.getQuery(completeQuery, 10, offset), //API Done
-                this.getCount(prefixes, countQuery)).done((function(a1, a2) {
-                var response = a1[0].results.bindings;
-                var pubs = [];
-                for (var i = 0; i < response.length; i++) {
-                    pubs[i] = response[i].pub.value;
-                }
-                var count = 0;
-                if (a2[0].results.bindings.length === 1 && 'count' in a2[0].results.bindings[0]) {
-                    var count = parseInt(a2[0].results.bindings[0].count.value);
-                }
-                if (count > 0) {
-                    $.when(this.getPublicationsContributors(pubs, allRequired), this.getPublicationsMultipleFields(pubs)).done((function(a3, a4) {
-                        this.insertSearchResults(a1[0], a3[0], a4[0], allRequired, 'for ' + this.category_labels[$element.attr('id')] + ' Category', offset, count);
-                        this.resultContainer.append(this.getPagination(completeQuery, count, offset, allRequired, 'for ' + this.category_labels[$element.attr('id')] + ' Category', stateObj));
-                    }).bind(this));
-                } else {
-                    this.insertSearchResults(null, null, null, this.personFields, 'for ' + this.category_labels[$element.attr('id')] + ' Category', 0, 0);
-                }
-            }).bind(this));
+            var searchOptions = {
+                category: category_id,
+                method: 'browse',
+                filters: this.getFiltersValues2(this.filters),
+            };
+            $.ajax({
+                datatype: 'text',
+                method: 'GET',
+                url: this.base_url + '/ajax/publications/search_publications',
+                data: searchOptions,
+            }).done(function(that){
+                return function(response){
+                    response = JSON.parse(response);
 
-            $.when(this.getFilters(prefixes, countQuery),
-                this.getAuthorFilters(prefixes, countQuery), this.getProjectFilters(prefixes, countQuery), this.getTagFilters(prefixes, countQuery)).done((function(a1, a2, a3, a4) {
-                this.insertFilters(a1[0], a2[0], a3[0], a4[0], filterValues, prefixes, countQuery);
-            }).bind(this));
+                    that.insertSearchResults2(response, searchLabel);
+                    that.resultContainer.append(that.getPagination2(searchOptions, response.count, 0, searchLabel, stateObj));
+                }
+            }(this)).fail(function(response){
+                console.error(response);
+            })
+            var filterSearchOptions = {
+                category: category_id,
+                method: 'browse',
+                filters: this.getFiltersValues2(this.filters),
+                filter_keys: 'all',
+                limit: 15,
+                offset: 0
+            };
+            $.when(this.getFilters2(filterSearchOptions, 15, offset)).done((function(response){
+                this.insertFilters2(JSON.parse(response), filterSearchOptions);
+            }).bind(this))
+            .fail(function(respone){
+                console.error(response);
+            });
+            
         },
         
-        /**
-         * Creates the pagination for the search results
-         * @param  {string} query          The sparql query
-         * @param  {number} count          The number of the results
-         * @param  {number} offset         The offset of the search
-         * @param  {Object} requiredFields The required fields based on the category
-         * @param  {string} searchLabel    The search label to be displayed
-         * @param  {Object} stateObj       The state object
-         * @return {Object}                A jQuery element object
-         */
-        getPagination: function(query, count, offset, requiredFields, searchLabel, stateObj) {
+        getPagination2: function(options, count, offset, searchLabel, stateObj){
             var $pagination = $('<ul class="pagination"></ul>');
             var pages = Math.ceil(count / 10);
             var firstPageClick = true;
-
 
             $pagination.twbsPagination({
                 totalPages: pages,
                 startPage: Math.ceil(offset / 10) + 1,
                 visiblePages: 7,
                 onPageClick: (function(that) {
-                    return function(event, page) {
-                        if (firstPageClick) {
+                    return function(event, page){
+                        if (firstPageClick){
                             firstPageClick = false;
                             return;
                         }
                         that.results.empty();
-                        $('html,body').animate({ scrollTop: 0 }, 'fast');
+                        $('html,body').animate({scrollTop:0}, 'fast');
                         that.loader.show();
-                        $.when(that.getQuery(query, 10, (page - 1) * 10)).done((function(a1) {
-                            var response = a1.results.bindings;
-                            var pubs = [];
-                            for (var i = 0; i < response.length; i++) {
-                                pubs[i] = response[i].pub.value;
-                            }
-                            if (count > 0) {
-                                $.when(that.getPublicationsContributors(pubs, requiredFields), that.getPublicationsMultipleFields(pubs)).done((function(a2, a3) {
-                                    this.insertSearchResults(a1, a2[0], a3[0], requiredFields, searchLabel, (page - 1) * 10, count);
-                                }).bind(this));
-                            } else {
-                                this.insertSearchResults(null, null, null, requiredFields, searchLabel, 0, 0);
-                            }
+                        options['limit'] = 10;
+                        options['offset'] = (page-1)*10;
+                        $.ajax({
+                            datatype: 'text',
+                            method: 'GET',
+                            url: that.base_url + '/ajax/publications/search_publications',
+                            data: options,
+                        }).done((function(response){
+                            this.insertSearchResults2(JSON.parse(response), searchLabel);
                             stateObj.offset = (page - 1) * 10;
-                            var search = '?';
-                            for (var key in stateObj) {
-                                if (key !== 'filters') {
-                                    search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
-                                } else {
-                                    for (var filterKey in stateObj.filters) {
-                                        var index = 0;
-                                        for (var filterVal in stateObj.filters[filterKey]) {
-                                            if (filterVal !== 'filterIntro')
-                                                search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
-                                        }
-                                    }
-                                }
-                            }
-                            search = search.substring(0, search.length - 1);
-                            window.history.pushState(stateObj, "", window.location.origin + window.location.pathname + search);
+                            // var search = '?';
+                            // for (var key in stateObj){
+
+                            // }
                         }).bind(that));
-                    };
-                })(this)
+                    }
+                })(this),
             });
+
             return $pagination;
         },
-        
-        /**
-         * Gets the contributors of an array of Publications from Blazegraph
-         * @param  {Array} publications      An array of the publications' uuids
-         * @param  {Array} contributorTypes The contributor types to be retreived
-         * @return {Object}                 A jqXHR object
-         */
-        getPublicationsContributors: function(publications, contributorTypes) { //NOTE: PRESS V3
-            var query = 'prefix press: <' + this.prefix + '> \n';
-            query += 'SELECT * WHERE { \n';
-            if (!$.isArray(publications) || publications.length === 0) return;
-            var i = 0;
 
-            query += '?pub press:hasContributor ?slot. \n';
-            query += 'FILTER(';
-            for (var i = 0; i < publications.length; i++) {
-                if (i > 0) query += '||';
-                query += '?pub = <' + publications[i] + '> ';
-            }
-            query += '). \n';
-            query += '?pub press:year ?year. \n';
-            query += 'BIND(concat(str(?year), str(?pub)) as ?order). \n';
-            query += '?con rdfs:subPropertyOf* press:contributorType. \n';
-            query += '?slot ?con ?person. \n';
-            query += 'BIND(strafter(str(?con), "#") AS ?type). \n';
-            query += '?slot press:listIndex ?personIndex. \n';
-            query += 'OPTIONAL{?person foaf:givenName ?givenName}. \n';
-            query += '?person foaf:familyName ?familyName. \n';
-
-            query += '}order by desc(?order)';
-
-            return this.getQuery(query, 0, 0);
-        },
-        //Get properties with multiple values of publications based on pub uuid
-        /**
-         * Gets the fields of the publications that might have multiple values (orgs, tags etc.)
-         * @param  {Object} publications The publications' uuids
-         * @return {Object}              A jqXHR object
-         */
-        getPublicationsMultipleFields: function(publications) {
-            if (!$.isArray(publications) || publications.length === 0) return;
-            var query = 'prefix press: <' + this.prefix + '> \n';
-            query += 'SELECT * WHERE { \n';
-            query += '{\n';
-            query += '?pub press:belongsTo ?org. \n';
-            query += 'FILTER (';
-            for (var i=0; i<publications.length; i++){
-              if (i>0) query += '||';
-              query += '?pub = <'+ publications[i] + '> ';
-            }
-            query += '). \n';
-            query += '?org press:organizationName ?orgName. \n';
-            query += '}UNION{ \n';
-            query += '?pub press:tag ?tag. \n';
-            query += 'FILTER (';
-            for (var i = 0; i < publications.length; i++) {
-                if (i > 0) query += '||';
-                query += '?pub = <' + publications[i] + '> ';
-            }
-            query += '). \n';
-            query += '} \n';
-            query += '}\n';
-
-            return this.getQuery(query, 0, 0);
-        },
-        
-        /**
-         * Gets the sparql triples of the selected filters
-         * @param  {Object} $elements A jQuery element object with the filter elements
-         * @return {Object}           An object with the filter values
-         */
-        getFiltersValues: function($elements) {
-            values = {
-                year: {},
-                category: {},
-                tags: {},
-                org: {},
-                contributors: {},
-                projects: {}
-            }
-            $('.search-filter-year[data-selected="selected"]', $elements).each(function() {
-                // values.year[$(this).attr('data-oVal')] = [];
-                values.year[$(this).attr('data-oVal')] = '?pub ' + $(this).attr('data-p') + ' ' + $(this).attr('data-oVal') + '. \n';
-                // values.year[$(this).attr('data-oVal')].push('?pub '+$(this).attr('data-p')+' '+$(this).attr('data-oVal')+'. \n');
-            });
-
-            $('.search-filter-category[data-selected="selected"]', $elements).each(function() {
-                // values.category[$(this).attr('data-oVal')] = [];
-                // values.category[$(this).attr('data-oVal')].push('?pub '+$(this).attr('data-p')+' '+$(this).attr('data-oVal')+'. \n');
-                values.category[$(this).attr('data-oVal')] = '?pub ' + $(this).attr('data-p') + ' ' + $(this).attr('data-oVal') + '. \n';
-            });
-
-            $('.search-filter-tags[data-selected="selected"]', $elements).each(function() {
-                // values.tags[$(this).attr('data-oVal')] = [];
-                // values.tags[$(this).attr('data-oVal')].push('?pub '+$(this).attr('data-p')+' '+$(this).attr('data-oVal')+'. \n');
-                values.tags[$(this).attr('data-oVal')] = '?pub ' + $(this).attr('data-p') + ' ' + $(this).attr('data-oVal') + '. \n';
-            });
-
-            //TODO: CHANGE FOR MULTIPLE ORGS
-            $('.search-filter-org[data-selected="selected"]', $elements).each(function() {
-                // values.org[$(this).attr('data-oVal')] = [];
-                // values.org[$(this).attr('data-oVal')].push('?pub '+$(this).attr('data-p')+' '+$(this).attr('data-oVal')+'. \n');
-                values.org[$(this).attr('data-oVal')] = '?pub ' + $(this).attr('data-p') + ' ' + $(this).attr('data-oVal') + '. \n';
-            });
-
-            $('.search-filter-project[data-selected="selected"]', $elements).each(function(index){
-                values.projects[$(this).attr('data-oVal')] = '?pub ' + $(this).attr('data-p') + ' ' + $(this).attr('data-oVal') + '. \n';
-            });
-
-            $('.search-filter-contributor[data-selected="selected"]', $elements).each(function(index) { //NOTE: PRESS V3
-                var contributorQuery = '';
-                contributorQuery += '?filterSlot' + index + ' ?filtercon ' + $(this).attr('data-oVal') + '. \n';
-                contributorQuery += '?pub press:hasContributor ?filterSlot' + index + '. \n';
-                // values.contributors[$(this).attr('data-oVal')] = [];
-                // values.contributors[$(this).attr('data-oVal')].push(contributorQuery);
-                values.contributors[$(this).attr('data-oVal')] = contributorQuery;
-            });
-
-            if ($('.search-filter-contributor[data-selected="selected"]', $elements).length > 0)
-                values.contributors.filterIntro = '?filtercon rdfs:subPropertyOf* press:contributorType. \n';
-
-            return values;
-        },
         /**
          * Gets the sparql triples of the selected filters
          * @param  {Object} $elements A jQuery element object with the filter elements
@@ -1901,149 +1450,7 @@
                 data: options
             });
         },
-        /**
-         * Creates and makes a call to Blazegraph to get the available years,
-         * organizations and categories for the filters
-         * 
-         * @param  {string} prefixQuery The prefix of the sparql query
-         * @param  {string} searchQuery The sparql Query
-         * @return {Object} A jqXHR object
-         */
-        getFilters: function(prefixQuery, searchQuery) {
-            var completeQuery = prefixQuery +
-                'select ?p ?o (count(?o) as ?oCount) WITH { \n' +
-                searchQuery +
-                '} as %filterSet \n' +
-                'WHERE {\n' +
-                'INCLUDE %filterSet. \n' +
-                '?pub ?p ?o. \n' +
-                'FILTER (?p = press:year || ?p = press:belongsTo || ?p = rdf:type)\n' +
-                '}group by ?p ?o order by desc(?oCount)';
-            return this.getQuery(completeQuery);
-        },
-
-        /**
-         * Creates and makes a call to Blazegraph to get the available authors for
-         * the filters
-         * 
-         * @param  {string} prefixQuery The prefix of the sparql query
-         * @param  {string} searchQuery The sparql Query
-         * @param  {number} offset The offset of the results
-         * @return {Object} A jqXHR object
-         */
-        getAuthorFilters: function(prefixQuery, searchQuery, offset) {
-            if (offset === undefined) {
-                offset = 0;
-            }
-            var completeQuery = prefixQuery;
-            if (prefixQuery.indexOf('bds') === -1) {
-                completeQuery += 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
-            }
-
-            completeQuery += 'SELECT ?contributoruuid ?contributorgivenName ' +
-                '?contributorfamilyName (count(?contributoruuid) as ?pubcount) WITH { \n' +
-                searchQuery +
-                '} as %authorFilterSet WHERE{ \n' +
-                'INCLUDE %authorFilterSet. \n' +
-                '?con rdfs:subPropertyOf* press:contributorType. \n' +
-                '?pub press:hasContributor ?slot. \n' +
-                '?slot ?con ?contributoruuid. \n' +
-                'OPTIONAL{?contributoruuid foaf:givenName ?contributorgivenName}. \n' +
-                '?contributoruuid foaf:familyName ?contributorfamilyName. \n' +
-                '}group by ?contributoruuid ?contributorgivenName ?contributorfamilyName order by desc(?pubcount) limit 15';
-            if (offset > 0) {
-                completeQuery += ' offset ' + offset;
-            }
-            return this.getQuery(completeQuery);
-        },
-
-        /**
-         * Creates and makes a call to Blazegraph to get the available projects
-         * for the filters
-         * 
-         * @param  {string} prefixQuery The prefix of the sparql query
-         * @param  {string} searchQuery The sparql Query
-         * @param  {number} offset The offset of the results
-         * @return {Object} A jqXHR object
-         */
-        getProjectFilters: function(prefixQuery, searchQuery, offset){
-            if(offset === undefined){
-                offset = 0;
-            }
-            var completeQuery = prefixQuery;
-
-            if(prefixQuery.indexOf('bds') === -1){
-                completeQuery += 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
-            }
-
-            completeQuery += 'SELECT ?projectUUID ?projectName ' +
-                '(count(?projectUUID) as ?pubcount) WITH { \n' +
-                searchQuery +
-                '} as %projectFilterSet WHERE{ \n' +
-                'INCLUDE %projectFilterSet. \n' +
-                '?pub press:appearsIn ?projectUUID. \n' +
-                '?projectUUID press:projectName ?projectName. \n'+
-                '}group by ?projectUUID ?projectName order by desc(?pubcount) limit 15';
-
-            if (offset > 0) {
-                completeQuery += ' offset ' + offset;
-            }
-            return this.getQuery(completeQuery);
-        },
-
-        /**
-         * Creates and makes a call to Blazegraph to get the available tags for
-         * the filters
-         * 
-         * @param  {string} prefixQuery The prefix of the sparql query
-         * @param  {string} searchQuery The sparql Query
-         * @param  {number} offset The offset of the results
-         * @return {Object} A jqXHR object
-         */
-        getTagFilters: function(prefixQuery, searchQuery, offset){
-            if(offset === undefined){
-                offset = 0;
-            }
-
-            var completeQuery = prefixQuery;
-
-            if(prefixQuery.indexOf('bds') === -1){
-                completeQuery += 'prefix bds: <http://www.bigdata.com/rdf/search#> \n';
-            }
-
-            completeQuery += 'SELECT ?tag (count(?tag) as ?Tagcount) WITH {\n'+
-                searchQuery +
-                '} as %tagFilterSet WHERE{ \n' +
-                'INCLUDE %tagFilterSet. \n'+
-                '?pub press:tag ?tag. \n'+
-                '} group by ?tag order by desc(?Tagcount) limit 15';
-
-            if (offset >0){
-                completeQuery += ' offset ' + offset;
-            }
-
-            return this.getQuery(completeQuery);
-        },
-        /**
-         * Creates a query to get the number of results of another search query
-         * and makes the request
-         * 
-         * @param  {string} prefixQuery The prefixes of the sparql query
-         * @param  {string} searchQuery The sparqlQuery
-         * @return {Object} A jqXHR object
-         */
-        getCount: function(prefixQuery, searchQuery) {
-
-            var completeQuery = prefixQuery +
-                'select (count(?pub) as ?count) WITH { \n' +
-                searchQuery +
-                '} as %countSet \n' +
-                'WHERE {\n' +
-                'INCLUDE %countSet. \n' +
-                '}';
-            return this.getQuery(completeQuery); //API Done
-        },
-
+        
         /**
          * Clears the search input
          */
@@ -3238,43 +2645,6 @@
             // console.log(this.lastQueryWithoutFilters[0]);
         },
 
-        /**
-         * Adds limit and offset to a query and makes the request to Blazegraph.
-         * 
-         * @param  {string} q The Query 
-         * @param  {number} limit The limit of the query
-         * @param  {number} offset The offset of the query
-         * @return {Object} A jqXHR object
-         */
-        getQuery: function(q, limit, offset) {
-            if (typeof limit === 'undefined') {
-                limit = 0;
-            }
-            if (typeof offset === 'undefined') {
-                offset = 0;
-            }
-            if (limit > 0) {
-                q += ' limit ' + limit;
-            }
-            if (offset > 0) {
-                q += ' offset ' + offset;
-            }
-            return $.ajax({
-                    dataType: 'json',
-                    method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: q
-                    }
-                })
-                .done(function(response) {
-                    return response;
-                })
-                .fail(function(response) {
-                    alert("Oops! There was an error with getting query! See console for more info.");
-                    console.error(response);
-                });
-        },
         /**
          * Returns the HTML of a box containing the share buttons
          * 

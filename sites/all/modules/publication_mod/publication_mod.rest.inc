@@ -713,195 +713,7 @@ function _create_search_query($options=array(), $blazegraph_info=array()){
 		$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 	}
 	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
-	$prefixes = <<<EOT
-	prefix bds: <http://www.bigdata.com/rdf/search#>
-	prefix press: <$blzg_prefix>
-	prefix org: <{$blzg_prefix}Organization/>
-EOT;
 
-    if($searchField == ''){
-        $select = <<<EOT
-        SELECT * WHERE{
-
-EOT;
-    }else{
-        $select = <<<EOT
-        SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
-            ?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
-
-EOT;
-    }
-	
-	$authorQuery = '';
-	foreach ($authors as $key => $author) {
-		$authorQuery .= <<<EOT
-		?con$key rdfs:subPropertyOf* press:contributorType. 
-		?slot$key ?con$key <$author>.
-		?pub press:hasContributor ?slot$key.
-
-EOT;
-	}
-	
-	$orgQuery = '';
-	if(count($orgs) > 0){
-		$orgQuery = "?pub press:belongsTo ?org. \nFILTER(";
-		
-		foreach ($orgs as $key => $org) {
-			if($key > 0){
-				$orgQuery .= '|| ';
-			}
-			$orgQuery .= "?org = org:". $org;
-		}
-		$orgQuery .= "). \n";
-	}
-
-	$tagQuery = '';
-	if(count($tags) > 0){
-		foreach ($tags as $tag){
-			$tagQuery = "?pub press:tag \"" . $tag . "\".\n";
-		}
-	}
-
-	$yearQuery = '';
-	if($yearFrom != '' || $yearTo != ''){
-		$yearQuery = "?pub press:year ?year. \n";
-		$yearQuery .= "FILTER (";
-		if($yearFrom != '' && $yearTo != ''){
-			$yearQuery .= "xsd:integer(?year) >= " . $yearFrom . " && xsd:integer(?year) <= " . $yearTo;
-		}else if($yearFrom != ''){
-			$yearQuery .= "xsd:integer(?year) >= " . $yearFrom;
-		}else if($yearTo != ''){
-			$yearQuery .= "xsd:integer(?year) <= " . $yearTo;
-		}
-		$yearQuery .= "). \n";
-	}
-
-	$reviewedQuery = '';
-
-	if($category == '' && $peerReviewed){
-		$reviewedQuery = <<<EOT
-		?type rdfs:subClassOf* ?ancClass.
-		?pub rdf:type ?type.
-		FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
-
-EOT;
-	}else if($category != ''){
-		if(!$peerReviewed){
-			if($subcategory != ''){
-				$reviewedQuery .= <<<EOT
-                ?type rdfs:subClassOf* press:$subcategory.
-				?pub rdf:type ?type.
-                
-EOT;
-			}else{
-                $reviewedQuery .= <<<EOT
-                ?type rdfs:subClassOf* press:$category.
-                ?pub rdf:type ?type.
-                
-EOT;
-			}
-		}else {
-			if($subcategory !== ''){
-				$reviewedQuery .= <<<EOT
-                ?type rdfs:subClassOf* press:$subcategory.
-				?pub rdf:type ?type.
-                
-EOT;
-			}else{
-				$reviewedQuery .= <<<EOT
-				?type rdfs:subClassOf* press:$category.
-				?pub rdf:type ?type.
-				?type rdfs:subClassOf* ?ancClass.
-                FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
-                
-EOT;
-			}
-		}
-	}
-
-	$fieldQuery = '';
-	$multipleFieldsQuery = '';
-	$authorFieldsQuery = '';
-
-	if($searchField != ''){
-		$fieldQuery = <<<EOT
-		{
-			?searchField bds:search "$searchField".
-			?searchField bds:relevance ?score.
-			?pub ?predicate ?searchField.
-			?pub rdf:type [rdfs:subClassOf* press:Publication].
-			MINUS {?pub press:englishAbstract ?searchField}.
-			MINUS {?pub press:publicationUrl ?searchField}.
-		}UNION{
-			?personSearchField bds:search "$searchField".
-			?personSearchField bds:relevance ?score.
-			?person ?s ?personSearchField.
-			?person rdf:type foaf:Person.
-			?con rdfs:subPropertyOf* press:contributorType.
-			?slot ?con ?person.
-			?pub press:hasContributor ?slot.
-		}
-EOT;
-		$multipleFieldsQuery = <<<EOT
-		{
-			?searchField bds:search "$searchField".
-			?searchField bds:relevance ?score.
-			?pub ?predicate ?searchField.
-			?pub rdf:type [rdfs:subClassOf* press:Publication].
-			MINUS {?pub press:englishAbstract ?searchField}.
-			MINUS {?pub press:publicationUrl ?searchField}.
-EOT;
-		$authorFieldsQuery = <<<EOT
-	}UNION{
-    ?personSearchField bds:search "$searchField".
-    ?personSearchField bds:relevance ?score.
-    ?person ?s ?personSearchField.
-    ?person rdf:type foaf:Person.
-    ?con rdfs:subPropertyOf* press:contributorType.
-    ?slot ?con ?person.
-    ?pub press:hasContributor ?slot.
-EOT;
-	}
-
-	$restOfFields = '';
-
-	if ($reviewedQuery == ''){
-		$restOfFields .= "?pub rdf:type ?type. \n";
-	}
-	if ($yearQuery == ''){
-		$restOfFields .= "?pub press:year ?year. \n";
-	}
-	if ($searchField == ''){
-		$restOfFields .= "BIND(concat(str(?year), str(?pub)) as ?order). \n";
-	}
-	$restOfFields .= <<<EOT
-	?type rdfs:subClassOf* press:Publication.
-	BIND(strafter(str(?type), "#") AS ?typeID).
-	OPTIONAL{?pub press:externalLink ?externalLink}.
-	OPTIONAL{?pub press:bookTitle ?bookTitle}.
-	OPTIONAL{?pub press:chapterTitle ?chapterTitle}.
-	OPTIONAL{?pub press:englishTitle ?englishTitle}.
-	OPTIONAL{?pub press:localLink ?localLink}.
-	OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
-EOT;
-
-    $closure = '';
-	if($searchField != ''){
-        $closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
-	    $closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
-		$closure .= "order by desc(?sumScore)";
-	}else{
-		$closure = "\n}order by desc(?order)";
-	}
-
-	$query = '';
-	if($searchField != ''){
-		$multipleFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
-		$authorFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
-	}else{
-		$query = $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
-	}
-	
 	$filterQuery = '';
 	if(!empty($filters)){
 		$filterQuery .= "\n #FILTERS \n";
@@ -942,17 +754,226 @@ EOT;
 				break;
 		}
 	}
-
-
-
-
-
 	$q = '';
-	if($searchField != ''){
-		$q = $select . $multipleFieldsQuery . $filterQuery . $restOfFields . $authorFieldsQuery . $restOfFields . "} \n" . $closure;
+	$prefixes = '';
+	if($method == 'browse'){
+
+		$prefixes = "prefix press:<$blzg_prefix>\n";
+		$q = <<<EOT
+		select * where {
+			?pub rdf:type [rdfs:subClassOf* press:$category].
+			?pub rdf:type ?type.
+			BIND(strafter(str(?type), "#") AS ?typeID).
+			$filterQuery
+			?pub press:year ?year.
+			BIND(concat(str(?year), str(?pub)) as ?order).
+			OPTIONAL{?pub press:externalLink ?externalLink}.
+			OPTIONAL{?pub press:bookTitle ?bookTitle}.
+			OPTIONAL{?pub press:chapterTitle ?chapterTitle}.
+			OPTIONAL{?pub press:englishTitle ?englishTitle}.
+			OPTIONAL{?pub press:localLink ?localLink}.
+			OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
+		}order by desc(?order)
+EOT;
 	}else{
-		$q = $select . $query . $filterQuery . $restOfFields . $closure;
+
+		$prefixes = <<<EOT
+prefix bds: <http://www.bigdata.com/rdf/search#>
+prefix press: <$blzg_prefix>
+prefix org: <{$blzg_prefix}Organization/>
+EOT;
+
+		if($searchField == ''){
+			$select = <<<EOT
+SELECT * WHERE{
+
+EOT;
+		}else{
+			$select = <<<EOT
+SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
+	?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
+
+EOT;
+		}
+		
+		$authorQuery = '';
+		foreach ($authors as $key => $author) {
+			$authorQuery .= <<<EOT
+?con$key rdfs:subPropertyOf* press:contributorType. 
+?slot$key ?con$key <$author>.
+?pub press:hasContributor ?slot$key.
+
+EOT;
+		}
+		
+		$orgQuery = '';
+		if(count($orgs) > 0){
+			$orgQuery = "?pub press:belongsTo ?org. \nFILTER(";
+			
+			foreach ($orgs as $key => $org) {
+				if($key > 0){
+					$orgQuery .= '|| ';
+				}
+				$orgQuery .= "?org = org:". $org;
+			}
+			$orgQuery .= "). \n";
+		}
+
+		$tagQuery = '';
+		if(count($tags) > 0){
+			foreach ($tags as $tag){
+				$tagQuery = "?pub press:tag \"" . $tag . "\".\n";
+			}
+		}
+
+		$yearQuery = '';
+		if($yearFrom != '' || $yearTo != ''){
+			$yearQuery = "?pub press:year ?year. \n";
+			$yearQuery .= "FILTER (";
+			if($yearFrom != '' && $yearTo != ''){
+				$yearQuery .= "xsd:integer(?year) >= " . $yearFrom . " && xsd:integer(?year) <= " . $yearTo;
+			}else if($yearFrom != ''){
+				$yearQuery .= "xsd:integer(?year) >= " . $yearFrom;
+			}else if($yearTo != ''){
+				$yearQuery .= "xsd:integer(?year) <= " . $yearTo;
+			}
+			$yearQuery .= "). \n";
+		}
+
+		$reviewedQuery = '';
+
+		if($category == '' && $peerReviewed){
+			$reviewedQuery = <<<EOT
+?type rdfs:subClassOf* ?ancClass.
+?pub rdf:type ?type.
+FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+
+EOT;
+		}else if($category != ''){
+			if(!$peerReviewed){
+				if($subcategory != ''){
+					$reviewedQuery .= <<<EOT
+?type rdfs:subClassOf* press:$subcategory.
+?pub rdf:type ?type.
+
+EOT;
+				}else{
+					$reviewedQuery .= <<<EOT
+?type rdfs:subClassOf* press:$category.
+?pub rdf:type ?type.
+
+EOT;
+				}
+			}else {
+				if($subcategory !== ''){
+					$reviewedQuery .= <<<EOT
+?type rdfs:subClassOf* press:$subcategory.
+?pub rdf:type ?type.
+
+EOT;
+				}else{
+					$reviewedQuery .= <<<EOT
+?type rdfs:subClassOf* press:$category.
+?pub rdf:type ?type.
+?type rdfs:subClassOf* ?ancClass.
+FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+
+EOT;
+				}
+			}
+		}
+
+		$fieldQuery = '';
+		$multipleFieldsQuery = '';
+		$authorFieldsQuery = '';
+
+		if($searchField != ''){
+			$fieldQuery = <<<EOT
+		{
+			?searchField bds:search "$searchField".
+			?searchField bds:relevance ?score.
+			?pub ?predicate ?searchField.
+			?pub rdf:type [rdfs:subClassOf* press:Publication].
+			MINUS {?pub press:englishAbstract ?searchField}.
+			MINUS {?pub press:publicationUrl ?searchField}.
+		}UNION{
+			?personSearchField bds:search "$searchField".
+			?personSearchField bds:relevance ?score.
+			?person ?s ?personSearchField.
+			?person rdf:type foaf:Person.
+			?con rdfs:subPropertyOf* press:contributorType.
+			?slot ?con ?person.
+			?pub press:hasContributor ?slot.
+		}
+EOT;
+			$multipleFieldsQuery = <<<EOT
+		{
+			?searchField bds:search "$searchField".
+			?searchField bds:relevance ?score.
+			?pub ?predicate ?searchField.
+			?pub rdf:type [rdfs:subClassOf* press:Publication].
+			MINUS {?pub press:englishAbstract ?searchField}.
+			MINUS {?pub press:publicationUrl ?searchField}.
+EOT;
+			$authorFieldsQuery = <<<EOT
+	}UNION{
+	?personSearchField bds:search "$searchField".
+	?personSearchField bds:relevance ?score.
+	?person ?s ?personSearchField.
+	?person rdf:type foaf:Person.
+	?con rdfs:subPropertyOf* press:contributorType.
+	?slot ?con ?person.
+	?pub press:hasContributor ?slot.
+EOT;
+		}
+
+		$restOfFields = '';
+
+		if ($reviewedQuery == ''){
+			$restOfFields .= "?pub rdf:type ?type. \n";
+		}
+		if ($yearQuery == ''){
+			$restOfFields .= "?pub press:year ?year. \n";
+		}
+		if ($searchField == ''){
+			$restOfFields .= "BIND(concat(str(?year), str(?pub)) as ?order). \n";
+		}
+		$restOfFields .= <<<EOT
+		?type rdfs:subClassOf* press:Publication.
+		BIND(strafter(str(?type), "#") AS ?typeID).
+		OPTIONAL{?pub press:externalLink ?externalLink}.
+		OPTIONAL{?pub press:bookTitle ?bookTitle}.
+		OPTIONAL{?pub press:chapterTitle ?chapterTitle}.
+		OPTIONAL{?pub press:englishTitle ?englishTitle}.
+		OPTIONAL{?pub press:localLink ?localLink}.
+		OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
+EOT;
+
+		$closure = '';
+		if($searchField != ''){
+			$closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
+			$closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
+			$closure .= "order by desc(?sumScore)";
+		}else{
+			$closure = "\n}order by desc(?order)";
+		}
+
+		$query = '';
+		if($searchField != ''){
+			$multipleFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+			$authorFieldsQuery .= $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+		}else{
+			$query = $authorQuery . $orgQuery . $yearQuery . $reviewedQuery . $tagQuery;
+		}
+		
+		$q = '';
+		if($searchField != ''){
+			$q = $select . $multipleFieldsQuery . $filterQuery . $restOfFields . $authorFieldsQuery . $restOfFields . "} \n" . $closure;
+		}else{
+			$q = $select . $query . $filterQuery . $restOfFields . $closure;
+		}
 	}
+
 
 	return array(
 		'prefix' => $prefixes,
