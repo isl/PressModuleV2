@@ -718,11 +718,19 @@ function _create_search_query($options=array(), $blazegraph_info=array()){
 	prefix press: <$blzg_prefix>
 	prefix org: <{$blzg_prefix}Organization/>
 EOT;
-	$select = <<<EOT
-	SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
-		?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
+
+    if($searchField == ''){
+        $select = <<<EOT
+        SELECT * WHERE{
 
 EOT;
+    }else{
+        $select = <<<EOT
+        SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
+            ?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
+
+EOT;
+    }
 	
 	$authorQuery = '';
 	foreach ($authors as $key => $author) {
@@ -772,8 +780,8 @@ EOT;
 
 	if($category == '' && $peerReviewed){
 		$reviewedQuery = <<<EOT
-		?pub rdf:type ?type.
 		?type rdfs:subClassOf* ?ancClass.
+		?pub rdf:type ?type.
 		FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
 
 EOT;
@@ -781,26 +789,31 @@ EOT;
 		if(!$peerReviewed){
 			if($subcategory != ''){
 				$reviewedQuery .= <<<EOT
+                ?type rdfs:subClassOf* press:$subcategory.
 				?pub rdf:type ?type.
-				?type rdfs:subClassOf* press:$subcategory.
+                
 EOT;
 			}else{
-				$reviewedQuery .= <<<EOT
-				?type rdfs:subClassOf* press:$category.
+                $reviewedQuery .= <<<EOT
+                ?type rdfs:subClassOf* press:$category.
+                ?pub rdf:type ?type.
+                
 EOT;
 			}
 		}else {
 			if($subcategory !== ''){
 				$reviewedQuery .= <<<EOT
+                ?type rdfs:subClassOf* press:$subcategory.
 				?pub rdf:type ?type.
-				?type rdfs:subClassOf* press:$subcategory.
+                
 EOT;
 			}else{
 				$reviewedQuery .= <<<EOT
-				?pub rdf:type ?type.
 				?type rdfs:subClassOf* press:$category.
+				?pub rdf:type ?type.
 				?type rdfs:subClassOf* ?ancClass.
-				FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+                FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Reviewed).
+                
 EOT;
 			}
 		}
@@ -872,12 +885,13 @@ EOT;
 	OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
 EOT;
 
-	$closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
-	$closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
+    $closure = '';
 	if($searchField != ''){
+        $closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
+	    $closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
 		$closure .= "order by desc(?sumScore)";
 	}else{
-		$closure .= "order by desc(?order)";
+		$closure = "\n}order by desc(?order)";
 	}
 
 	$query = '';
@@ -895,14 +909,14 @@ EOT;
 	foreach($filters as $key => $filter){
 		switch ($key) {
 			case 'year':
-				$filterQuery .= "?pub press:year $filter. \n";
+				$filterQuery .= "?pub press:year \"$filter\". \n";
 				break;
 			case 'category':
 				$filterQuery .= "?pub rdf:type $filter. \n";
 				break;
-			case 'tags':
+			case 'tag':
 				foreach ($filter as $value) {
-					$filterQuery .= "?pub press:tag $value. \n";
+					$filterQuery .= "?pub press:tag \"$value\". \n";
 				}
 				break;
 			case 'org':
@@ -1177,7 +1191,7 @@ function _get_filters(){
     $filter_keys = isset($_GET['filter_keys']) && !empty($_GET['filter_keys']) ? $_GET['filter_keys'] : 'all';
 
     if($filter_keys == 'all'){
-        $filter_keys = ['author', 'tag', 'year', 'org', 'category', 'project'];
+        $filter_keys = ['contributor', 'tag', 'year', 'org', 'category', 'project'];
     }else{
         $filter_keys = array($filter_keys);
     }
@@ -1197,8 +1211,8 @@ function _get_filters(){
     $mh = curl_multi_init();
     foreach ($filter_keys as $filter) {
         switch ($filter) {
-            case 'author':
-                $authorFiltersQuery = <<<EOT
+            case 'contributor':
+                $contributorFiltersQuery = <<<EOT
 $prefixes
 select ?contributoruuid ?contributorgivenName ?contributorfamilyName (count(?contributoruuid) as ?pubcount) WITH {
     $queryWithoutPrefix
@@ -1213,15 +1227,15 @@ select ?contributoruuid ?contributorgivenName ?contributorfamilyName (count(?con
 EOT;
             
                 if($offset > 0 ){
-                    $authorFiltersQuery .= " offset $offset";
+                    $contributorFiltersQuery .= " offset $offset";
                 }
 
-                $ch['author'] = curl_init();
-                curl_setopt($ch['author'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($authorFiltersQuery));
-                curl_setopt($ch['author'], CURLOPT_POST, 1);
-                curl_setopt($ch['author'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
-                curl_setopt($ch['author'], CURLOPT_RETURNTRANSFER, true);
-                curl_multi_add_handle($mh, $ch['author']);
+                $ch['contributor'] = curl_init();
+                curl_setopt($ch['contributor'], CURLOPT_URL, $blazegraph_info['blazegraph_url'] . '?query=' . urlencode($contributorFiltersQuery));
+                curl_setopt($ch['contributor'], CURLOPT_POST, 1);
+                curl_setopt($ch['contributor'], CURLOPT_HTTPHEADER, array('Accept:application/sparql-results+json'));
+                curl_setopt($ch['contributor'], CURLOPT_RETURNTRANSFER, true);
+                curl_multi_add_handle($mh, $ch['contributor']);
                 break;
             case 'tag':
                 $tagFiltersQuery = <<<EOT
@@ -1293,12 +1307,13 @@ EOT;
             case 'org':
                 $orgFiltersQuery = <<<EOT
 $prefixes
-select ?org (count(?org) as ?pubcount) WITH {
+select ?org ?organizationName (count(?org) as ?pubcount) WITH {
     $queryWithoutPrefix
 } as %orgFilterSet WHERE {
     include %orgFilterSet.
     ?pub press:belongsTo ?org.
-}group by ?org order by desc(?pubcount) limit $limit
+    ?org press:organizationName ?organizationName.
+}group by ?org ?organizationName order by desc(?pubcount) limit $limit
 EOT;
             
                 if($offset > 0 ){
@@ -1352,8 +1367,15 @@ EOT;
 
     $response = array();
     foreach ($ch as $key => $value) {
-        $response[$key] = json_decode(curl_multi_getcontent($value), true);
+        $decoded = json_decode(curl_multi_getcontent($value), true)['results']['bindings'];
+        $response[$key] = array();
+        foreach($decoded as $f_index => $r){
+            $response[$key][$f_index] = array();
+            foreach($r as $filter_key => $filter_val){
+                $response[$key][$f_index][$filter_key] = $filter_val['value'];
+            }
+        }
     }
-
+    
     echo json_encode($response);
 }

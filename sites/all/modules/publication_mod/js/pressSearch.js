@@ -137,8 +137,8 @@
 
         // Retreive from blazegraph the tags and categories. On success, 
         // Create the page
-        $.when(this.getCategories(), this.getTags()).always($.proxy(function(a1, a2) {
-            if (!(a1) || !a2) {
+        $.when(this.getCategories()).always($.proxy(function(a1) {
+            if (!a1) {
                 console.error('GET was unsuccesfull');
                 return;
             }
@@ -175,7 +175,7 @@
             field_container.append(this.getOrgsField(this.orgs));
 
             field_container.append(this.getYearField());
-            field_container.append(this.getTagField(a2[0]));
+            field_container.append(this.getTagField());
             var categories = this.getCategoriesFields(this.category_tree);
             field_container.append(categories[0]);
             field_container.append(categories[1]);
@@ -304,27 +304,14 @@
          * @return {Object} A jqXHR object
          */
         getCategories: function() {
+            var base_url = this.base_url;
             return $.ajax({
 
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
+                    url: base_url + '/ajax/publications/get_categories',
                     data: {
-                        query: "prefix press: <" + this.prefix + "> " +
-                            'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter' +
-                            '(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel ' +
-                            "WHERE { " +
-                            '{' +
-                            'SELECT (COUNT(?pub) as ?pubCounter) ?low ' +
-                            'WHERE { ' +
-                            '?low rdfs:subClassOf* press:Publication. ' +
-                            'OPTIONAL {?pub rdf:type [rdfs:subClassOf* ?low]}. ' +
-                            '} GROUP BY ?low ' +
-                            '}' +
-                            'OPTIONAL {?low rdfs:label ?lowlabel}. ' +
-                            'OPTIONAL {?low press:optgroup ?optgroup}. ' +
-                            'OPTIONAL {?low rdfs:subClassOf ?superclass} ' +
-                            '}'
+                        'counter': true
                     }
                 })
                 .done($.proxy(function(response) {
@@ -365,44 +352,12 @@
         },
 
         /**
-         * Gets tags from blazegraph
-         * 
-         * @return {Object} A jqXHR object
-         */
-        getTags: function() {
-            tags = [];
-            return $.ajax({
-                    dataType: 'json',
-                    method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: 'prefix press: <' + this.prefix + '> ' +
-                            'SELECT distinct ?tag WHERE { ' +
-                            '?pub press:tag ?tag} '
-                    }
-                })
-                .done($.proxy(function(response) {
-
-                }, this))
-                .fail(function(response) {
-                    alert("Oops! There was an error with getting tags! See console for more info.");
-                    console.error(response);
-                });
-        },
-
-        /**
          * Creates a tag field using typeahead.js and sortable.js
          *
          * @param {object} response The blazegraph response containing the tags
          * @return {Object} A jQuery element object
          */
-        getTagField: function(response) {
-            var tags = [];
-            for (var i = 0; i < response.results.bindings.length; i++) {
-                tags[i] = response.results.bindings[i].tag.value;
-            }
-
-            var required = '';
+        getTagField: function() {
             $input = $('<input class="typeahead form-control input-sm press-field" ' +
                 'id="tag-input" data-label="Tags" type="text" placeholder="Search..."/>');
             $ul = $('<ul id="tag-editable" class="list-group editable" style="display:none"></ul>');
@@ -413,10 +368,33 @@
             $col_div.append($input);
             $col_div.append($ul);
 
+            var base_url = this.base_url;
             var tagsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
-                datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: tags
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tag'),
+                remote: {
+                    url: base_url + '/ajax/publications/search_tag',
+                    prepare: (function(prefix) {
+                        return function(query, settings) {
+                            var queries = query.split(' ');
+                            settings.data = {
+                                query: queries.toString(),
+                            }
+                            return settings;
+                        }
+                    })(this.prefix),
+                    transform: function(response) {
+                        if (typeof response !== 'object') return [];
+                        var tr = [];
+                        var results = response.results.bindings;
+                        for (let i = 0; i < results.length; i++) {
+                            tr[i] = {
+                                tag: results[i].tag.value,
+                            }
+                        }
+                        return tr;
+                    }
+                }
             });
 
             $input.typeahead({
@@ -426,7 +404,8 @@
             }, {
                 limit: 100,
                 name: 'tags',
-                source: tagsBlood
+                source: tagsBlood,
+                display: 'tag'
             });
 
             var sortable = Sortable.create($ul[0], {
@@ -444,16 +423,17 @@
             $input.bind('typeahead:select', function(ev, suggestion) {
                 var $list = $('#tag-editable');
                 var valid = true;
+                console.log(suggestion);
                 $('.tag-item').each(function() {
-                    if ($(this).attr('id') === suggestion) {
+                    if ($(this).attr('id') === suggestion.tag) {
                         return valid = false;
                     }
                 });
                 if (valid) {
                     var $li;
-                    $li = $('<li id="' + suggestion + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
+                    $li = $('<li id="' + suggestion.tag + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
-                    $li.html(suggestion);
+                    $li.html(suggestion.tag);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
                 }
@@ -490,32 +470,18 @@
                         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('fullName'),
                         sufficient: 500,
                         remote: {
-                            url: this.dbURL, //+"?query="+query,
-                            wildcard: '%QUERY',
+                            url: this.base_url + '/ajax/publications/search_author',
                             prepare: (function(groupKey, prefix) {
                                 return function(query, settings) {
-
                                     var queries = query.split(' ');
-
-                                    BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' +
-                                        'prefix press: <' + prefix + '> \n' +
-                                        'SELECT ?uuid (CONCAT(?givenName, \" \", ?familyName) ' +
-                                        'AS ?fullName) ?givenName ?familyName (substr(?mbox, 8) as ?mail) WHERE { \n';
-                                    for (var i = 0; i < queries.length; i++) {
-                                        if (queries[i].length < 3) return false;
-                                        BDSquery += '?o' + i + ' bds:search "' + queries[i] + '*". \n' +
-                                            '?uuid ?p' + i + ' ?o' + i + ' . \n' +
-                                            'filter(?p' + i + ' = foaf:familyName || ?p' + i + ' = foaf:givenName). \n';
-                                    }
-
-                                    BDSquery += '?uuid foaf:familyName ?familyName. \n' +
-                                        '?uuid foaf:givenName ?givenName. \n' +
-                                        'optional{?uuid foaf:mbox ?mbox}. \n' +
-                                        '?uuid press:personGroup "' + groupKey + '". }';
+                                    queries = queries.filter(function(value, index, arr){
+                                        return value.length > 2;
+                                    });
 
                                     settings.data = {
-                                        query: BDSquery,
-                                    };
+                                        terms: queries,
+                                        groupKey: groupKey,
+                                    }
                                     return settings;
                                 };
                             })(key, this.prefix),
@@ -1057,6 +1023,7 @@
 
             if (typeof filters === 'undefined') {
                 filters = this.getFiltersValues(this.filters);
+
             }
 
             // Create the search label to be displayed
@@ -1429,7 +1396,55 @@
             //     console.error(response);
             // });
             // Make the query and call the displaying results function & filter function on success
-            $.when(this.getQuery(completeQuery, 10, offset),
+            $.ajax({
+                datatype: 'text',
+                method: 'GET',
+                url: this.base_url + '/ajax/publications/search_publications',
+                data: {
+                    searchField: field,
+                    yearFrom: yearFrom,
+                    yearTo: yearTo,
+                    category: category,
+                    subcategory: subcategory,
+                    peerReviewed: reviewed,
+                    method: 'advanced',
+                    authors: authorIds,
+                    orgs: orgIds,
+                    tags: tagIds,
+                    filters: this.getFiltersValues2(this.filters),
+                }
+            }).done(function(that){
+                return function(response){
+                    console.log(JSON.parse(response));
+                    that.insertSearchResults2(JSON.parse(response), searchLabel);
+                }
+            }(this)).fail(function(response){
+                console.error(response);
+            })
+            var filterSearchOptions = {
+                searchField: field,
+                yearFrom: yearFrom,
+                yearTo: yearTo,
+                category: category,
+                subcategory: subcategory,
+                peerReviewed: reviewed,
+                method: 'advanced',
+                authors: authorIds,
+                orgs: orgIds,
+                tags: tagIds,
+                filters: this.getFiltersValues2(this.filters),
+                filter_keys: 'all',
+                limit: 15,
+                offset: 0
+            };
+            $.when(this.getFilters2(filterSearchOptions, 15, offset)).done((function(response){
+                this.insertFilters2(JSON.parse(response), filterSearchOptions)
+            }).bind(this))
+            .fail(function(respone){
+                console.error(response);
+            });
+            /*
+            $.when(this.getQuery(completeQuery, 10, offset), // API Done
                 this.getCount(prefixes, countQuery)).done((function(a1, a2) {
                 var response = a1[0].results.bindings;
                 var pubs = [];
@@ -1443,11 +1458,11 @@
                 }
                 if (count > 0) {
                     $.when(this.getPublicationsContributors(pubs, this.personFields), this.getPublicationsMultipleFields(pubs)).done((function(a3, a4) {
-                        this.insertSearchResults(a1[0], a3[0], a4[0], this.personFields, searchLabel, 0, count);
+                        // this.insertSearchResults(a1[0], a3[0], a4[0], this.personFields, searchLabel, 0, count);
                         this.resultContainer.append(this.getPagination(completeQuery, count, offset, this.personFields, searchLabel, stateObj));
                     }).bind(this));
                 } else {
-                    this.insertSearchResults(null, null, null, this.personFields, searchLabel, 0, 0);
+                    // this.insertSearchResults(null, null, null, this.personFields, searchLabel, 0, 0);
                 }
             }).bind(this));
 
@@ -1455,6 +1470,7 @@
                 this.getAuthorFilters(prefixes, countQuery), this.getProjectFilters(prefixes, countQuery), this.getTagFilters(prefixes, countQuery)).done((function(a1, a2, a3, a4) {
                 this.insertFilters(a1[0], a2[0], a3[0], a4[0], filters, prefixes, countQuery);
             }).bind(this));
+            */
         },
         
         /**
@@ -1604,7 +1620,7 @@
             this.loader.show();
             this.lastSearchLabel = 'for ' + this.category_labels[$element.attr('id')] + ' Category';
 
-            $.when(this.getQuery(completeQuery, 10, offset),
+            $.when(this.getQuery(completeQuery, 10, offset), //API Done
                 this.getCount(prefixes, countQuery)).done((function(a1, a2) {
                 var response = a1[0].results.bindings;
                 var pubs = [];
@@ -1820,6 +1836,72 @@
             return values;
         },
         /**
+         * Gets the sparql triples of the selected filters
+         * @param  {Object} $elements A jQuery element object with the filter elements
+         * @return {Object}           An object with the filter values
+         */
+        getFiltersValues2: function($elements) {
+            var values = {};
+            $('.search-filter-year[data-selected="selected"]', $elements).each(function() {
+                values['year'] = $(this).attr('data-oVal');
+            });
+
+            $('.search-filter-category[data-selected="selected"]', $elements).each(function() {
+                values['category'] = $(this).attr('data-oVal');
+            });
+
+            values['tag'] = [];
+            $('.search-filter-tag[data-selected="selected"]', $elements).each(function() {
+                values['tag'].push($(this).attr('data-oVal'));
+            });
+
+            //TODO: CHANGE FOR MULTIPLE ORGS
+            values['org'] = [];
+            $('.search-filter-org[data-selected="selected"]', $elements).each(function() {
+                values['org'].push($(this).attr('data-oVal'));
+            });
+
+            values['project'] = [];
+
+            $('.search-filter-project[data-selected="selected"]', $elements).each(function(index){
+                values['project'].push($(this).attr('data-oVal'));
+            });
+            values['contributor'] = [];
+            $('.search-filter-contributor[data-selected="selected"]', $elements).each(function(index) { //NOTE: PRESS V3
+                values['contributor'].push($(this).attr('data-oVal'));
+            });
+
+            // if ($('.search-filter-contributor[data-selected="selected"]', $elements).length > 0)
+            //     values.contributors.filterIntro = '?filtercon rdfs:subPropertyOf* press:contributorType. \n';
+
+            return values;
+        },
+
+        getFilters2: function(options, limit, offset){
+            console.log('getFilters');
+            console.log(options);
+            // if(options['limit'] === undefined){
+            //     if(limit === undefined){
+            //         options['limit'] = 15;
+            //     }else{
+            //         options['limit'] = limit;
+            //     }
+            // }
+            // if(options['offset'] === undefined){
+            //     if(offset === undefined){
+            //         options['offset'] = 15;
+            //     }else{
+            //         options['offset'] = offset;
+            //     }
+            // }
+            return $.ajax({
+                datatype: 'text',
+                method: 'GET',
+                url: this.base_url + '/ajax/publications/get_filters',
+                data: options
+            });
+        },
+        /**
          * Creates and makes a call to Blazegraph to get the available years,
          * organizations and categories for the filters
          * 
@@ -1959,7 +2041,7 @@
                 'WHERE {\n' +
                 'INCLUDE %countSet. \n' +
                 '}';
-            return this.getQuery(completeQuery);
+            return this.getQuery(completeQuery); //API Done
         },
 
         /**
@@ -2257,6 +2339,620 @@
             this.loader.hide();
         },
 
+        insertSearchResults2: function(searchResults, searchLabel){
+            this.results.empty();
+            if(searchResults.count === 0){
+                this.loader.hide();
+                this.results.append('<h3 class="col-sm-12">No Results</h3>');
+                this.results.append('<h4 class="col-xs-12">' + searchLabel + '</h4>');
+                return;
+            }else if(searchResults.count === 1){
+                this.results.append('<h3 class="col-sm-12">1 Result</h3>');
+            }else{
+                this.results.append('<h3 class="col-sm-12">'+searchResults.count+' Results</h3>');
+            }
+
+            this.results.append('<h4 class="col-xs-12">'+searchLabel+'</h4><p>&nbsp;</p>');
+            var $container = $('<div></div>');
+            var current_pub = {};
+            for(var i=0; i < searchResults.results.length; i++){
+                current_pub = searchResults.results[i];
+
+                var title = '';
+                var titleField = this.titleFields[this.categoryAncestors[current_pub['typeID']]][current_pub['typeID']];
+            
+
+                if(current_pub[titleField]){
+                    title = current_pub[titleField];
+                }
+
+                if(!title || title === ''){
+                    if('englishTitle' in current_pub){
+                        title = current_pub.englishTitle;
+                    }else if('bookTitle' in current_pub){
+                        title = current_pub.bookTitle;
+                    }
+                }
+
+                var info_color = this.categoryColor[this.categoryAncestors[current_pub.typeID]];
+
+                var $row = $('<div class="row"></div>');
+                var $icons = $('<div class="col-sm-2" style="padding-top:8px"></div>');
+
+                var $download_icon = $('<a target="_blank" class="result-icons" data-toggle="tooltip" ' +
+                    'data-placement="top" data-container="body" title="Download the PDF of ' +
+                    'this Publication" style="color:inherit; visibility:hidden">' +
+                    '<i class="icon-download" style="font-size:17px;"></i></a>');
+                if ('localLink' in current_pub && !this.current_user.anonymous) {
+                    $download_icon.attr('href', this.base_url + current_pub.localLink);
+                    $download_icon.mouseover(function(e) { $(this).tooltip(); });
+                    $download_icon.mouseover();
+                    // if (){
+
+                    // $icons.append($download_icon);
+                    // }
+                    $download_icon.css('visibility', 'visible');
+                }
+                $icons.append($download_icon);
+
+                var $info_icon = $('<a  class="result-icons" data-toggle="tooltip" ' +
+                    'data-placement="top" data-container="body" title="' +
+                    this.category_labels[current_pub.typeID] + '" style="color:inherit">' +
+                    '<i class="icon-info-circled" style="font-size:17px;display:block;' +
+                    'color:' + info_color + '"></i></a>');
+                var $edit_icon = $('<a href="' + this.base_url + '/publication/edit?uuid=' +
+                    encodeURIComponent(current_pub.pub) + '&category=' +
+                    encodeURIComponent(current_pub.typeID) + '" target="_blank" ' +
+                    'class="result-icons" style="color:inherit"><i class="icon-edit" ' +
+                    'style="font-size:17px;font-weight:bold;"></i></a>');
+                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="icon-share" style="font-size:17px;"></i></a>');
+                var $share_icon_div = this.createShareButton('', title + ' | PRESS Publication System');
+                $share_icon_div.prepend($share_icon);
+                if ('publicationUrl' in current_pub) {
+                    var $share_icon_div = this.createShareButton(this.base_url + '/' + current_pub.publicationUrl, title + ' | PRESS Publication System');
+                    $share_icon_div.prepend($share_icon);
+                    $share_icon.css('visibility', 'visible');
+                }
+                var externalLink = '';
+                if ('externalLink' in current_pub) {
+                    $info_icon.attr('href', current_pub.externalLink);
+                    $info_icon.attr('target', 'target="_blank"');
+                }
+
+                $icons.append($share_icon_div);
+                $info_icon.mouseover(function(e) { $(this).tooltip(); });
+                $info_icon.mouseover();
+
+                $icons.append($info_icon);
+
+                var addEdit = false;
+
+                var pub_orgs = [];
+                if(current_pub.org){
+                    for(var j =0; j < current_pub.org.length; j++){
+                        pub_orgs.push(current_pub.org[j].org);
+                    }
+                }
+                if ($.inArray('administrator', this.current_user.roles) > -1 || 
+                    (!this.current_user.anonymous && 
+                        $.inArray('Publication Mod Power User', this.current_user.roles) > -1 &&
+                        $.inArray('http://www.ics.forth.gr/Press#Organization/' + this.current_user['lab'], pub_orgs) > -1)
+                    ) {
+                    addEdit = true;
+                }
+
+                var $pub_info = $('<div class="col-sm-10"></div>');
+
+                if('publicationUrl' in current_pub){
+                    $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.publicationUrl + '" target="_blank"><h4><strong>' + title + '</strong></h4></a>'));
+                }else{
+                    $pub_info.append($('<h4><strong>' + title + '</strong></h4>'));
+                }
+
+                var firstCon = true;
+
+                for (var j = 0; j < this.contributorOrder[current_pub.typeID].length; j++){
+                    var current_contributor_type = this.contributorOrder[current_pub.typeID][j];
+                    if(current_contributor_type in current_pub.contributors){
+                        console.log(current_contributor_type + ' in current pub contrs');
+                        var length = current_pub.contributors[current_contributor_type].length;
+                        keys = Object.keys(current_pub.contributors[current_contributor_type]).sort();
+                        for(var conIndex = 0; conIndex < keys.length; conIndex++){
+                            var current_contributor = current_pub.contributors[current_contributor_type][keys[conIndex]];
+                            if(addEdit === false && !this.current_user.anonymous){
+                                if(this.current_user.uuid === current_contributor.person){
+                                    addEdit = true;
+                                }
+                            }
+
+                            var givenName = '';
+                            if('givenName' in current_contributor){
+                                givenName = current_contributor['givenName'];
+                            }
+                            var fullName = givenName + ' ' + current_contributor['familyName'];
+                            var $author_link = $('<a  data-uuid="' + current_contributor['person'] + '">' + fullName + '</a>');
+                            $author_link.click((function(that) {
+                                return function() {
+                                    that.clearSearchInput();
+                                    that.clearAdvancedSearch();
+                                    $('#author-editable', that.advanced_search).
+                                    append('<li class="list-group-item" draggable="false" ' +
+                                        'style="float:left"><span class="author-contributor-name ' +
+                                        'contributor" data-uuid="' + $(this).attr('data-uuid') + '" ' +
+                                        'data-field="author">' + $(this).text() + '</span><i class="js-remove">&nbsp;✖</i></li>');
+                                    $('#author-editable', that.advanced_search).show();
+                                    that.searchByFields();
+                                    // that.clearAdvancedSearch(); //TODO: Check for workaround
+                                };
+                            })(this));
+                            if(!firstCon){
+                                $pub_info.append(', ');
+                            }
+                            $pub_info.append($author_link);
+                            firstCon = false;
+                        }
+                    }
+                }
+                if (addEdit){
+                    $icons.append($edit_icon);
+                }
+
+                $pub_info.append("<br/>");
+                $pub_info.append(current_pub.year);
+
+                if('tag' in current_pub){
+                    var $tagDiv = $('<div class="col-xs-12 pub-tags">Tags: </div>');
+                    var $tagsMore = $('<div class="results-more-tags"></div>').hide();
+                    for (var tagIndex = 0; tagIndex < current_pub.tag.length; tagIndex++) {
+                        var $span = $('<span class="pub-tag-item">' + current_pub.tag[tagIndex] + '</span>');
+                        $span.click((function(that) {
+                            return function() {
+                                that.clearSearchInput();
+                                that.clearAdvancedSearch();
+                                $('#tag-editable', that.advanced_search).append($('<li id="' + $(this).text() + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>'));
+                                that.searchByFields();
+                                that.clearAdvancedSearch();
+                            };
+                        })(this));
+                        if(tagIndex<5){
+                            $tagDiv.append($span);
+                        }else{
+                            $tagsMore.append($span);
+                        }
+                    }
+
+                    $tagDiv.append($tagsMore);
+                    $resultsShowMoreTags = $('<a class="results-show-more-tags">More</a>');
+                    $resultsShowMoreTags.click(function(){
+                        $(this).prev('.results-more-tags').toggle();
+                        if($(this).text() === 'Less'){
+                            $(this).text('More');
+                        }else{
+                            $(this).text('Less');
+                        }
+                    })
+                    $tagDiv.append($resultsShowMoreTags);
+                    $pub_info.append($tagDiv);
+                }
+                $row.append($icons);
+                $row.append($pub_info);
+                $container.append($row);
+                $container.append('<br>');
+            }
+
+            this.results.append($container);
+            this.loader.hide();
+        },
+
+        insertFilters2: function(results, searchOptions){
+            this.filters.empty();
+            this.filters.append('<h3>FILTERS</h3><hr/>');
+            this.filterLoader.hide();
+            this.filters.append(this.filterLoader);
+            var filterLoader = this.filterLoader;
+            
+            console.log(results);
+            console.log(searchOptions);
+
+            function onFilterClick(that) {
+                return function() {
+                    that.filterLoader.show();
+                    if ($(this).attr('data-selected') === 'selected') {
+                        $(this).removeAttr('data-selected');
+                        $(this).siblings().show();
+                    } else {
+                        $(this).attr('data-selected', 'selected');
+                    }
+
+                    if (that.currentSearchMode === 'browse') {
+                        that.searchByCategory();
+                    } else if (that.currentSearchMode === 'advanced') {
+                        that.searchByFields();
+                    }
+                };
+            }
+
+            var filter_order = ['contributor', 'tag', 'year', 'category', 'org', 'project'];
+            for(var i =0; i<filter_order.length; i++){
+                var key = filter_order[i];
+
+                switch (key) {
+                    case 'contributor':
+                        this.filters.append('<h4 class="col-xs-12">Authors</h4>');
+                        var contributorsDiv = $('<div class="col-xs-12"></div>');
+
+                        function insertContributors(contributors, div){
+                            var $contributorsMore = div.find("#show-more-contributors");
+                            for(var i = 0; i < contributors.length; i++){
+                                var contributorDiv = $('<div class="search-filter search-filter-contributor" '+
+                                    'data-oVal="<'+contributors[i].contributoruuid+'>"></div>');
+                                var name = '';
+                                if('contributorgivenName' in contributors[i]){
+                                    name = contributors[i].contributorgivenName + ' ';
+                                }
+                                name += contributors[i].contributorfamilyName;
+                                var contributor = $('<a class="col-xs-12" style="display:block">'+
+                                    name+' <i style="color:grey">['+contributors[i].pubcount+']</i></a>');
+                                contributorDiv.append(contributor);
+                                if($contributorsMore.length > 0){
+                                    $contributorsMore.before(contributorDiv);
+                                }else{
+                                    div.append(contributorDiv);
+                                }
+
+                                if('filters' in searchOptions && 'contributor' in searchOptions['filters']){
+                                    if(searchOptions.filters.contributor.indexOf(contributorDiv.attr('data-oVal')) > -1){
+                                        contributorDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['contributor'].length === 15){
+                            var $contributorsShowMore = $('<a id="show-more-contributors" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                            contributorsDiv.append($contributorsShowMore);
+                            $contributorsShowMore.click(function(that, searchOptions){
+                                return function(){
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'contributor';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options, 15, $this.attr('data-offset'))).done(function(response){
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertContributors(response['contributor'], contributorsDiv);
+                                        if(response['contributor'].length < 15){
+                                            contributorsDiv.find('#show-more-contributors').remove();
+                                        }
+                                        contributorsDiv.find('.search-filter').off('click');
+                                        contributorsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    })
+                                }
+                            }(this, searchOptions));
+                        }
+
+                        insertContributors(results['contributor'], contributorsDiv);
+                        this.filters.append(contributorsDiv);
+                        break;
+                    case 'tag':
+                        this.filters.append('<h4 class="col-xs-12">Tags</h4>');
+                        var tagsDiv = $('<div class="col-xs-12"></div>');
+                        
+                        function insertTags(tags, div) {
+                            var $tagsMore = div.find('#filters-show-more-tags');
+                            for (var i=0; i<tags.length; i++){
+                                var tagDiv = $('<div class="search-filter search-filter-tag" ' +
+                                    'data-oVal="' + tags[i].tag + '"></div>');
+                                var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].tag + ' <i style="color:grey">[' + tags[i].Tagcount + ']</i></a>');
+                                tagDiv.append(tag);
+                                if ($tagsMore.length > 0) {
+                                    $tagsMore.before(tagDiv);
+                                } else {
+                                    div.append(tagDiv);
+                                }
+
+                                if('filters' in searchOptions && 'tag' in searchOptions['filters']){
+                                    if(searchOptions.filters.tag.indexOf(tagDiv.attr('data-oVal')) > -1){
+                                        tagDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['tag'].length === 15){
+                            var tagsShowMore = $('<a id="filters-show-more-tags" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                            tagsDiv.append(tagsShowMore);
+                            tagsShowMore.click(function(that) {
+                                return function() {
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'tag';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options)).done(function(response) {
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertTags(response['tag'], tagsDiv);
+                                        if (response.tag.length < 15) {
+                                            tagsDiv.find('#filters-show-more-tags').remove();
+                                        }
+                                        tagsDiv.find('.search-filter').off('click');
+                                        tagsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    });
+                                }
+                            }(this));
+                        }
+
+                        insertTags(results['tag'], tagsDiv);
+                        this.filters.append(tagsDiv);
+                        break;
+                    case 'year':
+                        this.filters.append('<h4 class="col-xs-12">Year</h4>');
+                        var yearsDiv = $('<div class="col-xs-12"></div>');
+                        
+                        function insertYears(years, div) {
+                            var $yearsMore = div.find('#filters-show-more-years');
+                            for (var i=0; i<years.length; i++){
+                                var yearDiv = $('<div class="search-filter search-filter-year" ' +
+                                    'data-oVal="' + years[i].year + '"></div>');
+                                var year = $('<a  class="col-xs-12" style="display:block">' + years[i].year + ' <i style="color:grey">[' + years[i].pubcount + ']</i></a>');
+                                yearDiv.append(year);
+                                if ($yearsMore.length > 0) {
+                                    $yearsMore.before(yearDiv);
+                                } else {
+                                    div.append(yearDiv);
+                                }
+
+                                if('filters' in searchOptions && 'year' in searchOptions['filters']){
+                                    if(searchOptions.filters.year.indexOf(yearDiv.attr('data-oVal')) > -1){
+                                        yearDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['year'].length === 15){
+                            var yearsShowMore = $('<a id="filters-show-more-years" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                            yearsDiv.append(yearsShowMore);
+                            yearsShowMore.click(function(that) {
+                                return function() {
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'year';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options)).done(function(response) {
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertTags(response['year'], tagsDiv);
+                                        if (response.year.length < 15) {
+                                            yearsDiv.find('#filters-show-more-years').remove();
+                                        }
+                                        yearsDiv.find('.search-filter').off('click');
+                                        yearsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    });
+                                }
+                            }(this));
+                        }
+
+                        insertYears(results['year'], yearsDiv);
+                        this.filters.append(yearsDiv);
+                        break;
+                    case 'category':
+                        this.filters.append('<h4 class="col-xs-12">Category</h4>');
+                        var categoriesDiv = $('<div class="col-xs-12"></div>');
+                        
+                        function insertCategories(categories, div) {
+                            var $categoriesMore = div.find('#filters-show-more-categories');
+                            for (var i=0; i<categories.length; i++){
+                                var categoryDiv = $('<div class="search-filter search-filter-category" ' +
+                                    'data-oVal="<' + categories[i].type + '>"></div>');
+                                var category = $('<a  class="col-xs-12" style="display:block">' + this.category_labels[categories[i].type.split('#')[1]] + ' <i style="color:grey">[' + categories[i].pubcount + ']</i></a>');
+                                categoryDiv.append(category);
+                                if ($categoriesMore.length > 0) {
+                                    $categoriesMore.before(categoryDiv);
+                                } else {
+                                    div.append(categoryDiv);
+                                }
+
+                                if('filters' in searchOptions && 'category' in searchOptions['filters']){
+                                    if(searchOptions.filters.category.indexOf(categoryDiv.attr('data-oVal')) > -1){
+                                        categoryDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['category'].length === 15){
+                            var categoriesShowMore = $('<a id="filters-show-more-categories" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                categoriesDiv.append(categoriesShowMore);
+                                categoriesShowMore.click(function(that) {
+                                return function() {
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'categories';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options)).done(function(response) {
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertTags(response['category'], tagsDiv).bind(that);
+                                        if (response.category.length < 15) {
+                                            categoriesDiv.find('#filters-show-more-categories').remove();
+                                        }
+                                        categoriesDiv.find('.search-filter').off('click');
+                                        categoriesDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    });
+                                }
+                            }(this));
+                        }
+
+                        insertCategories(results['category'], categoriesDiv);
+                        this.filters.append(categoriesDiv);
+                        break;
+                    case 'org':
+                        this.filters.append('<h4 class="col-xs-12">Organization</h4>');
+                        var orgsDiv = $('<div class="col-xs-12"></div>');
+                        
+                        function insertOrgs(orgs, div) {
+                            var $orgsMore = div.find('#filters-show-more-orgs');
+                            for (var i=0; i<orgs.length; i++){
+                                var orgDiv = $('<div class="search-filter search-filter-org" ' +
+                                    'data-oVal="<' + orgs[i].org + '>"></div>');
+                                var org = $('<a  class="col-xs-12" style="display:block">' + orgs[i].organizationName + ' <i style="color:grey">[' + orgs[i].pubcount + ']</i></a>');
+                                orgDiv.append(org);
+                                if ($orgsMore.length > 0) {
+                                    $orgsMore.before(orgDiv);
+                                } else {
+                                    div.append(orgDiv);
+                                }
+
+                                if('filters' in searchOptions && 'org' in searchOptions['filters']){
+                                    if(searchOptions.filters.org.indexOf(orgDiv.attr('data-oVal')) > -1){
+                                        orgDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['org'].length === 15){
+                            var orgsShowMore = $('<a id="filters-show-more-orgs" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                orgsDiv.append(orgsShowMore);
+                                orgsShowMore.click(function(that) {
+                                return function() {
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'org';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options)).done(function(response) {
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertTags(response['org'], orgsDiv).bind(that);
+                                        if (response.org.length < 15) {
+                                            orgsDiv.find('#filters-show-more-orgs').remove();
+                                        }
+                                        orgsDiv.find('.search-filter').off('click');
+                                        orgsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    });
+                                }
+                            }(this));
+                        }
+
+                        insertOrgs(results['org'], orgsDiv);
+                        this.filters.append(orgsDiv);
+                        break;
+                    case 'project':
+                        this.filters.append('<h4 class="col-xs-12">Project</h4>');
+                        var projectsDiv = $('<div class="col-xs-12"></div>');
+                        
+                        function insertProjects(projects, div) {
+                            var $projectsMore = div.find('#filters-show-more-projects');
+                            for (var i=0; i<projects.length; i++){
+                                var projectDiv = $('<div class="search-filter search-filter-project" ' +
+                                    'data-oVal="<' + projects[i].projectUUID + '>"></div>');
+                                var project = $('<a  class="col-xs-12" style="display:block">' + projects[i].projectName + ' <i style="color:grey">[' + projects[i].pubcount + ']</i></a>');
+                                projectDiv.append(project);
+                                if ($projectsMore.length > 0) {
+                                    $projectsMore.before(projectDiv);
+                                } else {
+                                    div.append(projectDiv);
+                                }
+
+                                if('filters' in searchOptions && 'project' in searchOptions['filters']){
+                                    if(searchOptions.filters.project.indexOf(projectDiv.attr('data-oVal')) > -1){
+                                        projectDiv.attr('data-selected', 'selected');
+                                    }
+                                }
+                            }
+                        }
+
+                        if (results['project'].length === 15){
+                            var projectsShowMore = $('<a id="filters-show-more-projects" class="search-filter-more" ' +
+                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                projectsDiv.append(projectsShowMore);
+                                projectsShowMore.click(function(that) {
+                                return function() {
+                                    $this = $(this);
+                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                    var options = $.extend(true, {}, searchOptions);
+                                    options['filter_keys'] = 'project';
+                                    options['limit'] = 15;
+                                    options['offset'] = parseInt($this.attr('data-offset'));
+
+                                    $.when(that.getFilters2(options)).done(function(response) {
+                                        $this.siblings('.filterLoader').remove();
+                                        response = JSON.parse(response);
+                                        insertTags(response['project'], projectsDiv).bind(that);
+                                        if (response.project.length < 15) {
+                                            projectsDiv.find('#filters-show-more-projects').remove();
+                                        }
+                                        projectsDiv.find('.search-filter').off('click');
+                                        projectsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                    });
+                                }
+                            }(this));
+                        }
+
+                        insertProjects(results['project'], projectsDiv);
+                        this.filters.append(projectsDiv);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            
+            this.filters.append($('<button>', {
+                text: 'Clear Filters',
+                id: 'filterClear',
+                type: 'button',
+                class: 'btn btn-default btn-sm',
+                style: 'float:right;',
+                click: (function(that) {
+                    return function() {
+                        $('.search-filter[data-selected="selected"]', that.filters).removeAttr('data-selected');
+                        // that.getByFilters(that);
+                        if (that.currentSearchMode === 'browse') {
+                            that.searchByCategory();
+                        } else if (that.currentSearchMode === 'advanced') {
+                            that.searchByFields();
+                        }
+                    };
+                })(this)
+            }));
+
+            $('.search-filter', this.filters).click(onFilterClick(this));
+        },
+
         /**
          * Creates and inserts the filter column containing the filtering functionality
          * for the publication search
@@ -2270,7 +2966,6 @@
          * @param  {string} query The sparql query
          */
         insertFilters: function(fieldResponse, contributorResponse, projectResponse, tagResponse, selected, prefixes, query) {
-            console.log(projectResponse);
             this.filters.empty();
 
             this.filters.append('<h3>FILTERS</h3><hr/>');
