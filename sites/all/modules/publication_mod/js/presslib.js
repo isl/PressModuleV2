@@ -405,11 +405,12 @@
          * @return {Object} A jqXHR object
          */
         getCategories: function() {
+            var base_url = this.base_url;
             return $.ajax({
 
                     dataType: 'json',
                     method: "GET",
-                    url: '/ajax/publications/get_categories',
+                    url: base_url + '/ajax/publications/get_categories',
                 })
                 .done($.proxy(function(response) {
                     var category_tree = {};
@@ -724,7 +725,7 @@
                         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tokens'),
                         sufficient: 500,
                         remote: {
-                            url: '/ajax/publications/search_author',
+                            url: this.base_url + '/ajax/publications/search_author',
                             wildcard: '%QUERY',
                             // rateLimitBy: 'throttle',
                             // rateLimitWait: 0,
@@ -1231,11 +1232,12 @@
             $col_div.append($input);
             $col_div.append($ul);
 
+            var base_url = this.base_url;
             var tagsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tag'),
                 remote: {
-                    url: '/ajax/publications/search_tag',
+                    url: base_url + '/ajax/publications/search_tag',
                     prepare: (function(prefix) {
                         return function(query, settings) {
                             var queries = query.split(' ');
