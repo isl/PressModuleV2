@@ -414,6 +414,14 @@ function publication_mod_menu(){
     'type' => MENU_CALLBACK
   );
 
+  $menu['ajax/publications/get_author_info'] = array(
+    'title' => '',
+    'page callback' => '_get_author_info',
+    'access callback' => TRUE,
+    'file' => 'publication_mod.rest.inc',
+    'type' => MENU_CALLBACK
+  );
+
   menu_cache_clear_all();
 
   return $menu;
@@ -1008,7 +1016,7 @@ function _get_labs_to_json(){
     }
   }
   foreach($orgs as $key => $value){
-    $labs = $labs . "'". $value . "':'" . $key . "',";
+    $labs = $labs . "'". $key . "':'" . $value . "',";
   }
   $labs = $labs . "}";
 

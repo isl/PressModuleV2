@@ -303,21 +303,22 @@
                     var $ul = $('#lab-editable', this.element);
                     var splited_lab = results[i].org.value.split('/');
                     if ($.inArray('administrator', this.current_user.roles) === -1 &&
-                        splited_lab[splited_lab.length -1] === this.labs[this.current_user.lab]) {
+                        splited_lab[splited_lab.length -1] === this.current_user.lab) {
                         var valid = true;
                         $('.lab-item').each($.proxy(function(index, element) {
-                            if ($(element).attr('id') === this.labs[this.current_user.lab]) {
+                            if ($(element).attr('id') === this.current_user.lab) {
                                 return valid = false;
                             }
                         }, this));
                         if (valid) {
-                            $ul.append($('<li id="' + this.labs[this.current_user.lab] + '" class="lab-item list-group-item" draggable="false" style="float:left">' + this.labs[this.current_user.lab] + '</li>'));
+                            $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + this.labs[this.current_user.lab] + '</li>'));
                             $ul.show();
                         }
                     } else {
-                        var $li = $('<li id="' + results[i].org.value.split('#Organization/')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                        var orgId = results[i].org.value.split('#Organization/')[1];
+                        var $li = $('<li id="' + orgId + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                         $ul.append($li);
-                        $li.text(results[i].orgName.value);
+                        $li.text(this.orgIdToLocal[orgId]);
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
@@ -519,15 +520,43 @@
 
             this.element.append($labgroup);
 
-            var labValues = Object.keys(labs);
-            var labValueToKey = {};
-            for (key in labs) {
-                labValueToKey[labs[key]] = key;
+            var orgKeys = Object.keys(labs);
+            var orgNames = Object.values(labs);
+
+            var dups = [];
+            for(var i=0;i<orgKeys.length;i++){
+                if(!dups.includes(orgKeys[i])){
+                    for(var j=i+1;j<orgKeys.length;j++){
+                        if(labs[orgKeys[i]] === labs[orgKeys[j]]){
+                            if(!dups.includes(orgKeys[i])){
+                                        dups.push(orgKeys[i]);
+                            }
+                            if(!dups.includes(orgKeys[j])){
+                                        dups.push(orgKeys[j]);
+                            }
+                        }
+                    }
+                }
             }
+            var local = [];
+            var localToID = {};
+            var orgIdToLocal = {};
+            for(var key in labs){
+                if(dups.includes(key)){
+                    local.push(labs[key] + ' - ' + key);
+                    localToID[labs[key] + ' - ' + key] = key;
+                    orgIdToLocal[key] = labs[key] + ' - ' + key;
+                }else{
+                    local.push(labs[key]);
+                    localToID[labs[key]] = key;
+                    orgIdToLocal[key] = labs[key];
+                }
+            }
+            this.orgIdToLocal= orgIdToLocal;
             var labsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: labValues
+                local: local
             });
 
             function labWithDefaults(q, sync) {
@@ -563,10 +592,10 @@
             });
             if (!this.editMode) {
                 if ($.inArray('administrator', this.current_user.roles) === -1) {
-                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '</li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + orgIdToLocal[this.current_user.lab] + '</li>'));
                     $ul.show();
                 } else {
-                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + orgIdToLocal[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
                     $ul.show();
                 }
             }
@@ -575,12 +604,12 @@
                 var $list = $('#lab-editable');
                 var valid = true;
                 $('.lab-item').each(function() {
-                    if ($(this).attr('id') === suggestion) {
+                    if ($(this).attr('id') === localToID[suggestion]) {
                         return valid = false;
                     }
                 });
                 if (valid) {
-                    var $li = $('<li id="' + labs[suggestion] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + localToID[suggestion] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
                     $li.html(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);

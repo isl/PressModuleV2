@@ -129,11 +129,20 @@
         if (typeof options.parameters === 'object')
             this.parameters = options.parameters;
 
-        console.log(this.parameters);
-
         this.loader = $('<div id="loader">');
         this.filterLoader = $('<div class="filterLoader">');
         element.append(this.loader);
+
+        window.onpopstate = (function(that) {
+            return function(event) {
+                if (!event.state) {
+                    location.reload();
+                } else {
+                    var currentState = event.state;
+                    that.fillFieldsByStateAndSearch(currentState, true);
+                }
+            };
+        })(this);
 
         // Retreive from blazegraph the tags and categories. On success, 
         // Create the page
@@ -171,7 +180,7 @@
 
             var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
             field_container.append(this.getAuthorField());
-
+            
             field_container.append(this.getOrgsField(this.orgs));
 
             field_container.append(this.getYearField());
@@ -244,13 +253,13 @@
             this.element.append(this.filters);
 
             if (!$.isEmptyObject(this.parameters) && !window.location.hash.startsWith('#overlay=')) {
-                if (this.parameters.type) {
+                if (this.parameters.method) {
                     $('#category_list_button', this.element).css('visibility', '');
                     $('#advanced_search_button', this.element).css('visibility', '');
-                    if (this.parameters.type === 'browse') {
+                    if (this.parameters.method === 'browse') {
                         this.searchByCategory(this.parameters.category, this.parameters.offset);
-                    } else if (this.parameters.type === 'advanced') {
-                        this.fillFieldsByStateAndSearch(this.parametersToFields(this.parameters));
+                    } else if (this.parameters.method === 'advanced') {
+                        this.fillFieldsByStateAndSearch(this.parametersToFields(this.parameters), true, true);
                     }
                 }
             }
@@ -269,8 +278,8 @@
         parametersToFields: function(parameters) {
             var fields = {};
             //Single Value Fields
-            fields.type = parameters.type;
-            fields.field = parameters.field;
+            fields.method = parameters.method;
+            fields.searchField = parameters.field;
             fields.yearFrom = parameters.yearFrom;
             fields.yearTo = parameters.yearTo;
             fields.category = parameters.category;
@@ -286,15 +295,18 @@
             fields.tags = [];
             fields.orgs = [];
             fields.authors = [];
-            $.each(parameters, function(key, value) {
+            $.each(parameters, (function(key, value) {
                 if (key.startsWith('tags')) {
                     fields.tags.push(value);
                 } else if (key.startsWith('orgs')) {
-                    fields.orgs.push(value);
+                    fields.orgs.push({
+                        id: value,
+                        name: this.orgIDtoLocal[value],
+                    });
                 } else if (key.startsWith('authors')) {
                     fields.authors.push(value);
                 }
-            });
+            }).bind(this));
             return fields;
         },
         
@@ -423,7 +435,6 @@
             $input.bind('typeahead:select', function(ev, suggestion) {
                 var $list = $('#tag-editable');
                 var valid = true;
-                console.log(suggestion);
                 $('.tag-item').each(function() {
                     if ($(this).attr('id') === suggestion.tag) {
                         return valid = false;
@@ -591,7 +602,6 @@
                             // $exAuthorsModal.modal();
                         } else {
                             var author_group = "";
-
                             for (key in that.authorGroups) {
                                 if (suggestion.group === key && ('span' in that.authorGroups[key])) {
                                     author_group = that.authorGroups[key].span;
@@ -604,7 +614,7 @@
                             }
                             $li.html(author_group + '<span class="author-contributor-name' +
                                 ' contributor" data-uuid="' + suggestion.uuid + '" data-field="author" ' +
-                                mail + '>' + suggestion.fullName + '</span>');
+                                mail + ' data-group="'+suggestion.group+'">' + suggestion.fullName + '</span>');
 
                             $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                             $list.show();
@@ -645,18 +655,49 @@
             $col_div.append($ul);
             var label = organization.label;
             var org = organization.org;
-
             var orgKeys = Object.keys(org);
+            var orgNames = Object.values(org);
+
+            var dups = [];
+            for(var i=0;i<orgKeys.length;i++){
+                if(!dups.includes(orgKeys[i])){
+                    for(var j=i+1;j<orgKeys.length;j++){
+                        if(org[orgKeys[i]] === org[orgKeys[j]]){
+                            if(!dups.includes(orgKeys[i])){
+                                dups.push(orgKeys[i]);
+                            }
+                            if(!dups.includes(orgKeys[j])){
+                                dups.push(orgKeys[j]);
+                            }
+                        }
+                    }
+                }
+            }
+            var local = [];
+            var localToID = {};
+            var idToLocal = {};
+            for(var key in org){
+                if(dups.includes(key)){
+                    local.push(org[key] + ' - ' + key);
+                    localToID[org[key] + ' - ' + key] = key;
+                    idToLocal[key] = org[key] + ' - ' + key;
+                }else{
+                    local.push(org[key]);
+                    localToID[org[key]] = key;
+                    idToLocal[key] = org[key]
+                }
+            }
+            this.orgLocalToID = localToID;
+            this.orgIDtoLocal = idToLocal;
             var orgsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: orgKeys
+                local: local
             });
 
             function orgWithDefaults(q, sync) {
                 if (q === '') {
                     sync(orgsBlood.index.all());
-                    // console.log(orgsBlood.index.all());
                 } else {
                     orgsBlood.search(q, sync);
                 }
@@ -689,13 +730,13 @@
                 var $list = $('#org-editable');
                 var valid = true;
                 $('.org-item').each(function() {
-                    if ($(this).attr('id') === suggestion) {
+                    if ($(this).attr('id') === localToID[suggestion]) {
                         valid = false;
                         return false;
                     }
                 });
                 if (valid) {
-                    var $li = $('<li id="' + org[suggestion] + '" class="extra-org-item org-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + localToID[suggestion] + '" data-name="'+suggestion+'" class="extra-org-item org-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
                     $li.html(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
@@ -860,22 +901,31 @@
 
             return $div;
         },
-
+        getPredefinedAuthors: function(authoruuids){
+            return $.ajax({
+                datatype: 'text',
+                method: 'GET',
+                url: this.base_url + '/ajax/publications/get_author_info',
+                data: {
+                    authors: authoruuids
+                },
+            });
+        },
         /**
          * Uses state of browser to implement back button & search with url params
          * @param  {Object} fields    The advanced search fields of the state
          * @param  {Object} filters   The selected filters of the state
-         * @param  {boolean} pushState Passing variable to searchByField
+         * @param  {boolean} fromPopState Passing variable to searchByFields
          * @return {[type]}           [description]
          */
-        fillFieldsByStateAndSearch: function(fields, filters, pushState) {
+        fillFieldsByStateAndSearch: function(fields, fromPopState, fromUrl) {
             this.clearSearchInput();
             this.clearAdvancedSearch();
             if (typeof fields !== 'object') {
                 return;
             }
 
-            $('#free-text', this.element).val(fields.field);
+            $('#free-text', this.element).val(fields.searchField);
             $('#year-from', this.element).val(fields.yearFrom);
 
             $('#year-to', this.element).val(fields.yearTo);
@@ -892,16 +942,15 @@
 
             if (fields.orgs && $.isArray(fields.orgs) && fields.orgs.length > 0) {
                 for (var i = 0; i < fields.orgs.length; i++) {
-                    $('#org-editable', this.element).append($('<li id="' + fields.orgs[i] + '"' +
+                    $('#org-editable', this.element).append($('<li id="' + fields.orgs[i].id + '"' +
                         ' class="extra-org-item org-item list-group-item" draggable="false" ' +
-                        'style="float: left;">' + fields.orgs[i] + '<i class="js-remove">&nbsp;✖</i></li>'));
+                        'style="float: left;" data-name="' + fields.orgs[i].name + '">' + fields.orgs[i].name + '<i class="js-remove">&nbsp;✖</i></li>'));
                 }
                 $('#org-editable').show();
             }
 
             if (fields.tags && $.isArray(fields.tags) && fields.tags.length > 0) {
                 for (var i = 0; i < fields.tags.length; i++) {
-                    console.log(fields.tags[i]);
                     $('#tag-editable', this.element).append($('<li id="' + fields.tags[i] + '"' +
                         ' class="tag-item list-group-item" draggable="false" ' +
                         'style="float: left;">' + fields.tags[i] + '<i class="js-remove">&nbsp;✖</i></li>'));
@@ -909,43 +958,64 @@
                 $('#tag-editable').show();
             }
 
-            if (fields.authors && $.isArray(fields.authors) && fields.authors.length > 0) {
-                $('#author-editable').show();
-                console.log(fields.authors);
-                $.when(this.getPredefinedAuthors(fields.authors)).always($.proxy(function(response) {
-                    results = response.results.bindings;
-                    for (var i = 0; i < results.length; i++) {
-                        var $li = $('<li class="list-group-item" draggable="false"' +
-                            'style="float:left;"></li>');
-                        var group = (this.authorGroups[results[i].group.value].span) ? this.authorGroups[results[i].group.value].span : '';
-                        $li.append(group);
-                        var $span = $('<span class="author-contributor-name contributor" ' +
-                            'data-uuid="' + results[i].uuid.value + '" data-field="author">' + results[i].fullName.value + '</span>');
-                        if (results[i].mail) {
-                            $li.attr('title', results[i].mail.value);
-                            $span.attr('data-mail', results[i].mail.value);
+            if(fromUrl){
+                if (fields.authors && $.isArray(fields.authors) && fields.authors.length > 0) {
+                    $('#author-editable').show();
+                    $.when(this.getPredefinedAuthors(fields.authors)).always($.proxy(function(response) {
+                        results = response.results.bindings;
+                        for (var i = 0; i < results.length; i++) {
+                            var $li = $('<li class="list-group-item" draggable="false"' +
+                                'style="float:left;"></li>');
+                            var group = (this.authorGroups[results[i].group.value].span) ? this.authorGroups[results[i].group.value].span : '';
+                            $li.append(group);
+                            var $span = $('<span class="author-contributor-name contributor" ' +
+                                'data-uuid="' + results[i].uuid.value + '" data-field="author" data-group="'+ results[i].group.value+'">' + results[i].fullName.value + '</span>');
+                            if (results[i].mail) {
+                                $li.attr('title', results[i].mail.value);
+                                $span.attr('data-mail', results[i].mail.value);
+                            }
+                            $li.append($span);
+                            $li.append($('<i class="js-remove">&nbsp;✖</i>'));
+                            $('#author-editable').append($li);
                         }
-                        $li.append($span);
-                        $li.append($('<i class="js-remove">&nbsp;✖</i>'));
-                        $('#author-editable').append($li);
+                        this.searchByFields(fields.offset, fromPopState, fields);
+                    }, this));
+                } else {
+                    $('#author-editable').hide();
+                    this.searchByFields(fields.offset, fromPopState, fields);
+                }
+            }else{
+                for(objKey in fields.authors){
+                    $('#author-editable').show();
+                    var $li = $('<li class="list-group-item" draggable="false"' +
+                                'style="float:left;"></li>');
+                    var group = (this.authorGroups[fields.authors[objKey].group].span) ? this.authorGroups[fields.authors[objKey].group].span : '';
+                    $li.append(group);
+                    var $span = $('<span class="author-contributor-name contributor" ' +
+                        'data-uuid="' + fields.authors[objKey].uuid + '" data-field="author" data-group="'+ fields.authors[objKey].group+'">' + fields.authors[objKey].name + '</span>');
+                    if (fields.authors[objKey].mail) {
+                        $li.attr('title', fields.authors[objKey].group);
+                        $span.attr('data-mail', fields.authors[objKey].group);
                     }
-                    this.searchByFields(fields.offset, filters, pushState, fields);
-                }, this));
-            } else {
-                $('#author-editable').hide();
-                this.searchByFields(fields.offset, filters, pushState, fields);
+                    $li.append($span);
+                    $li.append($('<i class="js-remove">&nbsp;✖</i>'));
+                    $('#author-editable').append($li);
+                }
+                this.searchByFields(fields.offset, fromPopState, fields);
             }
+            
         },
+        
         /**
          * Does the search by text & advanced search fields
          * @param  {number} offset    The offset of the search
          * @param  {Object} filters   The enabled filters
-         * @param  {boolean} pushState If the search is performed by pushState (back, forward button)
+         * @param  {boolean} fromPopState If the search is performed by a pop state (back, forward button)
          * @param  {Object} stateObj  The state object
          */
-        searchByFields: function(offset, filters, pushState, stateObj) {
+        searchByFields: function(offset, fromPopState, stateObj) {
             //Getting the available fields
-            var field = $('#free-text', this.element).val();
+            var searchField = $('#free-text', this.element).val();
             var yearFrom = $('#year-from', this.element).val();
             var yearTo = $('#year-to', this.element).val();
             var category = $('#category', this.element).val();
@@ -959,9 +1029,8 @@
             var tagIds = [];
 
             var authors = $('.author-contributor-name');
-
             // Return if every field is emepty
-            if (field === '' && yearFrom === '' && yearTo === '' && category === '' &&
+            if (searchField === '' && yearFrom === '' && yearTo === '' && category === '' &&
                 subcategory === '' && reviewed === false && orgs.length === 0 &&
                 tags.length === 0 && authors.length === 0) {
                 return;
@@ -972,8 +1041,8 @@
             }
             this.currentSearchMode = 'advanced';
 
-            if (typeof pushState === 'undefined') {
-                pushState = false;
+            if (typeof fromPopState === 'undefined') {
+                fromPopState = false;
             }
 
             // Clear the results
@@ -990,11 +1059,12 @@
             }
 
             // Create the search label to be displayed
-            if (field !== '')
-                searchLabel += '"' + field + '"';
+            if (searchField !== '')
+                searchLabel += '"' + searchField + '"';
 
             // Add authors to query
             var authorIds = [];
+            var authorInfo = {};
             if (authors.length === 0) {
 
             } else {
@@ -1008,30 +1078,44 @@
                 }
 
                 for (var i = 0; i < authors.length; i++) {
-                    authorIds.push($(authors[i]).attr('data-uuid'));
-                    searchLabel += $(authors[i]).text();
+                    var id = $(authors[i]).attr('data-uuid');
+                    var name = $(authors[i]).text();
+                    authorIds.push(id);
+                    authorInfo[id] = {
+                        uuid: id,
+                        name: name,
+                        group: $(authors[i]).attr('data-group'),
+                        mail: $(authors[i]).attr('data-mail'),
+                    }
+                    searchLabel += name;
                     if (i < authors.length - 1)
                         searchLabel += ', ';
                 }
             }
 
             // Add orgs to query
-            
+            var orgInfo = {};
             if (orgs.length === 0) {
 
             } else if (orgs.length === 1) {
                 if (searchLabel !== '')
                     searchLabel += ', ';
-                searchLabel += 'Organization: ' + orgs.contents().not(orgs.children()).text() + ', ';
-                orgIds.push(orgs.attr('id'));
+                var name = orgs.attr('data-name');
+                var id = orgs.attr('id');
+                searchLabel += 'Organization: ' + name + ', ';
+                orgIds.push(id);
+                orgInfo[id] = {
+                    id: id,
+                    name: name,
+                }
             } else {
                 if (searchLabel !== '')
                     searchLabel += ', ';
 
-                searchLabel += 'Organizations: ' + $(orgs[0]).contents().not($(orgs[0]).children()).text();
+                searchLabel += 'Organizations: ' + $(orgs[0]).attr('data-name');
                 orgIds.push($(orgs[0]).attr('id'));
                 for (var i = 1; i < orgs.length; i++) {
-                    var text = $(orgs[i]).contents().not($(orgs[i]).children()).text();
+                    var text = $(orgs[i]).attr('data-name');
                     searchLabel += text;
                     orgIds.push($(orgs[i]).attr('id'));
                     if (i < orgs.length - 1)
@@ -1061,30 +1145,48 @@
             }
 
             //Create new state for history
-            if (!pushState) {
+            if (!fromPopState) {
                 stateObj = {
-                    type: 'advanced',
-                    field: field,
+                    method: 'advanced',
+                    searchField: searchField,
                     yearFrom: yearFrom,
                     yearTo: yearTo,
                     category: category,
                     subcategory: subcategory,
                     reviewed: reviewed,
-                    authors: authorIds,
-                    orgs: orgIds,
+                    authors: authorInfo,
+                    orgs: orgInfo,
                     tags: tagIds,
-                    offset: offset,
-                    filters: filters
+                    offset: offset
                 };
+
                 var search = '?';
                 for (var key in stateObj) {
                     if (key !== 'filters') {
                         if ((typeof stateObj[key] === 'string' || typeof stateObj[key] === 'boolean') && stateObj[key] !== '') {
                             search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
                         } else {
-                            for (var j = 0; j < stateObj[key].length; j++) {
-                                if (stateObj[key][j] !== '')
-                                    search += key + j + '=' + encodeURIComponent(stateObj[key][j]) + '&';
+                            if(key === 'tags'){
+                                for (var j = 0; j < stateObj[key].length; j++) {
+                                    if (stateObj[key][j] !== '')
+                                        search += key + j + '=' + encodeURIComponent(stateObj[key][j]) + '&';
+                                }
+                            }else if (key === 'authors'){
+                                var j = 0;
+                                for (var objKey in stateObj[key]) {
+                                    if(typeof stateObj[key][objKey] === 'object'){
+                                        search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].uuid) + '&';
+                                        j++;
+                                    }
+                                }
+                            }else if (key === 'orgs'){
+                                var j = 0;
+                                for (var objKey in stateObj[key]) {
+                                    if(typeof stateObj[key][objKey] === 'object'){
+                                        search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].id) + '&';
+                                        j++;
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -1101,16 +1203,16 @@
                 window.history.pushState(stateObj, "", window.location.origin + window.location.pathname + search);
             }
 
-            window.onpopstate = (function(that) {
-                return function(event) {
-                    if (!event.state) {
-                        location.reload();
-                    } else {
-                        var currentState = event.state;
-                        that.fillFieldsByStateAndSearch(currentState, currentState.filters, true);
-                    }
-                };
-            })(this);
+            // window.onpopstate = (function(that) {
+            //     return function(event) {
+            //         if (!event.state) {
+            //             location.reload();
+            //         } else {
+            //             var currentState = event.state;
+            //             that.fillFieldsByStateAndSearch(currentState, true);
+            //         }
+            //     };
+            // })(this);
 
             // Add year to query
             if (yearFrom !== '' || yearTo !== '') {
@@ -1182,7 +1284,7 @@
             // console.log(reviewed);
             this.lastSearchLabel = searchLabel;
             var searchOptions = {
-                searchField: field,
+                searchField: searchField,
                 yearFrom: yearFrom,
                 yearTo: yearTo,
                 category: category,
@@ -1192,7 +1294,7 @@
                 authors: authorIds,
                 orgs: orgIds,
                 tags: tagIds,
-                filters: this.getFiltersValues2(this.filters),
+                filters: this.getFiltersValues(this.filters),
             };
             $.ajax({
                 datatype: 'text',
@@ -1203,14 +1305,14 @@
                 return function(response){
                     response = JSON.parse(response);
 
-                    that.insertSearchResults2(response, searchLabel);
-                    that.resultContainer.append(that.getPagination2(searchOptions, response.count, 0, searchLabel, stateObj));
+                    that.insertSearchResults(response, searchLabel);
+                    that.resultContainer.append(that.getPagination(searchOptions, response.count, 0, searchLabel, stateObj));
                 }
             }(this)).fail(function(response){
                 console.error(response);
             })
             var filterSearchOptions = {
-                searchField: field,
+                searchField: searchField,
                 yearFrom: yearFrom,
                 yearTo: yearTo,
                 category: category,
@@ -1220,13 +1322,13 @@
                 authors: authorIds,
                 orgs: orgIds,
                 tags: tagIds,
-                filters: this.getFiltersValues2(this.filters),
+                filters: this.getFiltersValues(this.filters),
                 filter_keys: 'all',
                 limit: 15,
                 offset: 0
             };
-            $.when(this.getFilters2(filterSearchOptions, 15, offset)).done((function(response){
-                this.insertFilters2(JSON.parse(response), filterSearchOptions);
+            $.when(this.getFilters(filterSearchOptions, 15, offset)).done((function(response){
+                this.insertFilters(JSON.parse(response), filterSearchOptions);
             }).bind(this))
             .fail(function(respone){
                 console.error(response);
@@ -1238,9 +1340,9 @@
          * @param  {string} category_id  The category ID
          * @param  {number} offset       The offset of the searc
          * @param  {Object} filterValues The enabled filters
-         * @param  {boolean} pushState    If the search is performed by pushState (back, forward button)
+         * @param  {boolean} fromPopState    If the search is performed by a pop state (back, forward button)
          */
-        searchByCategory: function(category_id, offset, filterValues, pushState) {
+        searchByCategory: function(category_id, offset, filterValues, fromPopState) {
             if (this.currentSearchMode !== 'browse') {
                 this.clearFilters();
             }
@@ -1250,27 +1352,27 @@
             if (typeof category_id === 'undefined') {
                 category_id = window.history.state.category;
             }
-            console.log(category_id);
+
             if (typeof offset === 'undefined') {
                 offset = 0;
             }
 
-            if (typeof pushState === 'undefined') {
-                pushState = false;
+            if (typeof fromPopState === 'undefined') {
+                fromPopState = false;
             }
 
             // var selectedFilters;
 
             if (typeof filterValues === 'undefined') {
                 // selectedFilters = $('.search-filter[data-selected="selected"]', this.filters);
-                filterValues = this.getFiltersValues2(this.filters);
+                filterValues = this.getFiltersValues(this.filters);
             }
             this.resultContainer.find('*').not('#results').empty();
             var $element = $('#' + category_id, this.element);
 
             //Set state for history
-            if (!pushState) {
-                stateObj = { type: 'browse', category: category_id, offset: offset, filters: filterValues };
+            if (!fromPopState) {
+                stateObj = { method: 'browse', category: category_id, offset: offset, filters: filterValues };
                 var search = '?';
                 for (var key in stateObj) {
                     if (key !== 'filters') {
@@ -1309,8 +1411,9 @@
 
             var searchOptions = {
                 category: category_id,
+                offset: offset,
                 method: 'browse',
-                filters: this.getFiltersValues2(this.filters),
+                filters: this.getFiltersValues(this.filters),
             };
             $.ajax({
                 datatype: 'text',
@@ -1321,8 +1424,8 @@
                 return function(response){
                     response = JSON.parse(response);
 
-                    that.insertSearchResults2(response, searchLabel);
-                    that.resultContainer.append(that.getPagination2(searchOptions, response.count, 0, searchLabel, stateObj));
+                    that.insertSearchResults(response, searchLabel);
+                    that.resultContainer.append(that.getPagination(searchOptions, response.count, offset, searchLabel, stateObj));
                 }
             }(this)).fail(function(response){
                 console.error(response);
@@ -1330,13 +1433,13 @@
             var filterSearchOptions = {
                 category: category_id,
                 method: 'browse',
-                filters: this.getFiltersValues2(this.filters),
+                filters: this.getFiltersValues(this.filters),
                 filter_keys: 'all',
                 limit: 15,
                 offset: 0
             };
-            $.when(this.getFilters2(filterSearchOptions, 15, offset)).done((function(response){
-                this.insertFilters2(JSON.parse(response), filterSearchOptions);
+            $.when(this.getFilters(filterSearchOptions, 15, offset)).done((function(response){
+                this.insertFilters(JSON.parse(response), filterSearchOptions);
             }).bind(this))
             .fail(function(respone){
                 console.error(response);
@@ -1344,11 +1447,13 @@
             
         },
         
-        getPagination2: function(options, count, offset, searchLabel, stateObj){
+        getPagination: function(options, count, offset, searchLabel, stateObj){
             var $pagination = $('<ul class="pagination"></ul>');
             var pages = Math.ceil(count / 10);
             var firstPageClick = true;
-
+            if(count === 0){
+                return;
+            }
             $pagination.twbsPagination({
                 totalPages: pages,
                 startPage: Math.ceil(offset / 10) + 1,
@@ -1370,7 +1475,7 @@
                             url: that.base_url + '/ajax/publications/search_publications',
                             data: options,
                         }).done((function(response){
-                            this.insertSearchResults2(JSON.parse(response), searchLabel);
+                            this.insertSearchResults(JSON.parse(response), searchLabel);
                             stateObj.offset = (page - 1) * 10;
                             // var search = '?';
                             // for (var key in stateObj){
@@ -1389,7 +1494,7 @@
          * @param  {Object} $elements A jQuery element object with the filter elements
          * @return {Object}           An object with the filter values
          */
-        getFiltersValues2: function($elements) {
+        getFiltersValues: function($elements) {
             var values = {};
             $('.search-filter-year[data-selected="selected"]', $elements).each(function() {
                 values['year'] = $(this).attr('data-oVal');
@@ -1426,9 +1531,7 @@
             return values;
         },
 
-        getFilters2: function(options, limit, offset){
-            console.log('getFilters');
-            console.log(options);
+        getFilters: function(options, limit, offset){
             // if(options['limit'] === undefined){
             //     if(limit === undefined){
             //         options['limit'] = 15;
@@ -1480,273 +1583,10 @@
         /**
          * Inserts the search results based on the responses from Blazegraph
          * 
-         * @param  {Object} responsePublications
-         * @param  {Object} responseContributors
-         * @param  {Object} responseMultipleFields
-         * @param  {[type]} requiredFields
+         * @param  {Object} searchResults
          * @param  {string} searchLabel
-         * @param  {number} offset
-         * @param  {number} count
          */
-        insertSearchResults: function(responsePublications, responseContributors, responseMultipleFields, requiredFields, searchLabel, offset, count) {
-
-            var limit = 10;
-            this.results.empty();
-            if (count === 0) {
-                this.loader.hide();
-                this.results.append('<h3 class="col-sm-12">No Results</h3>');
-                this.results.append('<h4 class="col-xs-12">' + searchLabel + '</h4>');
-                return;
-            } else if (count === 1) {
-                this.results.append('<h3 class="col-sm-12">1 Result</h3>');
-            } else {
-                this.results.append('<h3 class="col-sm-12">' + count + ' Results</h3>');
-            }
-            if (searchLabel === '') {
-                searchLabel = this.lastSearchLabel;
-            }
-            this.results.append('<h4 class="col-xs-12">' + searchLabel + '</h4><p>&nbsp;</p>');
-
-            var results = $.extend(true, [], responsePublications.results.bindings);
-            var contributorResults = $.extend(true, [], responseContributors.results.bindings);
-            var contributors = {};
-
-            for (var i = 0; i < contributorResults.length; i++) {
-                if (!(contributorResults[i].pub.value in contributors)) {
-                    contributors[contributorResults[i].pub.value] = {};
-                }
-                var conType = contributorResults[i].type.value;
-                if (!($.isArray(contributors[contributorResults[i].pub.value][conType]))) {
-                    contributors[contributorResults[i].pub.value][conType] = [];
-                }
-                contributors[contributorResults[i].pub.value][conType].push(contributorResults[i]);
-            }
-            // console.log(contributors);
-            for (var key in contributors) {
-                for (var typeKey in contributors[key]) {
-                    contributors[key][typeKey].sort(function(a, b) {
-                        return a['personIndex'].value - b['personIndex'].value;
-                    });
-                }
-            }
-            var resultsMultipleFields = responseMultipleFields.results.bindings;
-            var multipleFields = {};
-            for (var i = 0; i < resultsMultipleFields.length; i++) {
-                var field = resultsMultipleFields[i];
-                if (!(field.pub.value in multipleFields)) {
-                    multipleFields[field.pub.value] = {};
-                }
-                var type = '';
-                if ('org' in field) {
-                    type = 'org';
-                } else if ('tag' in field) {
-                    type = 'tag';
-                }
-                if (!($.isArray(multipleFields[field.pub.value][type]))) {
-                    multipleFields[field.pub.value][type] = [];
-                }
-
-                if(type === 'org'){
-                    var res = field[type].value.split('/');
-                    multipleFields[field.pub.value][type].push(res[res.length-1]);
-                }else{
-                    multipleFields[field.pub.value][type].push(field[type].value);
-                }
-            }
-            // console.log(multipleFields);
-            var $container = $('<div></div>');
-            //Start inserting results
-            for (var i = 0; i < results.length; i++) {
-
-                var title = '';
-                var titleField = this.titleFields[this.categoryAncestors[results[i].typeID.value]][results[i].typeID.value];
-
-                if (results[i][titleField]) {
-                    title = results[i][titleField].value;
-                }
-                if (!title || title === '') {
-                    if ('englishTitle' in results[i]) {
-                        title = results[i].englishTitle.value;
-                    } else if ('bookTitle' in results[i]) {
-                        title = results[i].bookTitle.value;
-                    }
-                }
-
-                var info_color = this.categoryColor[this.categoryAncestors[results[i].typeID.value]];
-                var current_pub = results[i];
-                var $row = $('<div class="row"></div>');
-                var $icons = $('<div class="col-sm-2" style="padding-top:3px"></div>');
-
-                var $download_icon = $('<a target="_blank" class="result-icons" data-toggle="tooltip" ' +
-                    'data-placement="top" data-container="body" title="Download the PDF of ' +
-                    'this Publication" style="color:inherit; visibility:hidden">' +
-                    '<i class="icon-download" style="font-size:17px;"></i></a>');
-                if ('localLink' in current_pub && !this.current_user.anonymous) {
-                    $download_icon.attr('href', '../' + current_pub.localLink.value);
-                    $download_icon.mouseover(function(e) { $(this).tooltip(); });
-                    $download_icon.mouseover();
-                    // if (){
-
-                    // $icons.append($download_icon);
-                    // }
-                    $download_icon.css('visibility', 'visible');
-                }
-                $icons.append($download_icon);
-
-                var $info_icon = $('<a  class="result-icons" data-toggle="tooltip" ' +
-                    'data-placement="top" data-container="body" title="' +
-                    this.category_labels[results[i].typeID.value] + '" style="color:inherit">' +
-                    '<i class="icon-info-circled" style="font-size:17px;display:block;' +
-                    'color:' + info_color + '"></i></a>');
-                var $edit_icon = $('<a href="' + this.base_url + '/publication/edit?uuid=' +
-                    encodeURIComponent(current_pub.pub.value) + '&category=' +
-                    encodeURIComponent(current_pub.typeID.value) + '" target="_blank" ' +
-                    'class="result-icons" style="color:inherit"><i class="icon-edit" ' +
-                    'style="font-size:17px;font-weight:bold;"></i></a>');
-
-                var $share_icon = $('<a  class="result-icons share-btn" style="visibility:hidden"><i class="icon-share" style="font-size:17px;"></i></a>');
-                var $share_icon_div = this.createShareButton('', title + ' | PRESS Publication System');
-                $share_icon_div.prepend($share_icon);
-                if ('publicationUrl' in current_pub) {
-                    var $share_icon_div = this.createShareButton(window.location.origin + '/' + current_pub.publicationUrl.value, title + ' | PRESS Publication System');
-                    $share_icon_div.prepend($share_icon);
-                    $share_icon.css('visibility', 'visible');
-                }
-                var externalLink = '';
-                if ('externalLink' in current_pub) {
-                    $info_icon.attr('href', current_pub.externalLink.value);
-                    $info_icon.attr('target', 'target="_blank"');
-                }
-                $icons.append($share_icon_div);
-                $info_icon.mouseover(function(e) { $(this).tooltip(); });
-                $info_icon.mouseover();
-
-
-
-                $icons.append($info_icon);
-
-                var addEdit = false;
-                if ($.inArray('administrator', this.current_user.roles) > -1 || 
-                    (!this.current_user.anonymous && 
-                        $.inArray('Publication Mod Power User', this.current_user.roles) > -1 &&
-                        (multipleFields[current_pub.pub.value] &&
-                            'org' in multipleFields[current_pub.pub.value] && 
-                            $.inArray(this.current_user['lab'], multipleFields[current_pub.pub.value]['org']) > -1)
-                        )
-                    ) {
-                    addEdit = true;
-                }
-
-                var $pub_info = $('<div class="col-sm-10"></div>');
-                var firstCon = true;
-                if (current_pub.pub.value in contributors) { //NOTE: PRESS V3
-                    jlength = this.contributorOrder[current_pub.typeID.value].length;
-                    for (var j = 0; j < jlength; j++) {
-                        current_contributor_type = this.contributorOrder[current_pub.typeID.value][j];
-                        if (current_contributor_type in contributors[current_pub.pub.value]) {
-
-                            length = contributors[current_pub.pub.value][current_contributor_type].length;
-                            for (var x = 0; x < length; x++) {
-                                var current_contributor = contributors[current_pub.pub.value][current_contributor_type][x];
-
-                                if (!this.current_user.anonymous && addEdit === false) {
-                                    // console.log(current_contributor);
-                                    if (this.current_user.uuid === current_contributor.person.value) {
-                                        addEdit = true;
-                                    }
-                                }
-
-                                var givenName = '';
-                                if ('givenName' in current_contributor) {
-                                    givenName = current_contributor['givenName'].value;
-                                }
-                                var fullName = givenName + ' ' + current_contributor['familyName'].value;
-                                var $author_link = $('<a  data-uuid="' + current_contributor['person'].value + '">' + fullName + '</a>');
-                                $author_link.click((function(that) {
-                                    return function() {
-                                        that.clearSearchInput();
-                                        that.clearAdvancedSearch();
-                                        $('#author-editable', that.advanced_search).
-                                        append('<li class="list-group-item" draggable="false" ' +
-                                            'style="float:left"><span class="author-contributor-name ' +
-                                            'contributor" data-uuid="' + $(this).attr('data-uuid') + '" ' +
-                                            'data-field="author">' + $(this).text() + '</span><i class="js-remove">&nbsp;✖</i></li>');
-                                        $('#author-editable', that.advanced_search).show();
-                                        that.searchByFields();
-                                        // that.clearAdvancedSearch(); //TODO: Check for workaround
-                                    };
-                                })(this));
-                                if(!firstCon){
-                                    $pub_info.append(', ');
-                                }
-                                $pub_info.append($author_link);
-                                firstCon = false;
-                            }
-                        }
-                    }
-                }
-                if (addEdit) {
-                    $icons.append($edit_icon);
-                }
-
-                if ('publicationUrl' in current_pub) {
-                    $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.publicationUrl.value + '" target="_blank"><h5><strong>' + title + '</strong></h5></a>'));
-                } else {
-                    $pub_info.append($('<h5><strong>' + title + '</strong></h5>'));
-                }
-                // if ('orgName' in multipleFields[current_pub.pub.value]){
-                //   for (var r=0; r<multipleFields[current_pub.pub.value].orgName.length; r++){
-                //     $pub_info.append(multipleFields[current_pub.pub.value].orgName[r]);
-                //     $pub_info.append(', ');
-                //   }
-                // }
-                $pub_info.append(results[i].year.value);
-
-                if (multipleFields[current_pub.pub.value] && 'tag' in multipleFields[current_pub.pub.value]) {
-                    var $tagDiv = $('<div class="col-xs-12 pub-tags">Tags: </div>');
-                    var $tagsMore = $('<div class="results-more-tags"></div>').hide();
-                    for (var r = 0; r < multipleFields[current_pub.pub.value].tag.length; r++) {
-                        var $span = $('<span class="pub-tag-item">' + multipleFields[current_pub.pub.value].tag[r] + '</span>');
-                        $span.click((function(that) {
-                            return function() {
-                                that.clearSearchInput();
-                                that.clearAdvancedSearch();
-                                $('#tag-editable', that.advanced_search).append($('<li id="' + $(this).text() + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>'));
-                                that.searchByFields();
-                                that.clearAdvancedSearch();
-                            };
-                        })(this));
-                        if(r<5){
-                            $tagDiv.append($span);
-                        }else{
-                            $tagsMore.append($span);
-                        }
-                    }
-                    $tagDiv.append($tagsMore);
-                    $resultsShowMoreTags = $('<a class="results-show-more-tags">More</a>');
-                    $resultsShowMoreTags.click(function(){
-                        $(this).prev('.results-more-tags').toggle();
-                        if($(this).text() === 'Less'){
-                            $(this).text('More');
-                        }else{
-                            $(this).text('Less');
-                        }
-                    })
-                    $tagDiv.append($resultsShowMoreTags);
-                    $pub_info.append($tagDiv);
-                }
-                $row.append($icons);
-                $row.append($pub_info);
-                $container.append($row);
-                $container.append('<br>');
-            }
-            // this.results.empty();
-            this.results.append($container);
-
-            this.loader.hide();
-        },
-
-        insertSearchResults2: function(searchResults, searchLabel){
+        insertSearchResults: function(searchResults, searchLabel){
             this.results.empty();
             if(searchResults.count === 0){
                 this.loader.hide();
@@ -1861,7 +1701,6 @@
                 for (var j = 0; j < this.contributorOrder[current_pub.typeID].length; j++){
                     var current_contributor_type = this.contributorOrder[current_pub.typeID][j];
                     if(current_contributor_type in current_pub.contributors){
-                        console.log(current_contributor_type + ' in current pub contrs');
                         var length = current_pub.contributors[current_contributor_type].length;
                         keys = Object.keys(current_pub.contributors[current_contributor_type]).sort();
                         for(var conIndex = 0; conIndex < keys.length; conIndex++){
@@ -1951,15 +1790,19 @@
             this.loader.hide();
         },
 
-        insertFilters2: function(results, searchOptions){
+        /**
+         * Creates and inserts the filter column containing the filtering functionality
+         * for the publication search
+         * 
+         * @param  {Object} results   The response from Blazegraph for the fields used
+         * @param  {Object} searchOptions The current search options/fields
+         */
+        insertFilters: function(results, searchOptions){
             this.filters.empty();
             this.filters.append('<h3>FILTERS</h3><hr/>');
             this.filterLoader.hide();
             this.filters.append(this.filterLoader);
             var filterLoader = this.filterLoader;
-            
-            console.log(results);
-            console.log(searchOptions);
 
             function onFilterClick(that) {
                 return function() {
@@ -2030,7 +1873,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options, 15, $this.attr('data-offset'))).done(function(response){
+                                    $.when(that.getFilters(options, 15, $this.attr('data-offset'))).done(function(response){
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertContributors(response['contributor'], contributorsDiv);
@@ -2087,7 +1930,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options)).done(function(response) {
+                                    $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertTags(response['tag'], tagsDiv);
@@ -2144,7 +1987,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options)).done(function(response) {
+                                    $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertTags(response['year'], tagsDiv);
@@ -2201,7 +2044,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options)).done(function(response) {
+                                    $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertTags(response['category'], tagsDiv).bind(that);
@@ -2258,7 +2101,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options)).done(function(response) {
+                                    $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertTags(response['org'], orgsDiv).bind(that);
@@ -2315,7 +2158,7 @@
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
-                                    $.when(that.getFilters2(options)).done(function(response) {
+                                    $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
                                         insertTags(response['project'], projectsDiv).bind(that);
@@ -2358,291 +2201,6 @@
             }));
 
             $('.search-filter', this.filters).click(onFilterClick(this));
-        },
-
-        /**
-         * Creates and inserts the filter column containing the filtering functionality
-         * for the publication search
-         * 
-         * @param  {Object} fieldResponse   The response from Blazegraph for the fields used
-         * @param  {Object} contributorResponse The response from Blazegraph for the contributors used
-         * @param  {Object} projectResponse The response from Blazegraph for the projects used
-         * @param  {Object} tagResponse The response from Blazegraph for the tags used
-         * @param  {Object} selected The user selected values used for filtering
-         * @param  {string} prefixes The query prefixes
-         * @param  {string} query The sparql query
-         */
-        insertFilters: function(fieldResponse, contributorResponse, projectResponse, tagResponse, selected, prefixes, query) {
-            this.filters.empty();
-
-            this.filters.append('<h3>FILTERS</h3><hr/>');
-            this.filterLoader.hide();
-            this.filters.append(this.filterLoader);
-            var filterLoader = this.filterLoader;
-
-            var contributorResults = contributorResponse.results.bindings;
-
-            // var contributors = [];
-
-            this.filters.append('<h4 class="col-xs-12">Authors</h4>');
-            var contributorsDiv = $('<div class="col-xs-12"></div>');
-
-            function onFilterClick(that) {
-                return function() {
-                    that.filterLoader.show();
-                    if ($(this).attr('data-selected') === 'selected') {
-                        $(this).removeAttr('data-selected');
-                        $(this).siblings().show();
-                    } else {
-                        $(this).attr('data-selected', 'selected');
-                    }
-
-                    if (that.currentSearchMode === 'browse') {
-                        that.searchByCategory();
-                    } else if (that.currentSearchMode === 'advanced') {
-                        that.searchByFields();
-                    }
-                };
-            }
-
-            // Insert author filters
-            function insertAuthors(contributors, div) {
-                var $authorsMore = div.find('#show-more-authors');
-                for (var i = 0; i < contributors.length; i++) {
-                    var contributorDiv = $('<div class="search-filter search-filter-contributor" data-p="contributor" ' +
-                        'data-o="?contributor" data-oVal="<' + contributors[i].contributoruuid.value + '>"></div>');
-                    var name = '';
-                    if ('contributorgivenName' in contributors[i]) {
-                        name = contributors[i].contributorgivenName.value + ' ';
-                    }
-                    name += contributors[i].contributorfamilyName.value;
-                    var contributor = $('<a  class="col-xs-12" style="display:block">' + name + ' <i style="color:grey">[' + contributors[i].pubcount.value + ']</i></a>');
-                    contributorDiv.append(contributor);
-                    if ($authorsMore.length > 0) {
-                        $authorsMore.before(contributorDiv);
-                    } else {
-                        div.append(contributorDiv);
-                    }
-
-                    if (selected !== undefined) {
-                        if (selected.contributors[contributorDiv.attr('data-oval')]) {
-                            contributorDiv.attr('data-selected', 'selected');
-                        }
-                    }
-                }
-                
-            }
-            if (contributorResults.length === 15) {
-                var authorsShowMore = $('<a id="show-more-authors" class="search-filter-more" ' +
-                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                contributorsDiv.append(authorsShowMore);
-                authorsShowMore.click(function(that) {
-                    return function() {
-                        $this = $(this);
-                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-                        $.when(that.getAuthorFilters(prefixes, query, $this.attr('data-offset'))).done(function(a) {
-                            insertAuthors(a.results.bindings, contributorsDiv);
-                            if (a.results.bindings.length < 15) {
-                                contributorsDiv.find('#show-more-authors').remove();
-                            }
-                            contributorsDiv.find('.search-filter').off('click');
-                            contributorsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                            $this.siblings('.filterLoader').remove();
-                        });
-                    }
-                }(this));
-            }
-
-            insertAuthors(contributorResults, contributorsDiv);
-
-            this.filters.append(contributorsDiv);
-
-            //Insert field filters (year, org, categories)
-            var results = fieldResponse.results.bindings;
-
-            var years = [];
-            var orgs = [];
-            var categories = [];
-            // var tags = [];
-
-            for (var i = 0; i < results.length; i++) {
-                switch (results[i].p.value) {
-                    case this.prefix + 'year':
-                        years.push({ val: parseInt(results[i].o.value), count: parseInt(results[i].oCount.value) });
-                        break;
-                    case this.prefix + 'belongsTo':
-                        orgs.push({ val: results[i].o.value, count: parseInt(results[i].oCount.value) });
-                        break;
-                    case 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':
-                        categories.push({ val: results[i].o.value, count: parseInt(results[i].oCount.value) });
-                        break;
-                    default:
-                        console.error('Insert Filter Error. Unknown value type ' + results[i].p.value);
-                }
-            }
-            years = years.sort(function(a, b) { return b.val - a.val; });
-            orgs = orgs.sort(function(a, b) { return b.count - a.count; });
-            categories = categories.sort(function(a, b) { return b.count - a.count; });
-            // tags = tags.sort(function(a, b) { return b.count - a.count; });
-            // console.log(years);
-            // console.log(orgs);
-            // console.log(categories);
-            // console.log(tags);
-
-            // Insert tag filters
-            this.filters.append('<h4 class="col-xs-12">Tags</h4>');
-            var tagsDiv = $('<div class="col-xs-12"></div>');
-
-            var tagResults = tagResponse.results.bindings;
-
-            function insertTags(tags, div) {
-                var $tagsMore = div.find('#filters-show-more-tags');
-                for (var i = 0; i < tags.length; i++) {
-                    var tagDiv = $('<div class="search-filter search-filter-tags" data-p="press:tag" ' +
-                        'data-o="?tag" data-oVal="&quot;' + tags[i].tag.value + '&quot;"></div>');
-                    var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].tag.value + ' <i style="color:grey">[' + tags[i].Tagcount.value + ']</i></a>');
-                    tagDiv.append(tag);
-                    if ($tagsMore.length > 0) {
-                        $tagsMore.before(tagDiv);
-                    } else {
-                        div.append(tagDiv);
-                    }
-
-                    if (selected !== undefined) {
-                        if (selected.tags[tagDiv.attr('data-oval')]) {
-                            tagDiv.attr('data-selected', 'selected');
-                        }
-                    }
-                }
-            }
-            if (tagResults.length === 15) {
-                var tagsShowMore = $('<a id="filters-show-more-tags" class="search-filter-more" ' +
-                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                tagsDiv.append(tagsShowMore);
-                tagsShowMore.click(function(that) {
-                    return function() {
-                        $this = $(this);
-                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-                        $.when(that.getTagFilters(prefixes, query, $this.attr('data-offset'))).done(function(a) {
-                            insertTags(a.results.bindings, tagsDiv);
-                            if (a.results.bindings.length < 15) {
-                                tagsDiv.find('#filters-show-more-tags').remove();
-                            }
-                            $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                            $this.siblings('.filterLoader').remove();
-                        });
-                    }
-                }(this));
-            }
-
-            insertTags(tagResults, tagsDiv);
-
-            this.filters.append(tagsDiv);
-
-            // Insert Year filters
-            this.filters.append('<h4 class="col-xs-12">Year</h4>');
-            var yearsDiv = $('<div class="col-xs-12"></div>');
-            for (var i = 0; i < years.length; i++) {
-                var yearDiv = $('<div class="search-filter search-filter-year" data-p="press:year" ' +
-                    'data-o="?year" data-oVal="&quot;' + years[i].val + '&quot;" style="width:40%"></div>');
-
-                var year = $('<a >' + years[i].val + ' <i style="color:grey">[' + years[i].count + ']</i></a>');
-                yearDiv.append(year);
-                yearsDiv.append(yearDiv);
-                if (selected !== undefined) {
-                    if (selected.year[yearDiv.attr('data-oval')]) {
-                        yearDiv.attr('data-selected', 'selected');
-                    }
-                }
-                yearsDiv.append(' ');
-            }
-            this.filters.append(yearsDiv);
-
-            // Insert category filters
-            this.filters.append('<h4 class="col-xs-12">Category</h4>');
-            var categoriesDiv = $('<div class="col-xs-12"></div>');
-            for (var i = 0; i < categories.length; i++) {
-                var categoryDiv = $('<div class="search-filter search-filter-category" data-p="rdf:type" ' +
-                    'data-o="?type" data-oVal ="<' + categories[i].val + '>"></div>');
-                var category = $('<a  class="col-xs-12" style="display:block;">' +
-                    this.category_labels[categories[i].val.split('#')[1]] + ' <i style="color:grey">[' + categories[i].count + ']</i></a>');
-                categoryDiv.append(category);
-                categoriesDiv.append(categoryDiv);
-
-                if (selected !== undefined) {
-                    if (selected.category[categoryDiv.attr('data-oval')]) {
-                        categoryDiv.attr('data-selected', 'selected');
-                    }
-                }
-            }
-            this.filters.append(categoriesDiv);
-
-            // Insert organization filters
-            this.filters.append('<h4 class="col-xs-12">Organization</h4>');
-            var orgsDiv = $('<div class="col-xs-12"></div>');
-            for (var i = 0; i < orgs.length; i++) {
-                var orgDiv = $('<div class="search-filter search-filter-org" data-p="press:belongsTo" ' +
-                    'data-o="?org" data-oVal ="<' + orgs[i].val + '>"></div>');
-                var org = $('<a  class="col-xs-12" style="display:block;">' +
-                    orgs[i].val.split('#Organization/')[1] + ' <i style="color:grey">[' + orgs[i].count + ']</i></a>');
-                orgDiv.append(org);
-                orgsDiv.append(orgDiv);
-
-                if (selected !== undefined) {
-                    if (selected.org[orgDiv.attr('data-oval')]) {
-                        orgDiv.attr('data-selected', 'selected');
-                    }
-                }
-            }
-            this.filters.append(orgsDiv);
-
-            // Insert project filters
-            this.filters.append('<h4 class="col-xs-12">Projects</h4>');
-            var projectsDiv = $('<div class="col-xs-12"></div>');
-            var projects = projectResponse.results.bindings;
-
-
-            for (var i = 0; i < projects.length; i++) {
-                var projectDiv = $('<div class="search-filter search-filter-project" data-p="press:appearsIn" ' +
-                    'data-o="?project" data-oVal="<' + projects[i].projectUUID.value + '>"></div>');
-                var projectName = projects[i].projectName.value;
-                var project = $('<a  class="col-xs-12" style="display:block">' + projectName + ' <i style="color:grey">[' + projects[i].pubcount.value + ']</i></a>');
-                projectDiv.append(project);
-                projectsDiv.append(projectDiv);
-
-                if (selected !== undefined) {
-                    if (selected.projects[projectDiv.attr('data-oval')]) {
-                        projectDiv.attr('data-selected', 'selected');
-                    }
-                }
-            }
-
-            this.filters.append(projectsDiv);
-
-            this.filters.append($('<button>', {
-                text: 'Clear Filters',
-                id: 'filterClear',
-                type: 'button',
-                class: 'btn btn-default btn-sm',
-                style: 'float:right;',
-                click: (function(that) {
-                    return function() {
-                        $('.search-filter[data-selected="selected"]', that.filters).removeAttr('data-selected');
-                        // that.getByFilters(that);
-                        if (that.currentSearchMode === 'browse') {
-                            that.searchByCategory();
-                        } else if (that.currentSearchMode === 'advanced') {
-                            that.searchByFields();
-                        }
-                    };
-                })(this)
-            }));
-
-            $('.search-filter', this.filters).click(onFilterClick(this));
-
-            // console.log(this.lastQueryWithoutFilters[0]);
         },
 
         /**

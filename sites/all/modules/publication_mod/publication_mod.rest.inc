@@ -783,18 +783,11 @@ prefix press: <$blzg_prefix>
 prefix org: <{$blzg_prefix}Organization/>
 EOT;
 
-		if($searchField == ''){
-			$select = <<<EOT
-SELECT * WHERE{
-
-EOT;
-		}else{
-			$select = <<<EOT
+		$select = <<<EOT
 SELECT ?pub (SUM(?score) as ?sumScore) ?year ?englishTitle ?order ?type ?externalLink
 	?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink WHERE{
 
 EOT;
-		}
 		
 		$authorQuery = '';
 		foreach ($authors as $key => $author) {
@@ -949,14 +942,9 @@ EOT;
 		OPTIONAL{?pub press:publicationUrl ?publicationUrl}.
 EOT;
 
-		$closure = '';
-		if($searchField != ''){
-			$closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
-			$closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
-			$closure .= "order by desc(?sumScore)";
-		}else{
-			$closure = "\n}order by desc(?order)";
-		}
+		$closure = "\n}GROUP BY ?pub ?year ?englishTitle ?order ?type ?externalLink ";
+		$closure .= "?bookTitle ?chapterTitle ?typeID ?publicationUrl ?localLink ";
+		$closure .= "order by desc(?sumScore)";
 
 		$query = '';
 		if($searchField != ''){
@@ -1147,6 +1135,7 @@ EOT;
 		}
 
 		foreach ($pub as $prop_key => $value){
+			
 			$result_arr[$pub['pub']['value']][$prop_key] = $value['value'];
 		}
 	}
@@ -1399,4 +1388,54 @@ EOT;
     }
     
     echo json_encode($response);
+}
+
+function _get_author_info(){
+	if(!isset($_GET['authors']) || empty($_GET['authors'])){
+		return;
+	}
+	$authors = $_GET['authors'];
+	$blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+
+	$query = <<<EOT
+	prefix bds: <http://www.bigdata.com/rdf/search#>
+	prefix press: <$blzg_prefix>
+	SELECT ?uuid (CONCAT(?givenName, " ", ?familyName)
+	AS ?fullName) ?givenName ?familyName (substr(?mbox, 8) as ?mail) ?group WHERE {
+	?uuid rdf:type foaf:Person.
+	FILTER(
+EOT;
+	
+	foreach($authors as $index => $author){
+		if($index > 0) $query .= ' || ';
+		$query .= "?uuid = <" . $author . ">";
+	}
+
+	$query .= <<<EOT
+	).
+	?uuid foaf:familyName ?familyName.
+	optional{?uuid foaf:givenName ?givenName.}.
+	optional{?uuid foaf:mbox ?mbox}.
+	?uuid press:personGroup ?group.
+}
+EOT;
+	
+	$q = http_build_query(array('query'=>$query));
+
+	$options = array(
+		'headers' => array(
+			'Accept'=>'application/sparql-results+json',
+			'content-type'=> 'application/x-www-form-urlencoded'
+		),
+		'method' => 'POST',
+		'data' => $q
+	);
+
+	$result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+	foreach ($result->headers as $key => $value) {
+		header($key . ':' . $value);
+	}
+	http_response_code($result->code);
+	echo $result->data;
 }
