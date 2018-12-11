@@ -253,12 +253,14 @@
             this.element.append(this.filters);
 
             if (!$.isEmptyObject(this.parameters) && !window.location.hash.startsWith('#overlay=')) {
-                if (this.parameters.method) {
+                var method = (!!this.parameters.type) ? this.parameters.type : this.parameters.method;
+                if (method) {
                     $('#category_list_button', this.element).css('visibility', '');
                     $('#advanced_search_button', this.element).css('visibility', '');
-                    if (this.parameters.method === 'browse') {
+                    
+                    if (method === 'browse') {
                         this.searchByCategory(this.parameters.category, this.parameters.offset);
-                    } else if (this.parameters.method === 'advanced') {
+                    } else if (method === 'advanced') {
                         this.fillFieldsByStateAndSearch(this.parametersToFields(this.parameters), true, true);
                     }
                 }
@@ -278,7 +280,12 @@
         parametersToFields: function(parameters) {
             var fields = {};
             //Single Value Fields
-            fields.method = parameters.method;
+            console.log(parameters);
+            if(!!parameters.type){
+                fields.method = parameters.type;
+            }else{
+                fields.method = parameters.method;
+            }
             fields.searchField = parameters.field;
             fields.yearFrom = parameters.yearFrom;
             fields.yearTo = parameters.yearTo;
@@ -1990,7 +1997,7 @@
                                     $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
-                                        insertTags(response['year'], tagsDiv);
+                                        insertYears(response['year'], yearsDiv);
                                         if (response.year.length < 15) {
                                             yearsDiv.find('#filters-show-more-years').remove();
                                         }
@@ -2040,14 +2047,14 @@
                                     $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
 
                                     var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'categories';
+                                    options['filter_keys'] = 'category';
                                     options['limit'] = 15;
                                     options['offset'] = parseInt($this.attr('data-offset'));
 
                                     $.when(that.getFilters(options)).done(function(response) {
                                         $this.siblings('.filterLoader').remove();
                                         response = JSON.parse(response);
-                                        insertTags(response['category'], tagsDiv).bind(that);
+                                        insertCategories(response['category'], categoriesDiv).bind(that);
                                         if (response.category.length < 15) {
                                             categoriesDiv.find('#filters-show-more-categories').remove();
                                         }
