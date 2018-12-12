@@ -208,14 +208,15 @@
                 'type="text" placeholder="Enter text for free text search"></input></div>' +
                 '<a id="searchByFields"  class="icon-search" ' +
                 'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
-                '</div>' +
-                '<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
-                ' href="#advanced_search">Advanced Search</a></div>' +
-                '<div class="browse-search-div col-sm-6"><a id="category_list_button" data-toggle="collapse"' +
-                ' href="#Category-List" aria-expanded="true" aria-controls="Category-List"' +
-                ' style="visibility:hidden; float:right">Browse By Category</a></div>' +
                 '</div>');
-            
+            $search_block.append($free_search);
+            $search_block.append($('<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
+                ' href="#advanced_search">Advanced Search</a></div>'));
+            if(!$block_only_page){
+                $search_block.append($('<div class="browse-search-div col-sm-6"><a id="category_list_button" data-toggle="collapse"' +
+                ' href="#Category-List" aria-expanded="true" aria-controls="Category-List"' +
+                ' style="visibility:hidden; float:right">Browse By Category</a></div>'));
+            }
             
             $('#free-text', $free_search).on('keypress', (function(e) {
                 if (e.keyCode == 13){
@@ -233,11 +234,10 @@
                     window.location.assign(this.base_url + '/publication/search-pub' + this.createUrlQuery(fieldValues['stateObj']));
                 }else{
                     this.searchByFields();
-                    $('#category_list_button', $free_search).css('visibility', '');
-                    $('#advanced_search_button', $free_search).css('visibility', '');
+                    $('#category_list_button', $search_block).css('visibility', '');
+                    $('#advanced_search_button', $search_block).css('visibility', '');
                 }
             }).bind(this));
-            $search_block.append($free_search);
 
             var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
             field_container.append(this.getAuthorField());
@@ -270,8 +270,8 @@
                             window.location.assign(this.base_url + '/publication/search-pub' + this.createUrlQuery(fieldValues['stateObj']));
                         }else{
                             this.searchByFields();
-                            $('#category_list_button', $free_search).css('visibility', '');
-                            $('#advanced_search_button', $free_search).css('visibility', '');
+                            $('#category_list_button', $search_block).css('visibility', '');
+                            $('#advanced_search_button', $search_block).css('visibility', '');
                         }
                     }).bind(this)
                 }))
@@ -293,28 +293,31 @@
             field_container.append(last_line);
             $advanced_search = $('<div id="advanced_search" class="collapse col-sm-12"></div>');
             $advanced_search.append(field_container);
-            $category_list = this.getCategoryList(this.category_tree, $search_block, true);
             $search_block.append($advanced_search);
-            $search_block.append($category_list);
+            if(!$block_only_page){
+                $category_list = this.getCategoryList(this.category_tree, $search_block, true);
+                $search_block.append($category_list);
+            }
             
             var close_button = $('<h2 style="margin-top:0;float:left;"><button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>');
             close_button.on('click', (function(that) {
                 return function() {
                     that.advanced_search.collapse('hide');
-                    $('#category_list_button', $free_search).css('visibility', '');
-                    $('#advanced_search_button', $free_search).css('visibility', '');
+                    $('#category_list_button', $search_block).css('visibility', '');
+                    $('#advanced_search_button', $search_block).css('visibility', '');
                 };
             })(this));
             $advanced_search.append($('<div class="col-sm-1"></div>').append(close_button));
 
-
-            $('#category_list_button', $search_block).on('click', function(that){
-                return function() {
-                    $advanced_search.collapse('hide');
-                    $('#advanced_search_button', $search_block).css('visibility', '');
-                    $('#category_list_button', $search_block).css('visibility', 'hidden');
-                }
-            }(this));
+            if(!$block_only_page){
+                $('#category_list_button', $search_block).on('click', function(that){
+                    return function() {
+                        $advanced_search.collapse('hide');
+                        $('#advanced_search_button', $search_block).css('visibility', '');
+                        $('#category_list_button', $search_block).css('visibility', 'hidden');
+                    }
+                }(this));
+            }
 
             $('#advanced_search_button', $search_block).on('click', function(that) {
                 return function() {
