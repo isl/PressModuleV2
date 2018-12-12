@@ -18,11 +18,15 @@ function publication_mod_install(){
     'description' => $t('Publications of the PRESS Module'),
     'has_title' => TRUE,
     'title_label' => $t('Title'),
+    'module' => 'publication_mod',
     'custom' => TRUE
   );
 
   $content_type = node_type_set_defaults($publications_type);
   $status = node_type_save($content_type);
+
+  variable_set('node_submitted_publication_mod_publications', false);
+
   $t_args = array('%name' => $content_type->name);
 
   if ($status == SAVED_UPDATED) { // update case
