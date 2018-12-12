@@ -154,100 +154,11 @@
 
             this.loader.hide();
 
-            var $free_search = $('<div class="free-text-search-div col-sm-12 form-group">' +
-                '<div class="col-sm-1"></div>' +
-                '<div class="col-sm-10"><input id="free-text" class="form-control input-sm" ' +
-                'type="text" placeholder="Enter text for free text search"></input></div>' +
-                '<a id="searchByFields"  class="icon-search" ' +
-                'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
-                '</div>' +
-                '<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
-                ' href="#advanced_search">Advanced Search</a></div>' +
-                '<div class="browse-search-div col-sm-6"><a id="category_list_button" data-toggle="collapse"' +
-                ' href="#Category-List" aria-expanded="true" aria-controls="Category-List"' +
-                ' style="visibility:hidden; float:right">Browse By Category</a></div>' +
-                '</div>');
-            this.element.append($free_search);
-            $('#free-text', this.element).on('keypress', (function(e) {
-                if (e.keyCode == 13)
-                    this.searchByFields();
-            }).bind(this));
-            $('#searchByFields', this.element).on('click', (function() {
-                this.searchByFields();
-                $('#category_list_button', this.element).css('visibility', '');
-                $('#advanced_search_button', this.element).css('visibility', '');
-            }).bind(this));
-
-            var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
-            field_container.append(this.getAuthorField());
+            $search_block = this.createSearchBlock();
             
-            field_container.append(this.getOrgsField(this.orgs));
-
-            field_container.append(this.getYearField());
-            field_container.append(this.getTagField());
-            var categories = this.getCategoriesFields(this.category_tree);
-            field_container.append(categories[0]);
-            field_container.append(categories[1]);
-            var last_line = $('<div class="form-group"></div>');
-
-            last_line.append(this.getReviewedField().append($('<div class="col-sm-5"></div>').append(
-                $('<button>', {
-                    text: 'Search',
-                    id: 'advanced_search_search_button',
-                    class: 'btn btn-primary btn-sm advanced-search-btn',
-                    click: (function(that) {
-                        return function() {
-                            that.searchByFields();
-                            $('#category_list_button', that.element).css('visibility', '');
-                            $('#advanced_search_button', that.element).css('visibility', '');
-                        };
-                    })(this)
-                }))
-            .append(
-                $('<button>', {
-                    text: 'Clear Search',
-                    id: 'searchClear',
-                    type: 'button',
-                    class: 'btn btn-default btn-sm advanced-search-btn',
-                    click: (function(that) {
-                        return function() {
-                            that.clearSearchInput();
-                            that.clearAdvancedSearch();
-                        };
-                    })(this)
-                })
-                )));
-            field_container.append(last_line);
-            this.advanced_search.append(field_container);
-            var close_button = $('<h2 style="margin-top:0;float:left;"><button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>');
-            close_button.on('click', (function(that) {
-                return function() {
-                    that.advanced_search.collapse('hide');
-                    $('#category_list_button', that.element).css('visibility', '');
-                    $('#advanced_search_button', that.element).css('visibility', '');
-                };
-            })(this));
-            this.advanced_search.append($('<div class="col-sm-1"></div>').append(close_button));
-            this.element.append(this.advanced_search);
-
-            this.category_list = this.getCategoryList();
-
-            $('#category_list_button').on('click', function(that) {
-                return function() {
-                    that.advanced_search.collapse('hide');
-                    $('#advanced_search_button', that.element).css('visibility', '');
-                    $('#category_list_button', that.element).css('visibility', 'hidden');
-                }
-            }(this));
-            $('#advanced_search_button').on('click', function(that) {
-                return function() {
-                    that.category_list.collapse('hide');
-                    $('#advanced_search_button', that.element).css('visibility', 'hidden');
-                    $('#category_list_button', that.element).css('visibility', '');
-                }
-            }(this));
-
-            this.element.append(this.category_list);
+            this.advanced_search = $('#advanced_search', $search_block);
+            this.category_list = $('#Category-List', $search_block);
+            this.element.append($search_block);
             this.element.append('<p>&nbsp;</p>');
             this.element.append(this.resultContainer);
             this.element.append(this.filters);
@@ -271,6 +182,111 @@
     PRESSSearch.prototype = {
         constructor: PRESSSearch,
 
+        createSearchBlock: function(){
+            var $search_block = $('<div id="search-block"></div>');
+
+            var $free_search = $('<div class="free-text-search-div col-sm-12 form-group">' +
+                '<div class="col-sm-1"></div>' +
+                '<div class="col-sm-10"><input id="free-text" class="form-control input-sm" ' +
+                'type="text" placeholder="Enter text for free text search"></input></div>' +
+                '<a id="searchByFields"  class="icon-search" ' +
+                'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
+                '</div>' +
+                '<div class="advanced-search-div col-sm-6"><a id="advanced_search_button" data-toggle="collapse"' +
+                ' href="#advanced_search">Advanced Search</a></div>' +
+                '<div class="browse-search-div col-sm-6"><a id="category_list_button" data-toggle="collapse"' +
+                ' href="#Category-List" aria-expanded="true" aria-controls="Category-List"' +
+                ' style="visibility:hidden; float:right">Browse By Category</a></div>' +
+                '</div>');
+            
+            
+            $('#free-text', $free_search).on('keypress', (function(e) {
+                if (e.keyCode == 13)
+                    this.searchByFields();
+            }).bind(this));
+            $('#searchByFields', $free_search).on('click', (function() {
+                this.searchByFields();
+                $('#category_list_button', $free_search).css('visibility', '');
+                $('#advanced_search_button', $free_search).css('visibility', '');
+            }).bind(this));
+
+            var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
+            field_container.append(this.getAuthorField());
+            
+            field_container.append(this.getOrgsField(this.orgs));
+
+            field_container.append(this.getYearField());
+            field_container.append(this.getTagField());
+            var categories = this.getCategoriesFields(this.category_tree);
+            field_container.append(categories[0]);
+            field_container.append(categories[1]);
+            var last_line = $('<div class="form-group"></div>');
+            last_line.append(this.getReviewedField().append($('<div class="col-sm-5"></div>').append(
+                $('<button>', {
+                    text: 'Search',
+                    id: 'advanced_search_search_button',
+                    class: 'btn btn-primary btn-sm advanced-search-btn',
+                    click: (function(that) {
+                        return function() {
+                            that.searchByFields();
+                            $('#category_list_button', $free_search).css('visibility', '');
+                            $('#advanced_search_button', $free_search).css('visibility', '');
+                        };
+                    })(this)
+                }))
+            .append(
+                $('<button>', {
+                    text: 'Clear Search',
+                    id: 'searchClear',
+                    type: 'button',
+                    class: 'btn btn-default btn-sm advanced-search-btn',
+                    click: (function(that) {
+                        return function() {
+                            that.clearSearchInput();
+                            that.clearAdvancedSearch();
+                        };
+                    })(this)
+                })
+                ))
+            );
+            field_container.append(last_line);
+            $advanced_search = $('<div id="advanced_search" class="collapse col-sm-12"></div>');
+            $advanced_search.append(field_container);
+            var close_button = $('<h2 style="margin-top:0;float:left;"><button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>');
+            close_button.on('click', (function(that) {
+                return function() {
+                    that.advanced_search.collapse('hide');
+                    $('#category_list_button', $free_search).css('visibility', '');
+                    $('#advanced_search_button', $free_search).css('visibility', '');
+                };
+            })(this));
+            $advanced_search.append($('<div class="col-sm-1"></div>').append(close_button));
+
+            $category_list = this.getCategoryList(this.category_tree, $search_block);
+
+            $('#category_list_button', $search_block).on('click', function(that){
+                return function() {
+                    $advanced_search.collapse('hide');
+                    $('#advanced_search_button', $search_block).css('visibility', '');
+                    $('#category_list_button', $search_block).css('visibility', 'hidden');
+                }
+            }(this));
+
+            $('#advanced_search_button', $search_block).on('click', function(that) {
+                return function() {
+                    $category_list.collapse('hide');
+                    $('#advanced_search_button', $search_block).css('visibility', 'hidden');
+                    $('#category_list_button', $search_block).css('visibility', '');
+                }
+            }(this));
+
+            $search_block.append($free_search);
+            $search_block.append($advanced_search);
+            $search_block.append($category_list);
+
+            return $search_block;
+        },
+        
         /**
          * 
          * 
@@ -829,7 +845,7 @@
          * 
          * @return {Object} A jQuery element object
          */
-        getCategoryList: function() {
+        getCategoryList: function(category_tree, $rootElement) {
             var container = $('<div class="col-md-1"></div>');
 
             var $listRoot = $('<div class="col-xs-12 col-sm-8" data-key="Publication"></div>');
@@ -842,8 +858,8 @@
             $('#close_by_category', $listRoot).on('click', (function(that) {
                 return function() {
                     that.category_list.collapse('hide');
-                    $('#category_list_button', that.element).css('visibility', '');
-                    $('#advanced_search_button', that.element).css('visibility', '');
+                    $('#category_list_button', $rootElement).css('visibility', '');
+                    $('#advanced_search_button', $rootElement).css('visibility', '');
                 };
             })(this));
 
@@ -884,7 +900,7 @@
                 }
             }
 
-            traverse_tree(this.category_tree, $listRoot, 0);
+            traverse_tree(category_tree, $listRoot, 0);
             var $div = $('<div id="Category-List" class="row collapse in"></div>');
             $div.append(container);
             $div.append($listRoot);
@@ -900,8 +916,8 @@
                     // that.category_list.hide();
                     that.clearSearchInput();
                     that.clearAdvancedSearch();
-                    $('#category_list_button', that.element).css('visibility', '');
-                    $('#advanced_search_button', that.element).css('visibility', '');
+                    $('#category_list_button', $rootElement).css('visibility', '');
+                    $('#advanced_search_button', $rootElement).css('visibility', '');
                     that.searchByCategory($(this).attr('id'));
                 };
             })(this));
@@ -1398,18 +1414,6 @@
                 window.history.pushState(stateObj, "", window.location.origin + window.location.pathname + search);
             }
 
-
-
-            // window.onpopstate = (function(that) {
-            //     return function(event) {
-            //         if (!event.state) {
-            //             location.reload();
-            //         } else {
-            //             var currentState = event.state;
-            //             that.searchByCategory(currentState.category, currentState.offset, currentState.filters, true);
-            //         }
-            //     };
-            // })(this);
             this.category_list.collapse("hide");
             
             this.loader.show();
