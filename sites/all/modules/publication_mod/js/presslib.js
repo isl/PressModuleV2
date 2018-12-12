@@ -173,8 +173,9 @@
         
         //Retreive from blazegraph the tags, categories, data properties(fields)
         // On success, start inserting the fields
-        $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
-            if (!(a1[1] === "success" && a2[1] === "success" && a3[1] === "success")) {
+        // $.when(this.getTags(), this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2, a3) {
+        $.when(this.getCategories(), this.getDataProperties()).always($.proxy(function(a1, a2) {
+            if (!(a1[1] === "success" && a2[1] === "success")) {
                 console.error('GET was unsuccesfull');
                 return;
             }
@@ -235,59 +236,15 @@
                         }
                     }
                 }
-                var pubFields = findFields(categories, this.editPublication.category);
 
-                var except = Object.keys(this.personFields);
-                except.push('project');
-                except.push('tag');
 
-                // Query for getting all the fields of a publication based on category
-                var query = 'prefix press: <' + this.prefix + '>'; 
-                query += 'SELECT * WHERE{ \n';
-                query += '{?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += 'OPTIONAL {?pub press:creationDate ?creationDate.}. \n';
-                query += 'OPTIONAL {?pub press:modifiedDate ?modifiedDate.}. \n';
-                for (var i = 0; i < pubFields.length; i++) {
-                    if (typeof pubFields[i] === 'string') {
-                        if (!except.includes(pubFields[i]))
-                            query += 'OPTIONAL {?pub press:' + pubFields[i] + ' ?' + pubFields[i] + '}. \n';
-                    } else {
-                        for (var j = 0; j < pubFields[i].length; j++) {
-                            if (typeof pubFields[i][j] === 'string') {
-                                if (!except.includes(pubFields[i]))
-                                    query += 'OPTIONAL {?pub press:' + pubFields[i][j] + ' ?' + pubFields[i][j] + '}. \n';
-                            }
-                        }
-                    }
-                }
+                var pubFields = [].concat.apply([], findFields(categories, this.editPublication.category));
 
-                query += '}UNION{';
+                pubFields = pubFields.filter(function(value, index, arr){
+                    return value !== 'project' && value !== 'tag';
+                });
 
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:appearsIn ?project. \n';
-                query += '?project press:projectName ?projectName. \n';
-                query += '}UNION{ \n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:hasContributor ?conSlot. \n';
-                // query += '?conList press:slot ?conSlot. \n';
-                query += '?con rdfs:subPropertyOf* press:contributorType. \n';
-                query += '?conSlot ?con ?person. \n';
-                query += '?conSlot press:listIndex ?personIndex. \n';
-                query += '?person foaf:familyName ?familyName. \n';
-                query += '?person press:personGroup ?group. \n';
-                query += 'OPTIONAL {?person foaf:givenName ?givenName.}. \n';
-                query += 'OPTIONAL {?person foaf:mbox ?mbox.}. \n';
-                query += '}UNION{ \n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:belongsTo ?org. \n';
-                query += '?org press:organizationName ?orgName. \n';
-                query += '} UNION {\n';
-                query += '?pub press:publicationUuid "' + this.editPublication.uuid + '". \n';
-                query += '?pub press:tag ?tag. \n';
-                query += '} \n';
-                query += '} \n';
-
-                this.getPublicationInfo(query);
+                this.getPublicationInfo(this.editPublication.uuid, pubFields);
             }
 
         }, this));
@@ -302,13 +259,14 @@
          * 
          * @param {string} query The query to be requested 
          */
-        getPublicationInfo: function(query) {
+        getPublicationInfo: function(uuid, pubFields) {
             $.ajax({
                     dataType: 'json',
                     method: 'GET',
-                    url: this.dbURL,
+                    url: '/ajax/publications/get_publication_info',
                     data: {
-                        query: query
+                        uuid: uuid,
+                        pubFields: pubFields,
                     }
                 }).done($.proxy(function(response) {
                     this.insertData(response);
@@ -345,21 +303,22 @@
                     var $ul = $('#lab-editable', this.element);
                     var splited_lab = results[i].org.value.split('/');
                     if ($.inArray('administrator', this.current_user.roles) === -1 &&
-                        splited_lab[splited_lab.length -1] === this.labs[this.current_user.lab]) {
+                        splited_lab[splited_lab.length -1] === this.current_user.lab) {
                         var valid = true;
                         $('.lab-item').each($.proxy(function(index, element) {
-                            if ($(element).attr('id') === this.labs[this.current_user.lab]) {
+                            if ($(element).attr('id') === this.current_user.lab) {
                                 return valid = false;
                             }
                         }, this));
                         if (valid) {
-                            $ul.append($('<li id="' + this.labs[this.current_user.lab] + '" class="lab-item list-group-item" draggable="false" style="float:left">' + this.labs[this.current_user.lab] + '</li>'));
+                            $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + this.labs[this.current_user.lab] + '</li>'));
                             $ul.show();
                         }
                     } else {
-                        var $li = $('<li id="' + results[i].org.value.split('#Organization/')[1] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                        var orgId = results[i].org.value.split('#Organization/')[1];
+                        var $li = $('<li id="' + orgId + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                         $ul.append($li);
-                        $li.text(results[i].orgName.value);
+                        $li.text(this.orgIdToLocal[orgId]);
                         $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                         $ul.show();
                     }
@@ -447,23 +406,12 @@
          * @return {Object} A jqXHR object
          */
         getCategories: function() {
+            var base_url = this.base_url;
             return $.ajax({
 
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: "prefix press: <" + this.prefix + "> " +
-                            'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ' +
-                            '(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel ' +
-                            "WHERE { " +
-                            "?low rdfs:subClassOf* press:Publication. " +
-                            "OPTIONAL {?low rdfs:label ?lowlabel}. " +
-                            "OPTIONAL {?low press:optgroup ?optgroup}. " +
-                            "OPTIONAL {?low rdfs:subClassOf ?superclass . " +
-                            "?superclass rdfs:label ?superlabel} " +
-                            "} ORDER BY ?label"
-                    }
+                    url: base_url + '/ajax/publications/get_categories',
                 })
                 .done($.proxy(function(response) {
                     var category_tree = {};
@@ -505,12 +453,7 @@
             return $.ajax({
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: 'prefix press: <' + this.prefix + '> ' +
-                            'SELECT distinct ?tag WHERE { ' +
-                            '?pub press:tag ?tag} '
-                    }
+                    url: '/ajax/publications/get_tags',
                 })
                 .done($.proxy(function(response) {
                     for (var i = 0; i < response.results.bindings.length; i++) {
@@ -532,23 +475,7 @@
             return $.ajax({
                     dataType: 'json',
                     method: "GET",
-                    url: this.dbURL,
-                    data: {
-                        query: "prefix press: <" + this.prefix + "> " +
-                            'SELECT DISTINCT (strafter(str(?p), "#") AS ?pid) ?label (strafter(str(?type), "#") AS ?ptype) ?range ' +
-                            "WHERE { " +
-                            "?class ^rdfs:domain ?p . " +
-                            "?p rdf:type ?type . " +
-                            "FILTER (?type = owl:DatatypeProperty || ?type = owl:ObjectProperty) . " +
-                            "OPTIONAL{?p rdfs:label ?label }. " +
-                            "OPTIONAL {?p rdfs:range ?range}" +
-                            "{" +
-                            "?class rdfs:subClassOf* press:Publication." +
-                            "}union{" +
-                            "?class rdfs:subClassOf* press:Contributor_Slot." +
-                            "}" +
-                            "}order by ?p "
-                    }
+                    url: '/ajax/publications/get_data_properties',
                 })
                 .done($.proxy(function(response) {
                     results = response.results.bindings;
@@ -593,15 +520,43 @@
 
             this.element.append($labgroup);
 
-            var labValues = Object.keys(labs);
-            var labValueToKey = {};
-            for (key in labs) {
-                labValueToKey[labs[key]] = key;
+            var orgKeys = Object.keys(labs);
+            var orgNames = Object.values(labs);
+
+            var dups = [];
+            for(var i=0;i<orgKeys.length;i++){
+                if(!dups.includes(orgKeys[i])){
+                    for(var j=i+1;j<orgKeys.length;j++){
+                        if(labs[orgKeys[i]] === labs[orgKeys[j]]){
+                            if(!dups.includes(orgKeys[i])){
+                                        dups.push(orgKeys[i]);
+                            }
+                            if(!dups.includes(orgKeys[j])){
+                                        dups.push(orgKeys[j]);
+                            }
+                        }
+                    }
+                }
             }
+            var local = [];
+            var localToID = {};
+            var orgIdToLocal = {};
+            for(var key in labs){
+                if(dups.includes(key)){
+                    local.push(labs[key] + ' - ' + key);
+                    localToID[labs[key] + ' - ' + key] = key;
+                    orgIdToLocal[key] = labs[key] + ' - ' + key;
+                }else{
+                    local.push(labs[key]);
+                    localToID[labs[key]] = key;
+                    orgIdToLocal[key] = labs[key];
+                }
+            }
+            this.orgIdToLocal= orgIdToLocal;
             var labsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: labValues
+                local: local
             });
 
             function labWithDefaults(q, sync) {
@@ -637,10 +592,10 @@
             });
             if (!this.editMode) {
                 if ($.inArray('administrator', this.current_user.roles) === -1) {
-                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '</li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + orgIdToLocal[this.current_user.lab] + '</li>'));
                     $ul.show();
                 } else {
-                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + labValueToKey[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
+                    $ul.append($('<li id="' + this.current_user.lab + '" class="lab-item list-group-item" draggable="false" style="float:left">' + orgIdToLocal[this.current_user.lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
                     $ul.show();
                 }
             }
@@ -649,12 +604,12 @@
                 var $list = $('#lab-editable');
                 var valid = true;
                 $('.lab-item').each(function() {
-                    if ($(this).attr('id') === suggestion) {
+                    if ($(this).attr('id') === localToID[suggestion]) {
                         return valid = false;
                     }
                 });
                 if (valid) {
-                    var $li = $('<li id="' + labs[suggestion] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
+                    var $li = $('<li id="' + localToID[suggestion] + '" class="lab-item list-group-item" draggable="false" style="float:left"></li>');
                     $list.append($li);
                     $li.html(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
@@ -799,34 +754,21 @@
                         datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tokens'),
                         sufficient: 500,
                         remote: {
-                            url: this.dbURL,
+                            url: this.base_url + '/ajax/publications/search_author',
                             wildcard: '%QUERY',
                             // rateLimitBy: 'throttle',
                             // rateLimitWait: 0,
                             prepare: (function(groupKey, prefix) {
                                 return function(query, settings) {
-                                    // console.log(settings);
 
                                     var queries = query.split(' ');
-
-                                    BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' +
-                                        'prefix press: <' + prefix + '> \n' +
-                                        'SELECT ?uuid (CONCAT(?givenName, \" \", ?familyName) ' +
-                                        'AS ?fullName) ?givenName ?familyName (substr(?mbox, 8) as ?mail) WHERE { \n';
-                                    for (var i = 0; i < queries.length; i++) {
-                                        if (queries[i].length < 3) return false;
-                                        BDSquery += '?o' + i + ' bds:search "' + queries[i] + '*". \n' +
-                                            '?uuid ?p' + i + ' ?o' + i + ' . \n' +
-                                            'filter(?p' + i + ' = foaf:familyName || ?p' + i + ' = foaf:givenName). \n';
-                                    }
-
-                                    BDSquery += '?uuid foaf:familyName ?familyName. \n' +
-                                        '?uuid foaf:givenName ?givenName. \n' +
-                                        'optional{?uuid foaf:mbox ?mbox}. \n' +
-                                        '?uuid press:personGroup "' + groupKey + '". }';
+                                    queries = queries.filter(function(value, index, arr){
+                                        return value.length > 2;
+                                    });
 
                                     settings.data = {
-                                        query: BDSquery,
+                                        terms: queries,
+                                        groupKey: groupKey,
                                     }
                                     return settings;
                                 }
@@ -957,25 +899,26 @@
                     class: 'btn btn-primary btn-md',
                     click: (function() {
 
-                        $.get(this.dbURL + '?uuid')
+                        $.get('/ajax/publications/get_uuid')
                             .done($.proxy(function(response) {
                                 var uuid = 'urn:uuid:' + response;
                                 var query = 'prefix foaf: <http://xmlns.com/foaf/0.1/>\n';
                                 var firstName = $('#externalFirstName').val();
                                 var lastName = $('#externalLastName').val();
-                                query += 'INSERT{ \n';
-                                query += '?uuid rdf:type foaf:Person; \n';
-                                query += '<' + this.prefix + 'personGroup> "External_Author"; \n';
-                                query += 'foaf:familyName "' + lastName + '"; \n';
-                                query += 'foaf:givenName "' + firstName + '"; \n';
-                                query += 'foaf:mbox "mailto:' + $('#externalAuthorMail').val() + '"; \n';
-                                query += '<' + this.prefix + 'personUuid> ?struuid . \n';
-                                query += '}WHERE{\n';
-                                query += 'SELECT ?uuid ?struuid WHERE {BIND(<' + uuid + '> as ?uuid). BIND(str(?uuid) as ?struuid)} \n';
-                                query += '}';
+                                var mail = $('#externalAuthorMail').val();
+                                // query += 'INSERT{ \n';
+                                // query += '?uuid rdf:type foaf:Person; \n';
+                                // query += '<' + this.prefix + 'personGroup> "External_Author"; \n';
+                                // query += 'foaf:familyName "' + lastName + '"; \n';
+                                // query += 'foaf:givenName "' + firstName + '"; \n';
+                                // query += 'foaf:mbox "mailto:' + $('#externalAuthorMail').val() + '"; \n';
+                                // query += '<' + this.prefix + 'personUuid> ?struuid . \n';
+                                // query += '}WHERE{\n';
+                                // query += 'SELECT ?uuid ?struuid WHERE {BIND(<' + uuid + '> as ?uuid). BIND(str(?uuid) as ?struuid)} \n';
+                                // query += '}';
 
                                 this.loader.show();
-                                $.when(this.insertExternalAuthor(query)).done($.proxy(function(a) {
+                                $.when(this.insertExternalAuthor(uuid, firstName, lastName, mail)).done($.proxy(function(a) {
                                         this.loader.hide();
                                         var $alert = $('<div class="alert alert-success alert-dismissable fade in">' +
                                             '<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>' +
@@ -1209,23 +1152,15 @@
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
                 datumTokenizer: Bloodhound.tokenizers.obj.whitespace('projectID name'),
                 remote: {
-                    url: this.dbURL,
+                    url: '/ajax/publications/search_project',
                     wildcard: '%QUERY',
                     prepare: (function(prefix) {
                         return function(query, settings) {
 
                             var queries = query.split(' ');
 
-                            BDSquery = 'prefix bds: <http://www.bigdata.com/rdf/search#> \n' +
-                                'prefix press: <' + prefix + '> \n' +
-                                'SELECT ?projectID ?name WHERE { \n' +
-                                '?name bds:search "' + queries + '*". \n' +
-                                '?name bds:matchAllTerms "true". \n' +
-                                '?projectID press:projectName ?name. \n' +
-                                '} ';
-
                             settings.data = {
-                                query: BDSquery,
+                                query: queries.toString(),
                             }
                             return settings;
                         }
@@ -1326,10 +1261,33 @@
             $col_div.append($input);
             $col_div.append($ul);
 
+            var base_url = this.base_url;
             var tagsBlood = new Bloodhound({
                 queryTokenizer: Bloodhound.tokenizers.whitespace,
-                datumTokenizer: Bloodhound.tokenizers.whitespace,
-                local: this.tags
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('tag'),
+                remote: {
+                    url: base_url + '/ajax/publications/search_tag',
+                    prepare: (function(prefix) {
+                        return function(query, settings) {
+                            var queries = query.split(' ');
+                            settings.data = {
+                                query: queries.toString(),
+                            }
+                            return settings;
+                        }
+                    })(this.prefix),
+                    transform: function(response) {
+                        if (typeof response !== 'object') return [];
+                        var tr = [];
+                        var results = response.results.bindings;
+                        for (let i = 0; i < results.length; i++) {
+                            tr[i] = {
+                                tag: results[i].tag.value,
+                            }
+                        }
+                        return tr;
+                    }
+                }
             });
 
             $input.typeahead({
@@ -1339,7 +1297,8 @@
             }, {
                 limit: 100,
                 name: 'tags',
-                source: tagsBlood
+                source: tagsBlood,
+                display: 'tag'
             });
 
             var sortable = Sortable.create($ul[0], {
@@ -1364,12 +1323,17 @@
                 if (ev.type === 'keypress' && ev.which != 13) {
                     return;
                 }
+                if(typeof suggestion === 'object'){
+                    suggestion = suggestion.tag;
+                }
+
                 var valid = true;
                 $('.tag-item').each(function() {
                     if ($(this).attr('id') === suggestion) {
                         return valid = false;
                     }
                 });
+
                 if (valid) {
                     var $li;
                     if (ev.type === 'keypress') {
@@ -1379,7 +1343,7 @@
                         $li = $('<li id="' + suggestion + '" class="tag-item list-group-item" draggable="false" style="float:left"></li>');
                     }
                     $list.append($li);
-                    $li.html(suggestion);
+                    $li.text(suggestion);
                     $('<i class="js-remove">&nbsp;✖</i>').appendTo($li);
                     $list.show();
                 }
@@ -1704,308 +1668,127 @@
                     return;
                 }
             }
+            var pkg = new FormData();
 
-            /**
-             * Gets called after the addition of the Publication in Drupal and
-             * constructs the query based on the uuid provided
-             * 
-             * @param  {Object} response The response from drupal containing the
-             * new uuid and url of the publication, the url of the uploaded file
-             * @param  {boolean} del Indicates if the publication is going to be deleted
-             * @return {string} The sparql query
-             */
-            function constructQuery(response, del) {
-                prefix = this.prefix;
-                var query = "prefix foaf: <http://xmlns.com/foaf/0.1/> \n";
-
-                if (this.editMode) {
-                    query += 'DELETE { \n';
-                    query += '?pub ?p ?o. \n';
-                    query += '?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
-                    query += '?conSlot ?y ?z. \n';
-                    query += '}\n';
-                    query += 'WHERE{ \n';
-                    query += '?pub <' + this.prefix + 'publicationUuid> "' + this.editPublication.uuid + '". \n';
-                    query += '?pub ?p ?o. \n';
-                    query += 'OPTIONAL{?pub <' + this.prefix + 'hasContributor> ?conSlot. \n';
-                    query += 'OPTIONAL{?conSlot ?y ?z.}} \n';
-                    query += '}';
-                    if (!del)
-                        query += '; \n';
+            function constructOptions(del){
+                var options = {};
+                if(this.editMode){
+                    options['uuid'] = this.editPublication.uuid;
+                    options['creationDate'] = this.creationDate;
+                }else{
+                    // options['uuid'] = response.uuid;
                 }
-                if (!del) {
-                    var currentDate = new Date();
-                    var formattedDate = currentDate.toISOString();
-                    query += "INSERT DATA { \n";
-                    query += "<" + response.uuid + "> rdf:type <" + this.prefix + this.subcat.val() + ">; \n";
-                    if (this.editMode) {
-                        query += '<' + prefix + 'creationDate> "' + this.creationDate + '"^^xsd:dateTime; \n';
-                    } else {
-                        query += '<' + prefix + 'creationDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    }
-                    query += '<' + prefix + 'modifiedDate> "' + formattedDate + '"^^xsd:dateTime; \n';
-                    query += '<' + prefix + 'publicationUuid> "' + response.uuid + '"; \n';
-                    query += '<' + prefix + 'publicationUrl> "' + response.path + '"; \n';
+                options['delete'] = !!del;
+                if(options['delete']) return options;
 
+                // options['publicationUrl'] = response.path;
+                options['belongsTo'] = [];
+                $('#lab-editable li').each(function() {
+                    options['belongsTo'].push($(this).attr('id'));
+                });
+                
+                options['contributors'] = {};
 
-                    $('#lab-editable li').each(function() {
-                        query = query + "<" + prefix + "belongsTo> <" + prefix + 'Organization/' + $(this).attr('id') + ">; \n";
-                    })
-
-                    // Traverse the fields of the page to add the sparql triples
-                    function traverseFields(field) {
-                        var prefix = this.prefix;
-                        for (let i = 0; i < field.length; i++) {
-                            if (!Array.isArray(field[i])) {
-                                if (field[i] in this.personFields) {
-                                    var length = 0;
-                                    $('.' + field[i] + '-contributor-name').each(function() {
-                                        query += '<' + prefix + 'hasContributor> [ rdf:type <' + prefix + 'Contributor_Slot>; \n';
-                                        query += '<' + prefix + field[i] + '> <' + $(this).attr('data-uuid') + '>; \n' +
-                                            '<' + prefix + 'listIndex> ' + ++length + '; \n' +
-                                            ']; \n';
+                function traverseFields(field) {
+                    for (let i = 0; i < field.length; i++) {
+                        if (!Array.isArray(field[i])) {
+                            if (field[i] in this.personFields) {
+                                options['contributors'][field[i]] = [];
+                                $('.' + field[i] + '-contributor-name').each(function() {
+                                    options['contributors'][field[i]].push({
+                                        name: $(this).text(),
+                                        uri: $(this).attr('data-uuid')
                                     });
-                                } else if (field[i] === 'project') {
-                                    $('.project-item').each(function() {
-                                        query = query + '<' + prefix + 'appearsIn> <' + $(this).attr('id') + '>; \n';
+                                });
+                            } else if (field[i] === 'project') {
+                                options['project'] = [];
+                                $('.project-item').each(function() {
+                                    options['project'].push({
+                                        name: $(this).attr('title'),
+                                        uri: $(this).attr('id')
                                     });
-                                } else if (field[i] === 'localLink'){
-                                    if($('#' + field[i]).val().trim() !== '' && response.file_url !== '') {
-                                        query += '<' + this.prefix + 'localLink> "' + response.file_url + '"; \n';
-                                    }else if(this.editMode && !!this.localLink){
-                                        query += '<' + this.prefix + 'localLink> "' + this.localLink + '"; \n';
-                                    }
-                                } else if (field[i] === 'tag') {
-                                    $('.tag-item').each(function() {
-                                        query = query + '<' + prefix + 'tag> "' + $(this).attr('id') + '"; \n';
-                                    });
-                                } else if ($('#' + field[i]).val().trim() !== '') {
-                                    query = query + '<' + prefix + field[i] + '> "' + $('#' + field[i]).val().escapeSpecialChars() + '"; \n';
+                                });
+                            } else if (field[i] === 'localLink'){
+                                if($('#' + field[i]).val().trim() !== '') {
+                                    pkg.append('myfile', $('#localLink', this.element)[0].files[0]);
+                                }else if(this.editMode && !!this.localLink){
+                                    options['localLink'] = this.localLink;
                                 }
-
-                            } else {
-                                traverseFields.call(this, field[i]);
+                            } else if (field[i] === 'tag') {
+                                options['tag'] = [];
+                                $('.tag-item').each(function() {
+                                    options['tag'].push($(this).attr('id'));
+                                });
+                            } else if ($('#' + field[i]).val().trim() !== '') {
+                                options[field[i]] = $('#' + field[i]).val();
                             }
+                        } else {
+                            traverseFields.call(this, field[i]);
                         }
                     }
-
-                    var fields;
-                    if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
-                        fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
-                    } else {
-                        fields = this.JSONfields[this.cat.val()][this.subcat.val()];
-                    }
-                    traverseFields(fields);
-
-                    query += '.}\n';
                 }
-                return query;
+
+                var fields;
+                if ($(':selected', this.subcat).parent().prop('tagName') === 'OPTGROUP') {
+                    fields = this.JSONfields[this.cat.val()][$(':selected', this.subcat).parent().attr('id')][this.subcat.val()];
+                } else {
+                    fields = this.JSONfields[this.cat.val()][this.subcat.val()];
+                }
+                traverseFields.call(this,fields);
+
+                options['category'] = this.subcat.val();
+                
+                return options;
+            }
+            var base_url = this.base_url;
+            if(del){
+                $.ajax({
+                    dataType: 'text',
+                    method: "POST",
+                    url: base_url + '/ajax/publications/delete_publication',
+                    data: {
+                        'uuid': this.editPublication.uuid,
+                    }
+                })
+                .done(function(response) {
+                    window.location.href = base_url + '/publication/search-pub';
+                })
+                .fail(function(response) {
+                    console.error(response);
+                });
+                return;
             }
 
-            /**
-             * An ajax request wrapper
-             * 
-             * @param  {Object} options The AJAX options
-             * @return {[type]}
-             */
-            function ajax(options) {
-                var settings = {
-                    method: 'POST',
-                    data: null,
-                    done: function() {},
-                    fail: function() {},
-                    complete: function() {}
-                };
+            var submitOptions = constructOptions.call(this, del);
+            pkg.append('options', JSON.stringify(submitOptions));
+            console.log(submitOptions);
 
-                if (options)
-                    for (option in options) settings[option] = options[option];
-
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (xhttp.readyState == 4) {
-                        if (xhttp.status == 200) {
-                            settings.done(xhttp.responseText);
-                        } else {
-                            settings.fail(xhttp.responseText);
-                        };
-                        settings.complete(xhttp.responseText);
-                    };
-                };
-                xhttp.open(settings.method, settings.url, true);
-                xhttp.send(settings.data);
-            };
-
-            /**
-             * Creates the static page of the publication and calls the PRESS API
-             * to add the publication to drupal. If it succeeds, it calls the 
-             * constructQuery() function to upload the publication to Blazegraph
-             * 
-             * @param  {boolean} del Indicates if the publication is goind to be deleted
-             */
-            function beginUpload(del) {
-                // console.log($('#'+this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
-                var pkg = new FormData();
-                if (!del) {
-                    var $body = $('<div></div>');
-                    var $contributors = $('<div class="col-sm-12"></div>');
-                    var $summary = $('<div></div>');
-                    var contributors = {};
-                    $('.contributor').each(function() {
-                        if (!Array.isArray(contributors[$(this).attr('data-field')]))
-                            contributors[$(this).attr('data-field')] = [];
-                        contributors[$(this).attr('data-field')].push($(this));
-                    });
-                    var length = Object.keys(contributors).length;
-                    var j = 0;
-                    var contributors_all_pubs = {};
-                    for (key in contributors) {
-                        console.log(this.fields);
-                        console.log(key);
-                        var $concat = $('<div class="col-sm-3"><h3>' + this.fields[key].label + '</h3></div>');
-                        contributors_all_pubs[this.fields[key].label] = [];
-                        for (let i = 0; i < contributors[key].length; i++) {
-                            $contributor = '<a href="' + this.base_url + '/publication/search-pub?type=advanced' +
-                                '&reviewed=false' +
-                                '&authors0=' + encodeURIComponent(contributors[key][i].attr('data-uuid')) +
-                                '">' + contributors[key][i].text() + '</a>';
-                            $concat.append($contributor + '<br/>');
-                            // console.log(contributors[key][i]);
-                            $summary.append(contributors[key][i].text());
-
-                            contributors_all_pubs[this.fields[key].label].push({
-                                uri: contributors[key][i].attr('data-uuid'),
-                                name: contributors[key][i].text()
-                            });
-                            if (j !== length - 1 || i !== contributors[key].length - 1) {
-                                $summary.append(', ');
-                            }
-                        }
-                        $contributors.append($concat);
-                        j++;
-                    }
-                    $body.append($contributors);
-                    // console.log(this.fields);
-                    fields = this.fields;
-                    var $abstracts = $('<div class="col-sm-12"></div>');
-                    var abstractExists = false;
-                    $('[id$=Abstract]').each(function() {
-                        if ($(this).val().trim() !== '') {
-                            abstractExists = true;
-                            var abstract = $('<div class="col-sm-12"><h3>' + fields[$(this).attr('id')].label + '</h3></div>');
-                            abstract.append('<p>' + $(this).val().trim() + '</p>');
-                            $abstracts.append(abstract);
-                            if ($(this).attr('id') === 'englishAbstract') {
-                                $summary.append('<br/>');
-                                var abstractSummary = $(this).val().trim().split(' ', 40);
-                                $summary.append('<br/>' + abstractSummary.join(' ') + '...');
-                            }
-                        }
-                    });
-                    if (abstractExists)
-                        $body.append($abstracts);
-
-                    var $restOfFields = $('<div class="col-xs-12"><p>&nbsp;</p></div>');
-                    var fieldLabel = $('<table class="table table-hover"></table>')
-                    $('input.press-field:not(.typeahead, [id$=Abstract], #englishTitle, #localLink)').each((function(that) {
-                        return function() {
-                            if ($(this).val() !== '') {
-                                var val = $(this).val();
-                                if($(this).attr('id') === 'doi'){
-                                    val = '<a href="https://doi.org/'+val+'" target="_blank">'+val+'</a>';
-                                }
-                                fieldLabel.append('<tr><td>' + $(this).attr('data-label') + '</td><td>' + val + '</td>');
-                                // $restOfFields.append('<h4>'+$(this).attr('data-label')+'</h4>');
-                                // $restOfFields.append('<p>'+$(this).val()+'</p><br/>');
-                            }
-                        }
-                    })(this));
-                    var tagsField = '';
-                    var foundTags = false;
-                    $('li.tag-item.list-group-item').each((function(that){
-                        return function(){
-                            if ($(this).attr('id') !== '') {
-                                var val = $(this).attr('id');
-                                if(foundTags){
-                                    tagsField += ', ';
-                                }else{
-                                    foundTags = true;
-                                }
-                                val = '<a href="/publication/search-pub?type=advanced&reviewed=false&tags0=' + val +'" target="_blank">'+ val + '</a>';
-                                tagsField += val;                                
-                                // $restOfFields.append('<h4>'+$(this).attr('data-label')+'</h4>');
-                                // $restOfFields.append('<p>'+$(this).val()+'</p><br/>');
-                            }   
-                        }
-                    }))
-                    if(foundTags){
-                        fieldLabel.append('<tr><td>Tags</td><td>' + tagsField + '</td>');
-                    }
-                    $restOfFields.append(fieldLabel);
-                    var div = $('<div class="col-xs-12"></div>');
-                    div.append($restOfFields);
-                    $body.append(div);
-
-
-                    if ($('#localLink', this.element)[0].files[0]) {
-                        pkg.append('myfile', $('#localLink', this.element)[0].files[0]);
-                    }
-
-                    pkg.append('title', $('#' + this.titleFields[$('#category').val()][$('#subcategory').val()]).val());
-                    pkg.append('body', $body.html());
-                    pkg.append('summary', $summary.html());
-                    pkg.append('category', $('#subcategory').val());
-                    pkg.append('contributors', JSON.stringify(contributors_all_pubs));
-                    pkg.append('delete', false);
-                } else {
-                    pkg.append('delete', true);
-                }
-
-                var ajax_url = this.base_url + '/ajax/add_publication_page'; //TODO: Remove Hardcoded URL
-                if (this.editMode) {
-                    var uuid = this.editPublication.uuid
-                    // if (this.editPublication.uuid.startsWith('urn:uuid:')) {
-                    //     uuid = uuid.substring(9);
-                    // }
-                    pkg.append('uuid', uuid);
-                    ajax_url = this.base_url + '/ajax/edit_publication_page';
-                }
-
-                ajax({
-                    url: ajax_url,
-                    data: pkg,
-                    done: (function(res) {
-                        // console.log(res);
-                        response = JSON.parse(res);
-                        // console.log(response);
-                        var updateQuery = constructQuery.call(this, response, del);
-                        var href = '/publication/search-pub';
-                        if (!del) {
-                            href = response.path;
-                        }
-
-                        base_url = this.base_url;
-                        $.ajax({
-                                dataType: 'html',
-                                method: "POST",
-                                url: this.dbURL,
-                                data: {
-                                    update: updateQuery
-                                }
-                            })
-                            .done(function(response) {
-                                window.location.href = base_url + '/' + href;
-                            })
-                            .fail(function(response) {
-                                console.error(response);
-                            });
-                    }).bind(this),
-                    fail: (function(res){
-                        console.error(res);
-                    })
-                });
-            };
+            var remote_url = '/ajax/publications/add_publication';
+            if(this.editMode){
+                remote_url = '/ajax/publications/edit_publication';
+            }
             this.loader.show();
-            beginUpload.call(this, del);
+            var loader = this.loader;
+            $.ajax({
+                dataType: 'json',
+                method: "POST",
+                url: base_url + remote_url,
+                data: pkg,
+                processData: false,
+                contentType: false,
+                cache: false,
+            })
+            .done(function(response) {
+                loader.hide();
+                // console.log(response);
+                window.location.href = base_url + '/' + response.pub_url;
+            })
+            .fail(function(response) {
+                loader.hide();
+                var mode = this.editMode ? 'editing' : 'adding';
+                alert('There was an error with ' + mode + ' the publication.');
+                console.error(response);
+            });
         },
         /**
          * Makes a POST request to Blazegraph with the query param to insert a
@@ -2014,13 +1797,16 @@
          * @param  {string} updateQuery The query to be POSTed
          * @return {Object} A jqXHR object
          */
-        insertExternalAuthor: function(updateQuery) {
+        insertExternalAuthor: function(uuid, firstName, lastName, mail) {
             return $.ajax({
                     dataType: 'html',
                     method: "POST",
-                    url: this.dbURL,
+                    url: '/ajax/publications/add_external_author',
                     data: {
-                        update: updateQuery
+                        uuid: uuid,
+                        firstName: firstName,
+                        lastName: lastName,
+                        mail: mail, 
                     }
                 })
                 .done(function(response) {

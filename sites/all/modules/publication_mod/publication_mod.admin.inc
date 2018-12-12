@@ -442,7 +442,7 @@ function publication_mod_batch_import_run($pubs, $max, &$context){
     $pub_uri = $pub['uri'];
     $pub_type = $pub['type'];
 
-    $pub_page = _publication_mod_create_page_body($pub_uri);
+    $pub_page = _publication_mod_create_page_body_from_uri($pub_uri);
 
     $new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
 
