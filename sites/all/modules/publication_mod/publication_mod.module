@@ -2275,3 +2275,106 @@ function publication_mod_can_user_edit($pub, $user_uuid, $user_org, $power_user)
   }
   return ($belongsToOrg && $isContributor);
 }
+
+function publication_mod_block_info(){
+  $blocks['publication_mod_search_block'] = array(
+    'info' => t('Search Publication Block'),
+  );
+  $blocks['`pub_mod_search_block_per_lab`'] = array(
+    'info' => t('Search Publication Block per Lab'),
+  );
+  return $blocks;
+}
+
+function publication_mod_block_view($delta = ''){
+  global $user;
+  global $base_url;
+
+  // publication_mod_get_pub_count_per_lab("ISL");
+  // publication_mod_get_pub_count("Book");
+
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+  $dbURL = $blazegraph_info['blazegraph_url'];
+  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+
+  $JSONGet = json_encode($_GET);
+  // echo $JSONGet;
+
+  _add_presslib_library();
+
+  $current_user = _get_user_info_to_json();
+
+  $labs = _get_labs_to_json();
+
+  $path = drupal_get_path_alias();
+  
+  switch($delta){
+    case 'publication_mod_search_block':
+      $block['subject'] = t('');
+      $block['content'] = <<<EOT
+      <div class="form-horizontal" id="search-block"></div>
+      <script>
+        jQuery(document).ready(function($){
+          $('#search-block').pressSearch({
+            'base_url': '$base_url',
+            'dbURL': '$dbURL',
+            'prefix': '$ontologyPrefix',
+            'authorGroups': {
+              FORTH_ICS_Author: {
+                label: 'FORTH ICS Authors',
+                span: '<span class=\"icon-user\"></span>&nbsp;'
+              },
+              External_Author: {
+                label: 'External Authors',
+              }  
+            },
+            current_user: $current_user,
+            labs: $labs,
+            organizations: {
+              org: $labs,
+              label: 'Laboratory',
+            },
+            parameters: $JSONGet,
+            block_only: true,
+          });
+        });
+        </script>
+EOT;
+      break;
+    case 'pub_mod_search_block_per_lab':
+      $block['subject'] = t('');
+      $lab = strtoupper(explode('/', $path)[0]);
+      $block['content'] = <<<EOT
+      <div class="form-horizontal" id="search-block"></div>
+      <script>
+        jQuery(document).ready(function($){
+          $('#search-block').pressSearch({
+            'base_url': '$base_url',
+            'dbURL': '$dbURL',
+            'prefix': '$ontologyPrefix',
+            'authorGroups': {
+              FORTH_ICS_Author: {
+                label: 'FORTH ICS Authors',
+                span: '<span class=\"icon-user\"></span>&nbsp;'
+              },
+              External_Author: {
+                label: 'External Authors',
+              }  
+            },
+            current_user: $current_user,
+            labs: $labs,
+            organizations: {
+              org: $labs,
+              label: 'Laboratory',
+            },
+            parameters: $JSONGet,
+            block_only: true,
+            selected_lab: '$lab',
+          });
+        });
+        </script>
+EOT;
+      break;
+  }
+  return $block;
+}

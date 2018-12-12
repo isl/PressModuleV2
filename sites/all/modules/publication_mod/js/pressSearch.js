@@ -69,6 +69,8 @@
         this.advanced_search = $('<div id="advanced_search" class="collapse col-sm-12"></div>');
         this.categoryColor = categoryColor;
         this.parameters = {};
+        this.block_only = false;
+        this.selected_lab = false;
 
         this.categoryDescendants = {};
         this.categoryAncestors = {};
@@ -126,6 +128,12 @@
         if (typeof options.current_user === 'object')
             this.current_user = options.current_user;
 
+        if (typeof options.block_only === 'boolean')
+            this.block_only = options.block_only;
+        
+        if (typeof options.selected_lab === 'string')
+            this.selected_lab = options.selected_lab;
+
         if (typeof options.parameters === 'object')
             this.parameters = options.parameters;
 
@@ -154,11 +162,16 @@
 
             this.loader.hide();
 
-            $search_block = this.createSearchBlock();
+            $search_block = this.createSearchBlock(this.block_only, this.selected_lab);
             
             this.advanced_search = $('#advanced_search', $search_block);
             this.category_list = $('#Category-List', $search_block);
             this.element.append($search_block);
+
+            if(this.block_only){
+                return;
+            }
+
             this.element.append('<p>&nbsp;</p>');
             this.element.append(this.resultContainer);
             this.element.append(this.filters);
@@ -170,7 +183,7 @@
                     $('#advanced_search_button', this.element).css('visibility', '');
                     
                     if (method === 'browse') {
-                        this.searchByCategory(this.parameters.category, this.parameters.offset);
+                        this.searchByCategory(this.parameters.category, this.parameters.offset, true);
                     } else if (method === 'advanced') {
                         this.fillFieldsByStateAndSearch(this.parametersToFields(this.parameters), true, true);
                     }
@@ -182,8 +195,12 @@
     PRESSSearch.prototype = {
         constructor: PRESSSearch,
 
-        createSearchBlock: function(){
-            var $search_block = $('<div id="search-block"></div>');
+        createSearchBlock: function($block_only_page, selected_lab){
+            if(typeof $block_only_page === 'undefined'){
+                $block_only_page = false;
+            }
+
+            var $search_block = $('<div id="press-search-block" style="display:flow-root"></div>');
 
             var $free_search = $('<div class="free-text-search-div col-sm-12 form-group">' +
                 '<div class="col-sm-1"></div>' +
@@ -201,19 +218,40 @@
             
             
             $('#free-text', $free_search).on('keypress', (function(e) {
-                if (e.keyCode == 13)
-                    this.searchByFields();
+                if (e.keyCode == 13){
+                    if($block_only_page){
+                        var fieldValues = this.getFieldValues();
+                        window.location.assign(this.base_url + '/publication/search-pub' + this.createUrlQuery(fieldValues['stateObj']));
+                    }else{
+                        this.searchByFields();
+                    }
+                }
             }).bind(this));
             $('#searchByFields', $free_search).on('click', (function() {
-                this.searchByFields();
-                $('#category_list_button', $free_search).css('visibility', '');
-                $('#advanced_search_button', $free_search).css('visibility', '');
+                if($block_only_page){
+                    var fieldValues = this.getFieldValues();
+                    window.location.assign(this.base_url + '/publication/search-pub' + this.createUrlQuery(fieldValues['stateObj']));
+                }else{
+                    this.searchByFields();
+                    $('#category_list_button', $free_search).css('visibility', '');
+                    $('#advanced_search_button', $free_search).css('visibility', '');
+                }
             }).bind(this));
+            $search_block.append($free_search);
 
             var field_container = $('<div class="col-sm-11" style="padding-right:0"></div>');
             field_container.append(this.getAuthorField());
             
             field_container.append(this.getOrgsField(this.orgs));
+
+            if ($block_only_page && selected_lab && selected_lab !== '') {
+                if(selected_lab in this.orgIDtoLocal){
+                    $('#org-editable', field_container).append($('<li id="' + selected_lab + '"' +
+                        ' class="extra-org-item org-item list-group-item" draggable="false" ' +
+                        'style="float: left;" data-name="' + this.orgIDtoLocal[selected_lab] + '">' + this.orgIDtoLocal[selected_lab] + '<i class="js-remove">&nbsp;✖</i></li>'));
+                    $('#org-editable', field_container).show();
+                }
+            }
 
             field_container.append(this.getYearField());
             field_container.append(this.getTagField());
@@ -226,13 +264,16 @@
                     text: 'Search',
                     id: 'advanced_search_search_button',
                     class: 'btn btn-primary btn-sm advanced-search-btn',
-                    click: (function(that) {
-                        return function() {
-                            that.searchByFields();
+                    click: (function() {
+                        if($block_only_page){
+                            var fieldValues = this.getFieldValues();
+                            window.location.assign(this.base_url + '/publication/search-pub' + this.createUrlQuery(fieldValues['stateObj']));
+                        }else{
+                            this.searchByFields();
                             $('#category_list_button', $free_search).css('visibility', '');
                             $('#advanced_search_button', $free_search).css('visibility', '');
-                        };
-                    })(this)
+                        }
+                    }).bind(this)
                 }))
             .append(
                 $('<button>', {
@@ -252,6 +293,10 @@
             field_container.append(last_line);
             $advanced_search = $('<div id="advanced_search" class="collapse col-sm-12"></div>');
             $advanced_search.append(field_container);
+            $category_list = this.getCategoryList(this.category_tree, $search_block, true);
+            $search_block.append($advanced_search);
+            $search_block.append($category_list);
+            
             var close_button = $('<h2 style="margin-top:0;float:left;"><button type="button" id="close_by_category" class="close custom-close"><span>&times;</span></button></h2>');
             close_button.on('click', (function(that) {
                 return function() {
@@ -262,7 +307,6 @@
             })(this));
             $advanced_search.append($('<div class="col-sm-1"></div>').append(close_button));
 
-            $category_list = this.getCategoryList(this.category_tree, $search_block);
 
             $('#category_list_button', $search_block).on('click', function(that){
                 return function() {
@@ -280,9 +324,8 @@
                 }
             }(this));
 
-            $search_block.append($free_search);
-            $search_block.append($advanced_search);
-            $search_block.append($category_list);
+            
+            
 
             return $search_block;
         },
@@ -302,7 +345,7 @@
             }else{
                 fields.method = parameters.method;
             }
-            fields.searchField = parameters.field;
+            fields.searchField = parameters.searchField;
             fields.yearFrom = parameters.yearFrom;
             fields.yearTo = parameters.yearTo;
             fields.category = parameters.category;
@@ -845,7 +888,10 @@
          * 
          * @return {Object} A jQuery element object
          */
-        getCategoryList: function(category_tree, $rootElement) {
+        getCategoryList: function(category_tree, $rootElement, $block_only_page) {
+            if(typeof $block_only_page === 'undefined'){
+                $block_only_page = false;
+            }
             var container = $('<div class="col-md-1"></div>');
 
             var $listRoot = $('<div class="col-xs-12 col-sm-8" data-key="Publication"></div>');
@@ -913,12 +959,16 @@
 
             $listRoot.find('a.search-category').on('click', (function(that) {
                 return function() {
-                    // that.category_list.hide();
-                    that.clearSearchInput();
-                    that.clearAdvancedSearch();
-                    $('#category_list_button', $rootElement).css('visibility', '');
-                    $('#advanced_search_button', $rootElement).css('visibility', '');
-                    that.searchByCategory($(this).attr('id'));
+                    if($block_only_page){
+                        window.location.assign(that.base_url + '/publication/search-pub?method=browse&category='+encodeURIComponent($(this).attr('id')));
+                    }else{
+                        // that.category_list.hide();
+                        that.clearSearchInput();
+                        that.clearAdvancedSearch();
+                        $('#category_list_button', $rootElement).css('visibility', '');
+                        $('#advanced_search_button', $rootElement).css('visibility', '');
+                        that.searchByCategory($(this).attr('id'));
+                    }
                 };
             })(this));
 
@@ -947,7 +997,7 @@
             if (typeof fields !== 'object') {
                 return;
             }
-
+            console.log(fields);
             $('#free-text', this.element).val(fields.searchField);
             $('#year-from', this.element).val(fields.yearFrom);
 
@@ -1029,6 +1079,229 @@
             
         },
         
+        createUrlQuery: function(stateObj){
+            var search = '?';
+            for (var key in stateObj) {
+                if (key !== 'filters') {
+                    if ((typeof stateObj[key] === 'string' || typeof stateObj[key] === 'boolean') && stateObj[key] !== '') {
+                        search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
+                    } else {
+                        if(key === 'tags'){
+                            for (var j = 0; j < stateObj[key].length; j++) {
+                                if (stateObj[key][j] !== '')
+                                    search += key + j + '=' + encodeURIComponent(stateObj[key][j]) + '&';
+                            }
+                        }else if (key === 'authors'){
+                            var j = 0;
+                            for (var objKey in stateObj[key]) {
+                                if(typeof stateObj[key][objKey] === 'object'){
+                                    search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].uuid) + '&';
+                                    j++;
+                                }
+                            }
+                        }else if (key === 'orgs'){
+                            var j = 0;
+                            for (var objKey in stateObj[key]) {
+                                if(typeof stateObj[key][objKey] === 'object'){
+                                    search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].id) + '&';
+                                    j++;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // for (var filterKey in stateObj.filters) {
+                    //     var index = 0;
+                    //     for (var filterVal in stateObj.filters[filterKey]) {
+                    //         if (filterVal !== 'filterIntro')
+                    //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
+                    //     }
+                    // }
+                }
+            }
+            search = search.substring(0, search.length - 1);
+
+            return search;
+        },
+
+        getFieldValues: function(){
+            var values = {};
+
+            values['searchField'] = $('#free-text', this.element).val();
+            values['yearFrom'] = $('#year-from', this.element).val();
+            values['yearTo'] = $('#year-to', this.element).val();
+            values['category'] = $('#category', this.element).val();
+            values['subcategory'] = $('#subcategory', this.element).val();
+            values['reviewed'] = $('#reviewed', this.element).is(':checked');
+            values['method'] = 'advanced';
+            var tagIds = [];
+
+            $('.tag-item').each(function(){
+                tagIds.push($(this).attr('id'));
+            });
+
+            values['tags'] = tagIds;
+            
+            var authorInfo = {};
+            var authorIds = [];
+            $('.author-contributor-name').each(function(){
+                var id = $(this).attr('data-uuid');
+                var name = $(this).text();
+                authorIds.push(id);
+                authorInfo[id] = {
+                    uuid: id,
+                    name: name,
+                    group: $(this).attr('data-group'),
+                    mail: $(this).attr('data-mail'),
+                }
+            });
+            
+            var orgIds = [];
+            var orgInfo = {};
+            $('#org-editable li').each(function(){
+                var name = $(this).attr('data-name');
+                var id = $(this).attr('id');
+                orgIds.push(id);
+                orgInfo[id] = {
+                    id: id,
+                    name: name,
+                }
+            });
+
+            return_obj = {
+                'stateObj': values,
+                'searchOptions': $.extend(true, {}, values),
+            }
+
+            return_obj.stateObj['authors'] = authorInfo;
+            return_obj.searchOptions['authors'] = authorIds;
+
+            return_obj.stateObj['orgs'] = orgInfo;
+            return_obj.searchOptions['orgs'] = orgIds;
+
+            return return_obj;
+        },
+
+        createSearchLabel: function(options){
+            var searchLabel = '';
+
+            if (options['searchField'] !== '')
+                searchLabel += '"' + options['searchField'] + '"';
+            
+            var i;
+            if(Object.keys(options['authors']).length > 0){
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+                if(Object.keys(options['authors']).length === 1){
+                    searchLabel += 'Author: ';
+                } else {
+                    searchLabel += 'Authors: ';
+                }
+                i=0
+                for (var key in options['authors']) {
+                    if(i++ > 0){
+                        searchLabel += ', ';
+                    }
+                    searchLabel += options['authors'][key].name;
+                }
+            }
+
+            if(Object.keys(options['orgs']).length > 0){
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+                if(Object.keys(options['orgs']).length === 1){
+                    searchLabel += 'Lab: ';
+                } else {
+                    searchLabel += 'Labs: ';
+                }
+                i=0;
+                for (var key in options['orgs']) {
+                    if(i > 0){
+                        searchLabel += ', ';
+                    }
+                    searchLabel += options['orgs'][key].name;
+                }
+            }
+
+            if(options['tags'].length > 0){
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+                if(options['orgs'].length === 1){
+                    searchLabel += 'Tag: ';
+                } else {
+                    searchLabel += 'Tags: ';
+                }
+                i=0
+                for (var key in options['tags']) {
+                    if(i++ > 0){
+                        searchLabel += ', ';
+                    }
+                    searchLabel += options['tags'][key];
+                }
+            }
+
+            if (options['yearFrom'] !== '' || options['yearTo'] !== '') {
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+
+                searchLabel += 'Year: ';
+                var sameYear = false;
+                var yearRange = '';
+                var toRange = '';
+                var fromRange = '';
+                if (options['yearFrom'] !== '' && options['yearTo'] !== '') {
+                    yearRange = ' - ';
+                    if (options['yearFrom'] === options['yearTo']) {
+                        searchLabel += options['yearFrom'];
+                        sameYear = true;
+                    }
+                } else {
+                    if (options['yearFrom'] !== '') {
+                        fromRange = ' &gt; ';
+                    }
+                    if (options['yearTo'] !== '') {
+                        toRange = ' &lt; ';
+                    }
+                }
+                if (options['yearFrom'] !== '') {
+                    if (!sameYear) {
+                        searchLabel += fromRange + options['yearFrom'];
+                    }
+                }
+
+                if (options['yearTo'] !== '') {
+                    if (!sameYear) {
+                        searchLabel += toRange + yearRange + options['yearTo'];
+                    }
+                }
+            }
+
+            
+            if (options['category'] === '' && options['reviewed']) {
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+
+                searchLabel += ' Peer Reviewed Only';
+            } else if (options['category'] !== '') {
+                if (searchLabel !== '')
+                    searchLabel += ', ';
+                if (!options['reviewed']) {
+                    if (options['subcategory'] !== '') {
+                        searchLabel += this.category_labels[options['subcategory']];
+                    } else {
+                        searchLabel += this.category_labels[options['category']];
+                    }
+                } else {
+                    if (options['subcategory'] !== '') {
+                        searchLabel += this.category_labels[options['subcategory']] + ', Peer Reviewed Only';
+                    } else {
+                        searchLabel += this.category_labels[options['category']] + ', Peer Reviewed Only';
+                    }
+                }
+            }
+
+            return searchLabel;
+        },
         /**
          * Does the search by text & advanced search fields
          * @param  {number} offset    The offset of the search
@@ -1038,27 +1311,6 @@
          */
         searchByFields: function(offset, fromPopState, stateObj) {
             //Getting the available fields
-            var searchField = $('#free-text', this.element).val();
-            var yearFrom = $('#year-from', this.element).val();
-            var yearTo = $('#year-to', this.element).val();
-            var category = $('#category', this.element).val();
-            var subcategory = $('#subcategory', this.element).val();
-            var reviewed = $('#reviewed', this.element).is(':checked');
-            var orgs = []; //Get orgs
-            var orgIds = [];
-            orgs = $('#org-editable li');
-
-            var tags = $('.tag-item');
-            var tagIds = [];
-
-            var authors = $('.author-contributor-name');
-            // Return if every field is emepty
-            if (searchField === '' && yearFrom === '' && yearTo === '' && category === '' &&
-                subcategory === '' && reviewed === false && orgs.length === 0 &&
-                tags.length === 0 && authors.length === 0) {
-                return;
-            }
-
             if (this.currentSearchMode !== 'advanced') {
                 this.clearFilters();
             }
@@ -1081,222 +1333,24 @@
                 offset = 0;
             }
 
-            // Create the search label to be displayed
-            if (searchField !== '')
-                searchLabel += '"' + searchField + '"';
+            
+            // Return if every field is emepty
+            // if (searchField === '' && yearFrom === '' && yearTo === '' && category === '' &&
+            //     subcategory === '' && reviewed === false && orgs.length === 0 &&
+            //     tags.length === 0 && authors.length === 0) {
+            //     return;
+            // }
+            
+            var fieldValues = this.getFieldValues()
+            
+            var searchLabel = this.createSearchLabel(fieldValues['stateObj']);
+            this.lastSearchLabel = searchLabel;
 
-            // Add authors to query
-            var authorIds = [];
-            var authorInfo = {};
-            if (authors.length === 0) {
-
-            } else {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-
-                if (authors.length === 1) {
-                    searchLabel += 'Author: ';
-                } else {
-                    searchLabel += 'Authors: ';
-                }
-
-                for (var i = 0; i < authors.length; i++) {
-                    var id = $(authors[i]).attr('data-uuid');
-                    var name = $(authors[i]).text();
-                    authorIds.push(id);
-                    authorInfo[id] = {
-                        uuid: id,
-                        name: name,
-                        group: $(authors[i]).attr('data-group'),
-                        mail: $(authors[i]).attr('data-mail'),
-                    }
-                    searchLabel += name;
-                    if (i < authors.length - 1)
-                        searchLabel += ', ';
-                }
-            }
-
-            // Add orgs to query
-            var orgInfo = {};
-            if (orgs.length === 0) {
-
-            } else if (orgs.length === 1) {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-                var name = orgs.attr('data-name');
-                var id = orgs.attr('id');
-                searchLabel += 'Organization: ' + name + ', ';
-                orgIds.push(id);
-                orgInfo[id] = {
-                    id: id,
-                    name: name,
-                }
-            } else {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-
-                searchLabel += 'Organizations: ' + $(orgs[0]).attr('data-name');
-                orgIds.push($(orgs[0]).attr('id'));
-                for (var i = 1; i < orgs.length; i++) {
-                    var text = $(orgs[i]).attr('data-name');
-                    searchLabel += text;
-                    orgIds.push($(orgs[i]).attr('id'));
-                    if (i < orgs.length - 1)
-                        searchLabel += ', ';
-                }
-            }
-
-            // Add tags to query
-            if (tags.length > 0) {
-                if (searchLabel !== '') {
-                    searchLabel += ', ';
-                }
-
-                if (tags.length === 1) {
-                    searchLabel += 'tag: ';
-                } else {
-                    searchLabel += 'Tags: ';
-                }
-
-                for (var i = 0; i < tags.length; i++) {
-                    tagIds.push($(tags[i]).attr('id'));
-                    searchLabel += $(tags[i]).attr('id');
-                    if (i < tags.length - 1)
-                        searchLabel += ', ';
-                }
-
-            }
 
             //Create new state for history
             if (!fromPopState) {
-                stateObj = {
-                    method: 'advanced',
-                    searchField: searchField,
-                    yearFrom: yearFrom,
-                    yearTo: yearTo,
-                    category: category,
-                    subcategory: subcategory,
-                    reviewed: reviewed,
-                    authors: authorInfo,
-                    orgs: orgInfo,
-                    tags: tagIds,
-                    offset: offset
-                };
-
-                var search = '?';
-                for (var key in stateObj) {
-                    if (key !== 'filters') {
-                        if ((typeof stateObj[key] === 'string' || typeof stateObj[key] === 'boolean') && stateObj[key] !== '') {
-                            search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
-                        } else {
-                            if(key === 'tags'){
-                                for (var j = 0; j < stateObj[key].length; j++) {
-                                    if (stateObj[key][j] !== '')
-                                        search += key + j + '=' + encodeURIComponent(stateObj[key][j]) + '&';
-                                }
-                            }else if (key === 'authors'){
-                                var j = 0;
-                                for (var objKey in stateObj[key]) {
-                                    if(typeof stateObj[key][objKey] === 'object'){
-                                        search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].uuid) + '&';
-                                        j++;
-                                    }
-                                }
-                            }else if (key === 'orgs'){
-                                var j = 0;
-                                for (var objKey in stateObj[key]) {
-                                    if(typeof stateObj[key][objKey] === 'object'){
-                                        search += key + j + '=' + encodeURIComponent(stateObj[key][objKey].id) + '&';
-                                        j++;
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // for (var filterKey in stateObj.filters) {
-                        //     var index = 0;
-                        //     for (var filterVal in stateObj.filters[filterKey]) {
-                        //         if (filterVal !== 'filterIntro')
-                        //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
-                        //     }
-                        // }
-                    }
-                }
-                search = search.substring(0, search.length - 1);
-                window.history.pushState(stateObj, "", window.location.origin + window.location.pathname + search);
-            }
-
-            // window.onpopstate = (function(that) {
-            //     return function(event) {
-            //         if (!event.state) {
-            //             location.reload();
-            //         } else {
-            //             var currentState = event.state;
-            //             that.fillFieldsByStateAndSearch(currentState, true);
-            //         }
-            //     };
-            // })(this);
-
-            // Add year to query
-            if (yearFrom !== '' || yearTo !== '') {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-
-                searchLabel += 'Year: ';
-                var sameYear = false;
-                var yearRange = '';
-                var toRange = '';
-                var fromRange = '';
-                if (yearFrom !== '' && yearTo !== '') {
-                    yearRange = ' - ';
-                    if (yearFrom === yearTo) {
-                        searchLabel += yearFrom;
-                        sameYear = true;
-                    }
-                } else {
-                    if (yearFrom !== '') {
-                        fromRange = ' &gt; ';
-                    }
-                    if (yearTo !== '') {
-                        toRange = ' &lt; ';
-                    }
-                }
-                if (yearFrom !== '') {
-                    if (!sameYear) {
-                        searchLabel += fromRange + yearFrom;
-                    }
-                }
-
-                if (yearTo !== '') {
-                    if (!sameYear) {
-                        searchLabel += toRange + yearRange + yearTo;
-                    }
-                }
-            }
-
-            // Add if reviewed to query
-            var reviewedQuery = '';
-            if (category === '' && reviewed) {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-
-                searchLabel += ' Peer Reviewed Only';
-            } else if (category !== '') {
-                if (searchLabel !== '')
-                    searchLabel += ', ';
-                if (!reviewed) {
-                    if (subcategory !== '') {
-                        searchLabel += this.category_labels[subcategory];
-                    } else {
-                        searchLabel += this.category_labels[category];
-                    }
-                } else {
-                    if (subcategory !== '') {
-                        searchLabel += this.category_labels[subcategory] + ', Peer Reviewed Only';
-                    } else {
-                        searchLabel += this.category_labels[category] + ', Peer Reviewed Only';
-                    }
-                }
+                var urlQuery = this.createUrlQuery(fieldValues['stateObj']);
+                window.history.pushState(fieldValues['stateObj'], "", window.location.origin + window.location.pathname + urlQuery);
             }
 
             // console.log(field);
@@ -1305,20 +1359,10 @@
             // console.log(category);
             // console.log(subcategory);
             // console.log(reviewed);
-            this.lastSearchLabel = searchLabel;
-            var searchOptions = {
-                searchField: searchField,
-                yearFrom: yearFrom,
-                yearTo: yearTo,
-                category: category,
-                subcategory: subcategory,
-                peerReviewed: reviewed,
-                method: 'advanced',
-                authors: authorIds,
-                orgs: orgIds,
-                tags: tagIds,
-                filters: this.getFiltersValues(this.filters),
-            };
+
+            var searchOptions = fieldValues['searchOptions'];
+            searchOptions['filters'] = this.getFiltersValues(this.filters);
+
             $.ajax({
                 datatype: 'text',
                 method: 'GET',
@@ -1334,22 +1378,12 @@
             }(this)).fail(function(response){
                 console.error(response);
             })
-            var filterSearchOptions = {
-                searchField: searchField,
-                yearFrom: yearFrom,
-                yearTo: yearTo,
-                category: category,
-                subcategory: subcategory,
-                peerReviewed: reviewed,
-                method: 'advanced',
-                authors: authorIds,
-                orgs: orgIds,
-                tags: tagIds,
-                filters: this.getFiltersValues(this.filters),
-                filter_keys: 'all',
-                limit: 15,
-                offset: 0
-            };
+            var filterSearchOptions = $.extend(true, {}, searchOptions);
+
+            filterSearchOptions['filter_keys'] = 'all';
+            filterSearchOptions['limit'] = 15;
+            filterSearchOptions['offset'] = 0
+
             $.when(this.getFilters(filterSearchOptions, 15, offset)).done((function(response){
                 this.insertFilters(JSON.parse(response), filterSearchOptions);
             }).bind(this))
@@ -1365,7 +1399,7 @@
          * @param  {Object} filterValues The enabled filters
          * @param  {boolean} fromPopState    If the search is performed by a pop state (back, forward button)
          */
-        searchByCategory: function(category_id, offset, filterValues, fromPopState) {
+        searchByCategory: function(category_id, offset, fromPopState) {
             if (this.currentSearchMode !== 'browse') {
                 this.clearFilters();
             }
@@ -1386,32 +1420,31 @@
 
             // var selectedFilters;
 
-            if (typeof filterValues === 'undefined') {
-                // selectedFilters = $('.search-filter[data-selected="selected"]', this.filters);
-                filterValues = this.getFiltersValues(this.filters);
-            }
+
             this.resultContainer.find('*').not('#results').empty();
             var $element = $('#' + category_id, this.element);
 
             //Set state for history
-            if (!fromPopState) {
-                stateObj = { method: 'browse', category: category_id, offset: offset, filters: filterValues };
-                var search = '?';
-                for (var key in stateObj) {
-                    if (key !== 'filters') {
-                        search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
-                    } else {
-                        // for (var filterKey in stateObj.filters) {
-                        //     var index = 0;
-                        //     for (var filterVal in stateObj.filters[filterKey]) {
-                        //         if (filterVal !== 'filterIntro')
-                        //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
-                        //     }
-                        // }
-                    }
+            stateObj = { method: 'browse', category: category_id, offset: offset};
+            var search = '?';
+            for (var key in stateObj) {
+                if (key !== 'filters') {
+                    search += key + '=' + encodeURIComponent(stateObj[key]) + '&';
+                } else {
+                    // for (var filterKey in stateObj.filters) {
+                    //     var index = 0;
+                    //     for (var filterVal in stateObj.filters[filterKey]) {
+                    //         if (filterVal !== 'filterIntro')
+                    //             search += 'filter' + filterKey + index++ + '=' + encodeURIComponent(filterVal) + '&';
+                    //     }
+                    // }
                 }
-                search = search.substring(0, search.length - 1);
+            }
+            search = search.substring(0, search.length - 1);
+            if (!fromPopState) {
                 window.history.pushState(stateObj, "", window.location.origin + window.location.pathname + search);
+            }else{
+                window.history.replaceState(stateObj, "", window.location.origin + window.location.pathname + search);
             }
 
             this.category_list.collapse("hide");

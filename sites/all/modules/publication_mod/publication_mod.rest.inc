@@ -705,7 +705,7 @@ function _create_search_query($options=array(), $blazegraph_info=array()){
 	$tags = isset($options['tags']) && !empty($options['tags']) ? $options['tags'] : array();
 	$category = isset($options['category']) && !empty($options['category']) ? $options['category'] : '';
 	$subcategory = isset($options['subcategory']) && !empty($options['subcategory']) ? $options['subcategory'] : '';
-	$peerReviewed = isset($options['peerReviewed']) && $options['peerReviewed'] == 'true';
+	$reviewed = isset($options['reviewed']) && $options['reviewed'] == 'true';
 	$method = isset($options['method']) && !empty($options['method']) ? $options['method'] : 'advanced';
 	$filters = isset($options['filters']) && !empty($options['filters']) ? $options['filters'] : array();
 
@@ -835,7 +835,7 @@ EOT;
 
 		$reviewedQuery = '';
 
-		if($category == '' && $peerReviewed){
+		if($category == '' && $reviewed){
 			$reviewedQuery = <<<EOT
 ?type rdfs:subClassOf* ?ancClass.
 ?pub rdf:type ?type.
@@ -843,7 +843,7 @@ FILTER(?ancClass = press:Journal_Peer_Reviewed || ?ancClass = press:Conf_Peer_Re
 
 EOT;
 		}else if($category != ''){
-			if(!$peerReviewed){
+			if(!$reviewed){
 				if($subcategory != ''){
 					$reviewedQuery .= <<<EOT
 ?type rdfs:subClassOf* press:$subcategory.
@@ -979,7 +979,7 @@ function _search_publication(){
 	$tags = isset($_GET['tags']) && !empty($_GET['tags']) ? $_GET['tags'] : array();
 	$category = isset($_GET['category']) && !empty($_GET['category']) ? $_GET['category'] : '';
 	$subcategory = isset($_GET['subcategory']) && !empty($_GET['subcategory']) ? $_GET['subcategory'] : '';
-	$peerReviewed = isset($_GET['peerReviewed']) && $_GET['peerReviewed'] == 'true';
+	$reviewed = isset($_GET['reviewed']) && $_GET['reviewed'] == 'true';
 	$method = isset($_GET['method']) && !empty($_GET['method']) ? $_GET['method'] : 'advanced';
 	$filters = isset($_GET['filters']) && !empty($_GET['filters']) ? $_GET['filters'] : array();
 	$limit = isset($_GET['limit']) && !empty($_GET['limit']) ? intval($_GET['limit']) : 10;
