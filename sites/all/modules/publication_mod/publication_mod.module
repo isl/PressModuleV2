@@ -2006,7 +2006,8 @@ function publication_mod_user_insert(&$edit, $account, $category){
     "<". $uuid."> foaf:givenName \u0022" . $first_name ."\u0022. ".
     "<". $uuid."> <". $prefix ."personGroup> \u0022FORTH_ICS_Author\u0022. ".
     "<". $uuid."> foaf:mbox \u0022mailto:". $account->mail . "\u0022. ".
-    "<". $uuid."> <". $prefix ."username> \u0022". $edit['name'] . "\u0022. ";
+    "<". $uuid."> <". $prefix ."username> \u0022". $edit['name'] . "\u0022. ".
+    "<". $uuid."> rdf:type foaf:Person. ";
   if(isset($org) && !empty($org)){
     $sparql .= "<". $uuid."> <". $prefix ."memberOf> <". $prefix . "Organization/" .$org .">. ";
   }
@@ -2056,7 +2057,7 @@ function publication_mod_get_pub_count_per_lab($lab = '*', $category = '*') {
   $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . ">";
   $sparql .= "prefix org:<". $blazegraph_info['blazegraph_prefix'] . "Organization/>";
 
-  $sparql .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel (strafter(str(?lab), "Organization/") AS ?labID) ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
+  $sparql .= 'select (strafter(str(?low), "#") AS ?lowid) ?lowlabel (strafter(str(?lab), "Organization/") AS ?labID) ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
     '{ '.
       'SELECT (COUNT(?pub) as ?pubCounter) ?low ?lab WHERE { ' .
         '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
@@ -2112,7 +2113,7 @@ function publication_mod_get_pub_count($category = '*') {
 
   $sparql = "prefix press:<". $blazegraph_info['blazegraph_prefix'] . "> ";
 
-  $sparql .= 'SELECT (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
+  $sparql .= 'select (strafter(str(?low), "#") AS ?lowid) ?lowlabel ?optgroup ?pubCounter(strafter(str(?superclass), "#") AS ?superclassid) ?superlabel WHERE { ' .
     '{ '.
       'SELECT (COUNT(?pub) as ?pubCounter) ?low WHERE { ' .
         '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
