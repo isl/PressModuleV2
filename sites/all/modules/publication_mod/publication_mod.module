@@ -17,6 +17,17 @@ function publication_mod_help($path, $arg) {
  * Implements hook_menu()
  */
 function publication_mod_menu(){
+  $menu['pub/%'] = array(
+    // 'title callback' => 'publication_mod_get_pub_title',
+    // 'title arguments' => array(1),
+    'title' => 'test title page',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'publication_mod_get_pub_page',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+    'file' => 'publication_mod.pages.inc',
+  );
+
   $menu['ajax/pub_mod_blazegraph'] = array(
     'title' => '',
     'page callback' => 'publication_mod_ajax_callback_blazegraph',
@@ -2280,36 +2291,32 @@ function publication_mod_block_info(){
   $blocks['publication_mod_search_block'] = array(
     'info' => t('Search Publication Block'),
   );
-  $blocks['`pub_mod_search_block_per_lab`'] = array(
+  $blocks['pub_mod_search_block_per_lab'] = array(
     'info' => t('Search Publication Block per Lab'),
   );
   return $blocks;
 }
 
+
 function publication_mod_block_view($delta = ''){
   global $user;
   global $base_url;
-
-  // publication_mod_get_pub_count_per_lab("ISL");
-  // publication_mod_get_pub_count("Book");
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
-  $dbURL = $blazegraph_info['blazegraph_url'];
-  $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-
-  $JSONGet = json_encode($_GET);
-  // echo $JSONGet;
-
-  _add_presslib_library();
-
-  $current_user = _get_user_info_to_json();
-
-  $labs = _get_labs_to_json();
-
-  $path = drupal_get_path_alias();
   
   switch($delta){
     case 'publication_mod_search_block':
+      $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+      $dbURL = $blazegraph_info['blazegraph_url'];
+      $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+    
+      $JSONGet = json_encode($_GET);
+    
+      _add_presslib_library();
+    
+      $current_user = _get_user_info_to_json();
+    
+      $labs = _get_labs_to_json();
+    
+      $path = drupal_get_path_alias();
       $block['subject'] = t('');
       $block['content'] = <<<EOT
       <div class="form-horizontal" id="search-block"></div>
@@ -2342,6 +2349,19 @@ function publication_mod_block_view($delta = ''){
 EOT;
       break;
     case 'pub_mod_search_block_per_lab':
+      $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+      $dbURL = $blazegraph_info['blazegraph_url'];
+      $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+    
+      $JSONGet = json_encode($_GET);
+    
+      _add_presslib_library();
+    
+      $current_user = _get_user_info_to_json();
+    
+      $labs = _get_labs_to_json();
+    
+      $path = drupal_get_path_alias();
       $block['subject'] = t('');
       $lab = strtoupper(explode('/', $path)[0]);
       $block['content'] = <<<EOT
@@ -2377,4 +2397,81 @@ EOT;
       break;
   }
   return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function publication_mod_theme($existing, $type, $theme, $path) {
+  $theme = array();
+  $theme['my_theme_page'] = array(
+    // 'render element' => 'content',
+    // 'base hook' => 'page',
+    'template' => 'my_theme_page',
+    'path' => drupal_get_path('module', 'publication_mod') . '/templates',
+    'variables' => array(
+      'pub_info' => NULL,
+      'results' => NULL,
+    )
+  );
+
+  $theme['page__pub'] = array(
+    'template' => 'page--pub',
+    'path' => drupal_get_path('module', 'publication_mod') . '/templates',
+    'variables' => array(
+      'pub_info' => NULL,
+    )
+  );
+
+  $theme['html__pub'] = array(
+    'template' => 'html--pub',
+    'path' => drupal_get_path('module', 'publication_mod') . '/templates',
+  );
+  return $theme;
+}
+
+function publication_mod_get_pub_info($uri){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+
+  $query = <<<EOT
+  prefix press:<$blzg_prefix>
+  select * where{
+    ?pub press:publicationUuid "$uri";
+    {
+      ?pub ?p ?o.
+      optional{?o rdfs:label ?oLabel}.
+    } UNION {
+      ?contributorType rdfs:subPropertyOf* press:contributorType.
+      ?pub press:hasContributor ?con.
+      ?con ?contributorType ?person.
+      ?contributorType rdfs:label ?conLabel.
+      ?con press:listIndex ?index.
+      ?person foaf:givenName ?givenName.
+      ?person foaf:familyName ?familyName.
+      optional{?person press:apaName ?apaName}.
+    } UNION {
+      ?pub press:belongsTo ?org.
+      ?org press:organizationName ?orgName.
+    } UNION {
+      ?pub press:appearsIn ?project.
+      ?project press:projectName ?projectName.
+    }
+  }
+EOT;
+
+  $q = http_build_query(array('query'=>$query));
+
+  $options = array(
+  'headers' => array(
+    'Accept'=>'application/sparql-results+json',
+    'content-type'=> 'application/x-www-form-urlencoded'
+  ),
+  'method' => 'POST',
+  'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+
+  return json_decode($result->data, TRUE);
 }

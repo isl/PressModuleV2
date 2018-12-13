@@ -1,0 +1,456 @@
+
+/* ALL BOXES
+----------------------------------------------- */
+#boxContainer { /*USE THIS CONTAINER FOR ALL BOXES*/
+	display: table;
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+	max-width: 1280px;
+	box-sizing: border-box;
+}
+
+#boxContainer div.outerFirst { /*USE THIS OUTER FOR PROJECT AND PUBLICATION BOXES*/
+	display: table-cell;
+	width: 25%;
+	box-sizing: border-box;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;
+	vertical-align: top;
+}
+#boxContainer div.outer { /*USE THIS OUTER FOR PROJECT AND PUBLICATION BOXES*/
+	display: table-cell;
+	width: 25%;
+	box-sizing: border-box;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #6E7A86;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;
+	vertical-align: top;
+}
+#boxContainer div.outerPublic { /*USE THIS OUTER PUBLICATION BOXES*/
+	display: table-cell;
+	width: 25%;
+	box-sizing: border-box;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #6E7A86;
+	border-bottom-width: 30px;
+	border-bottom-style: solid;
+	border-bottom-color: #505050;
+	vertical-align: top;
+}
+
+#boxContainer div.innerProject { /*USE THIS INNER FOR PROJECT BOXES*/
+	display: table-cell;
+	width: 100%;
+	padding-right: 30px;
+	padding-bottom: 30px;
+	padding-left: 30px;
+	box-sizing: border-box;
+}
+#boxContainer div.innerPublic { /*USE THIS INNER FOR PUBLICATION BOXES*/
+	display: table-cell;
+	width: 100%;
+	padding: 30px;
+	box-sizing: border-box;
+}
+#boxContainer div.innerPeople { /*USE THIS INNER FOR PEOPLE BOXES*/
+	display: table-cell;
+	width: 25%;
+	padding: 30px;
+	box-sizing: border-box;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+#boxContainer div.innerContact { /*USE THIS INNER FOR 2 COLUMN TEXT BOXES*/
+	display: table-cell;
+	padding: 30px;
+	box-sizing: border-box;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+#boxContainer div.inner { /*USE THIS INNER FOR 2 COLUMN TEXT BOXES*/
+	display: table-cell;
+	width: 50%;
+	padding: 30px;
+	box-sizing: border-box;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+
+#boxContainer div.oneColumnInner { /*USE THIS INNER FOR 2 COLUMN TEXT BOXES*/
+	display: table-cell;
+	/*width: 50%;*/
+	padding: 30px;
+	box-sizing: border-box;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+#boxContainer div.photoPublic { /*USE THIS INNER FOR PUBLICATION BOXES*/
+	display: table;
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+	background-color: #505050;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;
+}
+#boxContainer div.image { /*USE THIS INNER FOR PUBLICATION BOXES*/
+	display: table;
+	float: left;
+	margin-right: 20px;
+	box-sizing: border-box;
+	border-right-width: 2px;
+	border-right-style: solid;
+	border-right-color: #fff;
+}
+#boxContainer div.publicName a { /*USE THIS FOR PUBLICATION BOXES*/
+	display: block;
+	box-sizing: border-box;
+	font-size: 17px;
+	line-height: 1.5em;
+	padding-top: 20px;
+	color: #fff;
+	padding-right: 10px;
+	font-family: OpenSansL;
+}
+#boxContainer div.publicText { /*USE THIS FOR PUBLICATION BOXES*/
+	font-size: 18px;
+	line-height: 1.3em;
+}
+#boxContainer div.photo {
+	box-sizing: border-box;
+}
+#boxContainer div.projectName { /*USE THIS FOR PROJECT AND LABORATORIES BOXES*/
+	font-family: OpenSansL;
+	font-size: 24px;
+	color: #1F82C0;
+	margin-bottom: 12px;
+}
+#boxContainer div.labName { /*USE THIS FOR PUBLICATION AND PEOPLE BOXES*/
+	font-family: OpenSansL;
+	font-size: 24px;
+	margin-bottom: 30px;
+}
+
+#boxContainer div.projectOwner { /*USE THIS FOR PROJECT BOXES*/
+	height: 30px;
+	text-align: right;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	color: #666666;
+}
+
+#boxContainer div.text { /*USE THIS FOR PROJECT BOXES*/
+	font-size: 18px;
+	line-height: 1.3em;
+	margin-bottom: 30px;
+}
+
+#boxContainer div.textNumbers { /*USE THIS FOR PUBLICATION, PEOPLE AND 2 COLUMN TEXT BOXES*/
+	font-size: 19px;
+	margin-bottom: 30px;
+}
+#boxContainer div.textNumbers li { /*USE THIS FOR 2 COLUMN TEXT BOXES*/
+	font-size: 19px;
+}
+#boxContainer div.textNumbers li a { /*USE THIS FOR 2 COLUMN TEXT BOXES*/
+	font-size: 17px;
+}
+#boxContainer div.textNumbers a { /*USE THIS FOR PUBLICATION, PEOPLE AND 2 COLUMN TEXT BOXES*/
+	font-size: 17px;
+}
+.labHead { /*USE THIS FOR PEOPLE BOXES*/
+	font-weight: bold;
+
+}
+.titleText { /*USE THIS FOR 2 COLUMN TEXT BOXES*/
+	text-align: left;
+	font-family: OpenSansL;
+	font-size: 20px;
+	line-height: 2em;
+}
+
+.titlecontactText { /*USE THIS FOR 2 COLUMN TEXT BOXES*/
+	text-align: left;
+	font-family: OpenSansL;
+	font-size: 24px;
+	color: #1F82C0;
+
+}
+
+.moreinfo { /*USE THIS FOR PROJECT BOXES*/
+	border: 1px solid #1F82C0;
+	padding: 0px 20px;
+	text-align: center;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	display: inline-block;
+	-webkit-transition-duration: 0.4s; /* Safari */
+	transition-duration: 0.4s;
+	cursor: pointer;
+}
+
+.moreinfo a:hover {
+	color: #fff;
+	text-decoration: none;
+}
+
+.moreinfo:hover {
+    background-color: #4E95DD;
+	border: 1px solid #006699;
+}
+
+
+/* ICS PROMOTION BOXES 
+----------------------------------------------- */
+#promotionbox2 {
+	display: table;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 50px;
+	width: 100%;
+	max-width: 1280px;
+	/*border: 1px solid red;*/
+}
+
+#promotionbox2 div.inner {
+	display: table-cell;
+	width: 25%;
+	min-width: 150px;
+	padding: 30px;
+	border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: #6E7A86;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #6E7A86;
+	/*border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;*/
+}
+#promotionbox2 div.innerFirst {
+	display: table-cell;
+	min-width: 150px;
+	padding: 30px;
+	border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: #6E7A86;
+	/*border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;*/
+}
+#promotionbox2 div.innerEmpty {
+	display: table-cell;
+	width: 25%;
+	min-width: 150px;
+	padding: 30px;
+	border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: #6E7A86;
+	border-left-width: 1px;
+	border-left-style: solid;
+	border-left-color: #6E7A86;
+	/*border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #6E7A86;*/
+}
+#promotionbox2 div.labName {
+	text-align: left;
+	font-family: OpenSansL;
+	font-size: 24px;
+	min-height: 90px;
+	margin-bottom: 10px;
+	
+}
+
+#promotionbox2 div.staff {
+	/*/border: 1px solid #003399;*/
+}
+#promotionbox2 div.staff a {
+	/*font-size: 14px;*/
+}
+.labHead {
+
+}
+
+
+/* PROMOTION BOXES 
+----------------------------------------------- */
+#promotionbox {
+	display: table;
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+	/*padding-left: 30px;
+	padding-right: 30px;*/	/*USE PADDING WHEN BOX IS OUT OF CONTENT AREA*/
+	box-sizing: border-box;
+	/*border: 1px solid red;*/
+}
+
+#promotionbox div.inner {
+	display: table-cell;
+	width: 50%;
+	min-width: 150px;
+	padding: 30px;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+
+#promotionbox div.innerFirst {
+	display: table-cell;
+	width: 50%;
+	min-width: 150px;
+	/*padding: 30px;*/
+	border-top-width: 1px;
+	border-top-style: solid;
+	border-top-color: #6E7A86;
+}
+#promotionbox div.innerEmpty {
+	display: table-cell;
+	width: 25%;
+	min-width: 150px;
+	padding-top: 2em;
+	padding-bottom: 2em;
+	padding-left: 30px;
+	padding-right: 30px;
+	border-top-width: 1px;
+	border-left-width: 1px;
+	border-top-style: solid;
+	border-left-style: solid;
+	border-top-color: #6E7A86;
+	border-left-color: #6E7A86;
+}
+#promotionbox div.labName {
+	text-align: left;
+	font-family: OpenSansL;
+	font-size: 24px;
+}
+
+#promotionbox div.text {
+
+}
+/* LABS MENU 
+----------------------------------------------- */
+#labmenubox {
+	padding-left: 30px;
+	padding-right: 30px;
+	margin-bottom: 30px;
+}
+#labmenubox ul {
+ 	display: flex;
+	flex-direction: row;
+    flex-wrap: wrap;
+	width: 100%;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+#labmenubox li {
+	display: inline-block;
+	color: #6E7A86;
+	font-weight: normal;
+	width: calc(100% / 7);
+	line-height: 1.2em;
+	background-image: url(../_img/labMenu-Vline.png);
+	background-repeat: repeat-y;
+	background-position: left;
+}
+#labmenubox li a {
+    display: block;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	padding-left: calc(100% / 10);
+	padding-right: calc(100% / 20);
+    text-decoration: none;
+}
+
+#labmenubox li.first {
+	/*border: none;*/
+	background: none;
+}
+#labmenubox li.first a {
+	text-decoration: none;
+	padding-left: 0px;
+
+}
+
+#labmenubox li a:hover:not(.active) {
+    background-color: #1F82C0;
+	color: #FFFFFF;
+}
+
+.active {
+	color: #6E7A86;
+}
+
+@media only screen and (max-width: 780px) {
+#labmenubox li {
+	width: calc(100% / 4);
+	margin-bottom: 8px;
+	line-height: 0.8em;
+}
+#labmenubox li.first {
+	background-image: url(../_img/labMenu-Vline.png);
+	background-repeat: repeat-y;
+	background-position: left;
+}
+#labmenubox li.first a {
+	text-decoration: none;
+	padding-left: calc(100% / 10);
+
+}
+}
+@media only screen and (max-width: 640px) {
+#labmenubox ul {
+ 	display: table;
+}
+#labmenubox li {
+	display: block;
+	width: 100%;
+	margin-bottom: 0;
+	line-height: 1em;
+	background-image: url(../_img/labMenu-Vline.png);
+	background-repeat: repeat-x;
+	background-position: left bottom;
+}
+#labmenubox li a {
+	padding-left: calc(100% / 30);
+}
+#labmenubox li.first {
+	background-image: url(../_img/labMenu-Vline.png);
+	background-repeat: repeat-x;
+	background-position: left bottom;
+}
+#labmenubox li.first a {
+	text-decoration: none;
+	padding-left: calc(100% / 30);
+
+}
+}

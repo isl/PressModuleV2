@@ -1,0 +1,133 @@
+.mainForm {
+	display: table;
+	width: 100%;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 30px;
+	margin-left: 0px;	
+		/*border: 1px solid black;*/
+}
+
+.searchPeople {
+	display: table;
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+	/*border: 1px solid black;*/
+}
+
+.searchField {
+	float: left;
+	width: 100%;
+	max-width: 680px;
+	height: 48px;
+	margin-right: 30px;
+	margin-bottom: 20px;
+	border: 1px solid #C9D3DF;
+	border-radius: 3px;
+	padding-left: 15px;
+	padding-right: 15px;
+	font-family: OpenSansL;
+	font-size: 19px;
+	color: #666666;
+}
+.searchField-small {
+	float: left;
+	width: 50%;
+	max-width: 325px;
+	height: 48px;
+	margin-right: 30px;
+	margin-bottom: 20px;
+	border: 1px solid #C9D3DF;
+	border-radius: 3px;
+	padding-left: 15px;
+	padding-right: 15px;
+	font-family: OpenSansL;
+	font-size: 19px;
+	color: #666666;
+}
+.submitButton-small {
+	float: left;
+	margin-right: 30px;
+	width: 80px;
+	height: 48px;
+	border: 1px solid #006699;
+	border-radius: 3px;
+	font-family: OpenSansL;
+	background-color: #4E95DD;
+	background-image: url(../_img/searchButton.png);
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+.submitButton {
+	float: left;
+	margin-left: 30px;
+	width: 50%;
+	max-width: 232px;
+	height: 48px;
+	border: 1px solid #006699;
+	border-radius: 3px;
+	font-family: OpenSansL;
+	background-color: #4E95DD;
+	background-image: url(../_img/searchButton.png);
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+
+.advancedButton {
+	float: left;
+	width: 232px;
+	height: 48px;
+	border: 1px solid #006699;
+	border-radius: 3px;
+	font-family: OpenSansS;
+	font-size: 15px;
+	color: #fff;
+	background-color: #4E95DD;
+}
+.searchOver {
+	font-family: OpenSansL;
+	color: #1F82C0;
+	font-size: 30px;
+}
+@media only screen and (max-width: 1182px) {
+.searchField {
+	margin-right: 50%;
+}
+
+}
+@media only screen and (max-width: 1152px) {
+.submitButton {
+	margin-left: 0px;
+	max-width: 325px;
+}
+
+}
+@media only screen and (max-width: 804px) {
+.searchField-small {
+	width: 48%;
+	max-width: none;
+	margin-right: 4%;
+}
+.submitButton {
+	width: 48%;
+	max-width: none;
+}
+
+}
+@media only screen and (max-width: 540px) {
+.searchField-small {
+	width: 100%;
+}
+.submitButton {
+	width: 100%;
+}
+.advancedButton {
+	width: 60%;
+}
+.submitButton-small {
+	margin-right: 7%;
+	width: 33%;
+
+}
+}

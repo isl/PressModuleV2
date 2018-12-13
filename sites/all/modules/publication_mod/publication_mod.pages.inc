@@ -2,6 +2,112 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
+function publication_mod_get_pub_page($uri){
+  
+  // echo "<pre>";
+  // print_r($results);
+  // echo "</pre>";
+  
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix'));
+  $blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+  if(substr($uri, 0, 9) === "urn:uuid:"){
+    $results = publication_mod_get_pub_info($uri);
+  }else{
+    $results = publication_mod_get_pub_info($blzg_prefix . 'publication/' . $uri);
+  }
+  
+  
+  if(count($results['results']['bindings']) === 0){
+    drupal_not_found();
+    exit();
+  }
+  $pub_properties = array();
+  $contributors = array();
+  foreach($results['results']['bindings'] as $value){
+    if(array_key_exists('p', $value)){
+      $p = $value['p']['value'];
+      if(substr($p, 0, strlen($blzg_prefix)) === $blzg_prefix){
+        $p = substr($p, strlen($blzg_prefix));
+        if($p === 'tag' || $p === 'externalLink'){
+          if(!array_key_exists($p, $pub_properties)){
+            $pub_properties[$p] = array();
+          }
+          $pub_properties[$p][] = $value['o']['value'];
+        }
+        else if($p !== 'appearsIn' && $p !== 'belongsTo' && $p !== 'hasContributor'){
+          $pub_properties[$p] = $value['o']['value'];
+        }
+      }else if($p === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'){
+        $pub_properties['type'] = array(
+          'id' => substr($value['o']['value'], strlen($blzg_prefix)),
+          'label' => $value['oLabel']['value'],
+        );
+      }
+    }else if(array_key_exists('contributorType', $value)){
+      $con_type = $value['contributorType']['value'];
+      if(substr($con_type, 0, strlen($blzg_prefix)) === $blzg_prefix){
+        $con_type = substr($con_type, strlen($blzg_prefix));
+      }
+
+      if(!array_key_exists($con_type, $contributors)){
+        $contributors[$con_type] = array(
+          'type' => $con_type,
+          'persons' => array(),
+          'label' => $value['conLabel']['value'],
+        );
+      }
+      
+      $index = intval($value['index']['value']);
+      $contributors[$con_type]['persons'][$index] = array(
+        'givenName' => $value['givenName']['value'],
+        'familyName' => $value['familyName']['value'],
+        'uri' => $value['person']['value'],
+      );
+      if(array_key_exists('apaName', $value)){
+        $contributors[$con_type]['persons'][$index]['apaName'] = $value['apaName']['value'];
+      }
+    }else if(array_key_exists('org', $value)){
+      if(!array_key_exists('org', $pub_properties)){
+        $pub_properties['org'][] = array(
+          'uri' => $value['org']['value'],
+          'name' => $value['orgName']['value'],
+        );
+      }
+    }else if(array_key_exists('project', $value)){
+      if(!array_key_exists('project', $pub_properties)){
+        $pub_properties['project'][] = array(
+          'uri' => $value['project']['value'],
+          'name' => $value['projectName']['value'],
+        );
+      }
+    }
+  }
+  $pressFieldsStr = file_get_contents(drupal_get_path('module', 'publication_mod') . '/js/pressfields.json');
+  $pressFields = json_decode($pressFieldsStr, true);
+
+  $pubCategory = $pub_properties['type']['id'];
+  $contributorTypeOrder = $pressFields['JSONContributorOrder'][$pubCategory];
+  
+  $pub_properties['contributors'] = array();
+  for($i = 0; $i < count($contributorTypeOrder); $i++){
+    $type = $contributorTypeOrder[$i];
+    if(array_key_exists($type, $contributors)){
+      $pub_properties['contributors'][$i] = $contributors[$type];
+    }
+  }
+  // echo "<pre>";
+  // print_r($pub_properties);
+  // echo "</pre>";
+  $defaultTitle = $pub_properties[$pressFields['titleFields'][$pubCategory]];
+  drupal_set_title($defaultTitle);
+  return theme('my_theme_page', 
+    array(
+      'title' =>$defaultTitle,
+      'pub_info' => $pub_properties
+    )
+  );
+}
+
 /**
  * Creates Add Publication page
  * 

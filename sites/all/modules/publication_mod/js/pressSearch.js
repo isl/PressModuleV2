@@ -1737,11 +1737,21 @@
 
                 var $pub_info = $('<div class="col-sm-10"></div>');
 
-                if('publicationUrl' in current_pub){
-                    $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.publicationUrl + '" target="_blank"><h4><strong>' + title + '</strong></h4></a>'));
-                }else{
-                    $pub_info.append($('<h4><strong>' + title + '</strong></h4>'));
+                var url = '';
+                var imported_pub_prefix = this.prefix + 'publication/';
+                if(current_pub.pub.startsWith('urn:uuid')){
+                    url = current_pub.pub;
+                }else if(current_pub.pub.startsWith(this.prefix + 'publication/')){
+                    url = current_pub.pub.substring(imported_pub_prefix.length);
                 }
+                if (url !== ''){
+                    $pub_info.append($('<a href="' + this.base_url +'/pub/'+ url + '" target="_blank"><h4><strong>' + title + '</strong></h4></a>'));
+                }
+                // if('publicationUrl' in current_pub){
+                //     $pub_info.append($('<a href="' + this.base_url +'/'+ current_pub.publicationUrl + '" target="_blank"><h4><strong>' + title + '</strong></h4></a>'));
+                // }else{
+                //     $pub_info.append($('<h4><strong>' + title + '</strong></h4>'));
+                // }
 
                 var firstCon = true;
 
