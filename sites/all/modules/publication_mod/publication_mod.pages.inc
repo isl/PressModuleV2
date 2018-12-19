@@ -23,6 +23,13 @@ function publication_mod_get_pub_page($uri){
   }
   $pub_properties = array();
   $contributors = array();
+
+  $pressFieldsStr = file_get_contents(drupal_get_path('module', 'publication_mod') . '/js/pressfields.json');
+  $pressFields = json_decode($pressFieldsStr, true);
+  
+  //press to CSL
+  $cslProperties = array();
+
   foreach($results['results']['bindings'] as $value){
     if(array_key_exists('p', $value)){
       $p = $value['p']['value'];
@@ -33,15 +40,27 @@ function publication_mod_get_pub_page($uri){
             $pub_properties[$p] = array();
           }
           $pub_properties[$p][] = $value['o']['value'];
+          if($p =='tag'){
+            if(!isset($cslProperties['keyword'])) $cslProperties['keyword'] = '';
+            $cslProperties['keyword'] .= $value['o']['value'] . " ";
+          }else{
+            $cslProperties['URL'] = $value['o']['value'];
+          }
         }
         else if($p !== 'appearsIn' && $p !== 'belongsTo' && $p !== 'hasContributor'){
           $pub_properties[$p] = $value['o']['value'];
+          if(isset($pressFields['pressToCSLFields'][$p]) 
+            && $pressFields['pressToCSLFields'][$p] 
+            && $p !== 'bookTitle') 
+            $cslProperties[$pressFields['pressToCSLFields'][$p]] = $value['o']['value'];
         }
       }else if($p === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'){
+        $pub_type = substr($value['o']['value'], strlen($blzg_prefix));
         $pub_properties['type'] = array(
-          'id' => substr($value['o']['value'], strlen($blzg_prefix)),
+          'id' => $pub_type,
           'label' => $value['oLabel']['value'],
         );
+        $cslProperties['type'] = $pressFields['pressToCSLCategories'][$pub_type];
       }
     }else if(array_key_exists('contributorType', $value)){
       $con_type = $value['contributorType']['value'];
@@ -56,16 +75,18 @@ function publication_mod_get_pub_page($uri){
           'label' => $value['conLabel']['value'],
         );
       }
-      
+
       $index = intval($value['index']['value']);
       $contributors[$con_type]['persons'][$index] = array(
         'givenName' => $value['givenName']['value'],
         'familyName' => $value['familyName']['value'],
         'uri' => $value['person']['value'],
       );
+      
       if(array_key_exists('apaName', $value)){
         $contributors[$con_type]['persons'][$index]['apaName'] = $value['apaName']['value'];
       }
+
     }else if(array_key_exists('org', $value)){
       if(!array_key_exists('org', $pub_properties)){
         $pub_properties['org'][] = array(
@@ -82,10 +103,20 @@ function publication_mod_get_pub_page($uri){
       }
     }
   }
-  $pressFieldsStr = file_get_contents(drupal_get_path('module', 'publication_mod') . '/js/pressfields.json');
-  $pressFields = json_decode($pressFieldsStr, true);
 
   $pubCategory = $pub_properties['type']['id'];
+
+  if(isset($pub_properties['bookTitle'])){
+    $bookTitleCategories = array('Editor', 'Whole_Book', 'Monograph');
+    if (in_array($pubCategory, $bookTitleCategories)){
+      $cslProperties['title'] = $pub_properties['bookTitle'];
+    }else{
+      $cslProperties['container-title'] = $pub_properties['bookTitle'];
+    }
+  }
+  if(isset($pub_properties['year'])){
+    $cslProperties['issued'] = array('date-parts' => array(array($pub_properties['year'])));
+  }
   $contributorTypeOrder = $pressFields['JSONContributorOrder'][$pubCategory];
   
   $pub_properties['contributors'] = array();
@@ -93,8 +124,25 @@ function publication_mod_get_pub_page($uri){
     $type = $contributorTypeOrder[$i];
     if(array_key_exists($type, $contributors)){
       $pub_properties['contributors'][$i] = $contributors[$type];
+      $cslType = $pressFields['pressToCSLFields']['hasContributor'][$type];
+      if($cslType){
+        if(!isset($cslProperties[$cslType])){
+          $cslProperties[$cslType] = array();
+        }
+        $keys = array_keys($contributors[$type]['persons']);
+        sort($keys);
+        foreach($keys as $index => $value){
+          $person = $contributors[$type]['persons'][$value];
+          $cslProperties[$cslType][] = array(
+            'family' => $person['familyName'],
+            'given' => $person['givenName'],
+          );
+        }
+      }
     }
   }
+
+
   // echo "<pre>";
   // print_r($pub_properties);
   // echo "</pre>";
@@ -103,7 +151,9 @@ function publication_mod_get_pub_page($uri){
   return theme('my_theme_page', 
     array(
       'title' =>$defaultTitle,
-      'pub_info' => $pub_properties
+      'pub_info' => $pub_properties,
+      'json_encoded' => json_encode($pub_properties),
+      'cslProperties' => json_encode($cslProperties)
     )
   );
 }

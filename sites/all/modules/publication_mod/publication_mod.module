@@ -2410,8 +2410,10 @@ function publication_mod_theme($existing, $type, $theme, $path) {
     'template' => 'my_theme_page',
     'path' => drupal_get_path('module', 'publication_mod') . '/templates',
     'variables' => array(
+      'title' => NULL,
+      'json_encoded' => NULL,
       'pub_info' => NULL,
-      'results' => NULL,
+      'cslProperties' => NULL,
     )
   );
 

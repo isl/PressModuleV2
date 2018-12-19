@@ -204,8 +204,8 @@
 
             var $free_search = $('<div class="free-text-search-div col-sm-12 form-group">' +
                 '<div class="col-sm-1"></div>' +
-                '<div class="col-sm-10"><input id="free-text" class="form-control input-sm" ' +
-                'type="text" placeholder="Enter text for free text search"></input></div>' +
+                '<div class="col-sm-10"><input id="free-text" class="searchBlock form-control input-sm" ' +
+                'type="text" placeholder="Title | Author"></input></div>' +
                 '<a id="searchByFields"  class="icon-search" ' +
                 'style="font-size:30px; text-decoration:none; position:relative; top:-6px;"></a>&nbsp;' +
                 '</div>');

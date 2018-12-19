@@ -289,7 +289,6 @@
         "hasSupervisors": "Supervisors",
         "hasBookEditors": "Book Editors"
     },
-
     "filterFields": {
         "hasContributors": {
             "intro": "?filterCon rdfs:subPropertyOf* press:hasContributors. \n"
@@ -306,5 +305,76 @@
         "category": {
             "p": "rdf:type"
         }
+    },
+
+    "pressToCSLCategories": {
+        "Paper_In_Proceedings_Full_Paper_Reviewed": "inproceedings",
+        "Paper_In_Proceedings_Abstract_Reviewed": "inproceedings",
+        "Poster_In_Proceedings_Full_Paper_Reviewed": "inproceedings",
+        "Poster_In_Proceedings_Abstract_Reviewed": "inproceedings",
+        "Demo": "",
+        "Tutorial": "",
+        "Edited_Proceeding": "",
+        "Invited_Paper": "",
+        "Chapter_In_Book": "inbook",
+        "Editor": "",
+        "Whole_Book": "book",
+        "Monograph": "",
+        "Journal_Article": "article",
+        "Scientific_Newsletter": "",
+        "Foreword": "",
+        "Journal_Editorial": "article",
+        "Magazine_Editorial": "article",
+        "Other_Journal": "article",
+        "ERCIM_News": "englishTitle",
+        "FORTH_ICS_Tech_Report": "techreport",
+        "Other_Tech_Report": "techreport",
+        "Distinguished_Lecture": "",
+        "Talk": "",
+        "Master_Thesis": "thesis",
+        "Phd_Thesis": "thesis",
+        "Seminar": "",
+        "Multimedia_Material": "",
+        "White_Paper": "misc",
+        "Miscellaneous": "misc"
+    },
+    "pressToCSLFields": {
+        "appearsIn": "",
+        "belongsTo": "",
+        "bookSeries": "series",
+        "bookTitle": ["title", "container-title"],
+        "chapterTitle": "title",
+        "conferenceDateEnd": "container",
+        "conferenceDateStart": "container",
+        "conferenceLocation": "event-place",
+        "conferenceTitle": "event",
+        "demoUrl": "URL",
+        "doi": "DOI",
+        "edition": "edition",
+        "englishAbstract": "abstract",
+        "englishTitle": "title",
+        "eventLocation": "event-place",
+        "eventTitle": "event",
+        "externalLink": "URL",
+        "greekTitle": "",
+        "greekAbstract": "",
+        "hasContributor": {
+            "hasAuthors": "author",
+            "hasBookEditors": "editor",
+            "hasChapterAuthors": "author",
+            "hasSupervisors": ""
+        },
+        "isbn": "ISBN",
+        "journalNumber": "number",
+        "journalTitle": "container-title",
+        "location": "address",
+        "otherDetails": "",
+        "pages": "pages",
+        "publisher": "publisher",
+        "publisherLocation": "publisher-place",
+        "reportNumber": "number",
+        "tag": "keyword",
+        "volume": "volume",
+        "year": "issued"
     }
 }
