@@ -2119,7 +2119,7 @@
                         this.filters.append(categoriesDiv);
                         break;
                     case 'org':
-                        this.filters.append('<h4 class="col-xs-12">Organization</h4>');
+                        this.filters.append($('<h4 class="col-xs-12"></h4>').text(this.orgs.label));
                         var orgsDiv = $('<div class="col-xs-12"></div>');
                         
                         function insertOrgs(orgs, div) {
