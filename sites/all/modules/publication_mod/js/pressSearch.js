@@ -1877,352 +1877,364 @@
 
                 switch (key) {
                     case 'contributor':
-                        this.filters.append('<h4 class="col-xs-12">Authors</h4>');
-                        var contributorsDiv = $('<div class="col-xs-12"></div>');
+                        if(results['contributor'].length > 0){
+                            this.filters.append('<h4 class="col-xs-12">Authors</h4>');
+                            var contributorsDiv = $('<div class="col-xs-12"></div>');
 
-                        function insertContributors(contributors, div){
-                            var $contributorsMore = div.find("#show-more-contributors");
-                            for(var i = 0; i < contributors.length; i++){
-                                var contributorDiv = $('<div class="search-filter search-filter-contributor" '+
-                                    'data-oVal="<'+contributors[i].contributoruuid+'>"></div>');
-                                var name = '';
-                                if('contributorgivenName' in contributors[i]){
-                                    name = contributors[i].contributorgivenName + ' ';
-                                }
-                                name += contributors[i].contributorfamilyName;
-                                var contributor = $('<a class="col-xs-12" style="display:block">'+
-                                    name+' <i style="color:grey">['+contributors[i].pubcount+']</i></a>');
-                                contributorDiv.append(contributor);
-                                if($contributorsMore.length > 0){
-                                    $contributorsMore.before(contributorDiv);
-                                }else{
-                                    div.append(contributorDiv);
-                                }
+                            function insertContributors(contributors, div){
+                                var $contributorsMore = div.find("#show-more-contributors");
+                                for(var i = 0; i < contributors.length; i++){
+                                    var contributorDiv = $('<div class="search-filter search-filter-contributor" '+
+                                        'data-oVal="<'+contributors[i].contributoruuid+'>"></div>');
+                                    var name = '';
+                                    if('contributorgivenName' in contributors[i]){
+                                        name = contributors[i].contributorgivenName + ' ';
+                                    }
+                                    name += contributors[i].contributorfamilyName;
+                                    var contributor = $('<a class="col-xs-12" style="display:block">'+
+                                        name+' <i style="color:grey">['+contributors[i].pubcount+']</i></a>');
+                                    contributorDiv.append(contributor);
+                                    if($contributorsMore.length > 0){
+                                        $contributorsMore.before(contributorDiv);
+                                    }else{
+                                        div.append(contributorDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'contributor' in searchOptions['filters']){
-                                    if(searchOptions.filters.contributor.indexOf(contributorDiv.attr('data-oVal')) > -1){
-                                        contributorDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'contributor' in searchOptions['filters']){
+                                        if(searchOptions.filters.contributor.indexOf(contributorDiv.attr('data-oVal')) > -1){
+                                            contributorDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['contributor'].length === 15){
+                                var $contributorsShowMore = $('<a id="show-more-contributors" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                contributorsDiv.append($contributorsShowMore);
+                                $contributorsShowMore.click(function(that, searchOptions){
+                                    return function(){
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'contributor';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options, 15, $this.attr('data-offset'))).done(function(response){
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertContributors(response['contributor'], contributorsDiv);
+                                            if(response['contributor'].length < 15){
+                                                contributorsDiv.find('#show-more-contributors').remove();
+                                            }
+                                            contributorsDiv.find('.search-filter').off('click');
+                                            contributorsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        })
+                                    }
+                                }(this, searchOptions));
+                            }
+
+                            insertContributors(results['contributor'], contributorsDiv);
+                            this.filters.append(contributorsDiv);
                         }
-
-                        if (results['contributor'].length === 15){
-                            var $contributorsShowMore = $('<a id="show-more-contributors" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                            contributorsDiv.append($contributorsShowMore);
-                            $contributorsShowMore.click(function(that, searchOptions){
-                                return function(){
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'contributor';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options, 15, $this.attr('data-offset'))).done(function(response){
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertContributors(response['contributor'], contributorsDiv);
-                                        if(response['contributor'].length < 15){
-                                            contributorsDiv.find('#show-more-contributors').remove();
-                                        }
-                                        contributorsDiv.find('.search-filter').off('click');
-                                        contributorsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    })
-                                }
-                            }(this, searchOptions));
-                        }
-
-                        insertContributors(results['contributor'], contributorsDiv);
-                        this.filters.append(contributorsDiv);
                         break;
                     case 'tag':
-                        this.filters.append('<h4 class="col-xs-12">Tags</h4>');
-                        var tagsDiv = $('<div class="col-xs-12"></div>');
-                        
-                        function insertTags(tags, div) {
-                            var $tagsMore = div.find('#filters-show-more-tags');
-                            for (var i=0; i<tags.length; i++){
-                                var tagDiv = $('<div class="search-filter search-filter-tag" ' +
-                                    'data-oVal="' + tags[i].tag + '"></div>');
-                                var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].tag + ' <i style="color:grey">[' + tags[i].Tagcount + ']</i></a>');
-                                tagDiv.append(tag);
-                                if ($tagsMore.length > 0) {
-                                    $tagsMore.before(tagDiv);
-                                } else {
-                                    div.append(tagDiv);
-                                }
+                        if(results['tag'].length > 0){
+                            this.filters.append('<h4 class="col-xs-12">Tags</h4>');
+                            var tagsDiv = $('<div class="col-xs-12"></div>');
+                            
+                            function insertTags(tags, div) {
+                                var $tagsMore = div.find('#filters-show-more-tags');
+                                for (var i=0; i<tags.length; i++){
+                                    var tagDiv = $('<div class="search-filter search-filter-tag" ' +
+                                        'data-oVal="' + tags[i].tag + '"></div>');
+                                    var tag = $('<a  class="col-xs-12" style="display:block">' + tags[i].tag + ' <i style="color:grey">[' + tags[i].Tagcount + ']</i></a>');
+                                    tagDiv.append(tag);
+                                    if ($tagsMore.length > 0) {
+                                        $tagsMore.before(tagDiv);
+                                    } else {
+                                        div.append(tagDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'tag' in searchOptions['filters']){
-                                    if(searchOptions.filters.tag.indexOf(tagDiv.attr('data-oVal')) > -1){
-                                        tagDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'tag' in searchOptions['filters']){
+                                        if(searchOptions.filters.tag.indexOf(tagDiv.attr('data-oVal')) > -1){
+                                            tagDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['tag'].length === 15){
+                                var tagsShowMore = $('<a id="filters-show-more-tags" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                tagsDiv.append(tagsShowMore);
+                                tagsShowMore.click(function(that) {
+                                    return function() {
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'tag';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options)).done(function(response) {
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertTags(response['tag'], tagsDiv);
+                                            if (response.tag.length < 15) {
+                                                tagsDiv.find('#filters-show-more-tags').remove();
+                                            }
+                                            tagsDiv.find('.search-filter').off('click');
+                                            tagsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        });
+                                    }
+                                }(this));
+                            }
+
+                            insertTags(results['tag'], tagsDiv);
+                            this.filters.append(tagsDiv);
                         }
-
-                        if (results['tag'].length === 15){
-                            var tagsShowMore = $('<a id="filters-show-more-tags" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                            tagsDiv.append(tagsShowMore);
-                            tagsShowMore.click(function(that) {
-                                return function() {
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'tag';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options)).done(function(response) {
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertTags(response['tag'], tagsDiv);
-                                        if (response.tag.length < 15) {
-                                            tagsDiv.find('#filters-show-more-tags').remove();
-                                        }
-                                        tagsDiv.find('.search-filter').off('click');
-                                        tagsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    });
-                                }
-                            }(this));
-                        }
-
-                        insertTags(results['tag'], tagsDiv);
-                        this.filters.append(tagsDiv);
                         break;
                     case 'year':
-                        this.filters.append('<h4 class="col-xs-12">Year</h4>');
-                        var yearsDiv = $('<div class="col-xs-12"></div>');
-                        
-                        function insertYears(years, div) {
-                            var $yearsMore = div.find('#filters-show-more-years');
-                            for (var i=0; i<years.length; i++){
-                                var yearDiv = $('<div class="search-filter search-filter-year" ' +
-                                    'data-oVal="' + years[i].year + '"></div>');
-                                var year = $('<a  class="col-xs-12" style="display:block">' + years[i].year + ' <i style="color:grey">[' + years[i].pubcount + ']</i></a>');
-                                yearDiv.append(year);
-                                if ($yearsMore.length > 0) {
-                                    $yearsMore.before(yearDiv);
-                                } else {
-                                    div.append(yearDiv);
-                                }
+                        if(results['year'].length > 0){
+                            this.filters.append('<h4 class="col-xs-12">Year</h4>');
+                            var yearsDiv = $('<div class="col-xs-12"></div>');
+                            
+                            function insertYears(years, div) {
+                                var $yearsMore = div.find('#filters-show-more-years');
+                                for (var i=0; i<years.length; i++){
+                                    var yearDiv = $('<div class="search-filter search-filter-year" ' +
+                                        'data-oVal="' + years[i].year + '"></div>');
+                                    var year = $('<a  class="col-xs-12" style="display:block">' + years[i].year + ' <i style="color:grey">[' + years[i].pubcount + ']</i></a>');
+                                    yearDiv.append(year);
+                                    if ($yearsMore.length > 0) {
+                                        $yearsMore.before(yearDiv);
+                                    } else {
+                                        div.append(yearDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'year' in searchOptions['filters']){
-                                    if(searchOptions.filters.year.indexOf(yearDiv.attr('data-oVal')) > -1){
-                                        yearDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'year' in searchOptions['filters']){
+                                        if(searchOptions.filters.year.indexOf(yearDiv.attr('data-oVal')) > -1){
+                                            yearDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['year'].length === 15){
+                                var yearsShowMore = $('<a id="filters-show-more-years" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                yearsDiv.append(yearsShowMore);
+                                yearsShowMore.click(function(that) {
+                                    return function() {
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'year';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options)).done(function(response) {
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertYears(response['year'], yearsDiv);
+                                            if (response.year.length < 15) {
+                                                yearsDiv.find('#filters-show-more-years').remove();
+                                            }
+                                            yearsDiv.find('.search-filter').off('click');
+                                            yearsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        });
+                                    }
+                                }(this));
+                            }
+
+                            insertYears(results['year'], yearsDiv);
+                            this.filters.append(yearsDiv);
                         }
-
-                        if (results['year'].length === 15){
-                            var yearsShowMore = $('<a id="filters-show-more-years" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                            yearsDiv.append(yearsShowMore);
-                            yearsShowMore.click(function(that) {
-                                return function() {
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'year';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options)).done(function(response) {
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertYears(response['year'], yearsDiv);
-                                        if (response.year.length < 15) {
-                                            yearsDiv.find('#filters-show-more-years').remove();
-                                        }
-                                        yearsDiv.find('.search-filter').off('click');
-                                        yearsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    });
-                                }
-                            }(this));
-                        }
-
-                        insertYears(results['year'], yearsDiv);
-                        this.filters.append(yearsDiv);
                         break;
                     case 'category':
-                        this.filters.append('<h4 class="col-xs-12">Category</h4>');
-                        var categoriesDiv = $('<div class="col-xs-12"></div>');
-                        
-                        function insertCategories(categories, div) {
-                            var $categoriesMore = div.find('#filters-show-more-categories');
-                            for (var i=0; i<categories.length; i++){
-                                var categoryDiv = $('<div class="search-filter search-filter-category" ' +
-                                    'data-oVal="<' + categories[i].type + '>"></div>');
-                                var category = $('<a  class="col-xs-12" style="display:block">' + this.category_labels[categories[i].type.split('#')[1]] + ' <i style="color:grey">[' + categories[i].pubcount + ']</i></a>');
-                                categoryDiv.append(category);
-                                if ($categoriesMore.length > 0) {
-                                    $categoriesMore.before(categoryDiv);
-                                } else {
-                                    div.append(categoryDiv);
-                                }
+                        if(results['category'].length > 0){
+                            this.filters.append('<h4 class="col-xs-12">Category</h4>');
+                            var categoriesDiv = $('<div class="col-xs-12"></div>');
+                            
+                            function insertCategories(categories, div) {
+                                var $categoriesMore = div.find('#filters-show-more-categories');
+                                for (var i=0; i<categories.length; i++){
+                                    var categoryDiv = $('<div class="search-filter search-filter-category" ' +
+                                        'data-oVal="<' + categories[i].type + '>"></div>');
+                                    var category = $('<a  class="col-xs-12" style="display:block">' + this.category_labels[categories[i].type.split('#')[1]] + ' <i style="color:grey">[' + categories[i].pubcount + ']</i></a>');
+                                    categoryDiv.append(category);
+                                    if ($categoriesMore.length > 0) {
+                                        $categoriesMore.before(categoryDiv);
+                                    } else {
+                                        div.append(categoryDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'category' in searchOptions['filters']){
-                                    if(searchOptions.filters.category.indexOf(categoryDiv.attr('data-oVal')) > -1){
-                                        categoryDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'category' in searchOptions['filters']){
+                                        if(searchOptions.filters.category.indexOf(categoryDiv.attr('data-oVal')) > -1){
+                                            categoryDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['category'].length === 15){
+                                var categoriesShowMore = $('<a id="filters-show-more-categories" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                    categoriesDiv.append(categoriesShowMore);
+                                    categoriesShowMore.click(function(that) {
+                                    return function() {
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'category';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options)).done(function(response) {
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertCategories(response['category'], categoriesDiv).bind(that);
+                                            if (response.category.length < 15) {
+                                                categoriesDiv.find('#filters-show-more-categories').remove();
+                                            }
+                                            categoriesDiv.find('.search-filter').off('click');
+                                            categoriesDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        });
+                                    }
+                                }(this));
+                            }
+
+                            insertCategories(results['category'], categoriesDiv);
+                            this.filters.append(categoriesDiv);
                         }
-
-                        if (results['category'].length === 15){
-                            var categoriesShowMore = $('<a id="filters-show-more-categories" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                                categoriesDiv.append(categoriesShowMore);
-                                categoriesShowMore.click(function(that) {
-                                return function() {
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'category';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options)).done(function(response) {
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertCategories(response['category'], categoriesDiv).bind(that);
-                                        if (response.category.length < 15) {
-                                            categoriesDiv.find('#filters-show-more-categories').remove();
-                                        }
-                                        categoriesDiv.find('.search-filter').off('click');
-                                        categoriesDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    });
-                                }
-                            }(this));
-                        }
-
-                        insertCategories(results['category'], categoriesDiv);
-                        this.filters.append(categoriesDiv);
                         break;
                     case 'org':
-                        this.filters.append($('<h4 class="col-xs-12"></h4>').text(this.orgs.label));
-                        var orgsDiv = $('<div class="col-xs-12"></div>');
-                        
-                        function insertOrgs(orgs, div) {
-                            var $orgsMore = div.find('#filters-show-more-orgs');
-                            for (var i=0; i<orgs.length; i++){
-                                var orgDiv = $('<div class="search-filter search-filter-org" ' +
-                                    'data-oVal="<' + orgs[i].org + '>"></div>');
-                                var org = $('<a  class="col-xs-12" style="display:block">' + orgs[i].organizationName + ' <i style="color:grey">[' + orgs[i].pubcount + ']</i></a>');
-                                orgDiv.append(org);
-                                if ($orgsMore.length > 0) {
-                                    $orgsMore.before(orgDiv);
-                                } else {
-                                    div.append(orgDiv);
-                                }
+                        if(results['org'].length > 0){
+                            this.filters.append($('<h4 class="col-xs-12"></h4>').text(this.orgs.label));
+                            var orgsDiv = $('<div class="col-xs-12"></div>');
+                            
+                            function insertOrgs(orgs, div) {
+                                var $orgsMore = div.find('#filters-show-more-orgs');
+                                for (var i=0; i<orgs.length; i++){
+                                    var orgDiv = $('<div class="search-filter search-filter-org" ' +
+                                        'data-oVal="<' + orgs[i].org + '>"></div>');
+                                    var org = $('<a  class="col-xs-12" style="display:block">' + orgs[i].organizationName + ' <i style="color:grey">[' + orgs[i].pubcount + ']</i></a>');
+                                    orgDiv.append(org);
+                                    if ($orgsMore.length > 0) {
+                                        $orgsMore.before(orgDiv);
+                                    } else {
+                                        div.append(orgDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'org' in searchOptions['filters']){
-                                    if(searchOptions.filters.org.indexOf(orgDiv.attr('data-oVal')) > -1){
-                                        orgDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'org' in searchOptions['filters']){
+                                        if(searchOptions.filters.org.indexOf(orgDiv.attr('data-oVal')) > -1){
+                                            orgDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['org'].length === 15){
+                                var orgsShowMore = $('<a id="filters-show-more-orgs" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                    orgsDiv.append(orgsShowMore);
+                                    orgsShowMore.click(function(that) {
+                                    return function() {
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'org';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options)).done(function(response) {
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertTags(response['org'], orgsDiv).bind(that);
+                                            if (response.org.length < 15) {
+                                                orgsDiv.find('#filters-show-more-orgs').remove();
+                                            }
+                                            orgsDiv.find('.search-filter').off('click');
+                                            orgsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        });
+                                    }
+                                }(this));
+                            }
+
+                            insertOrgs(results['org'], orgsDiv);
+                            this.filters.append(orgsDiv);
                         }
-
-                        if (results['org'].length === 15){
-                            var orgsShowMore = $('<a id="filters-show-more-orgs" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                                orgsDiv.append(orgsShowMore);
-                                orgsShowMore.click(function(that) {
-                                return function() {
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'org';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options)).done(function(response) {
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertTags(response['org'], orgsDiv).bind(that);
-                                        if (response.org.length < 15) {
-                                            orgsDiv.find('#filters-show-more-orgs').remove();
-                                        }
-                                        orgsDiv.find('.search-filter').off('click');
-                                        orgsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    });
-                                }
-                            }(this));
-                        }
-
-                        insertOrgs(results['org'], orgsDiv);
-                        this.filters.append(orgsDiv);
                         break;
                     case 'project':
-                        this.filters.append('<h4 class="col-xs-12">Project</h4>');
-                        var projectsDiv = $('<div class="col-xs-12"></div>');
-                        
-                        function insertProjects(projects, div) {
-                            var $projectsMore = div.find('#filters-show-more-projects');
-                            for (var i=0; i<projects.length; i++){
-                                var projectDiv = $('<div class="search-filter search-filter-project" ' +
-                                    'data-oVal="<' + projects[i].projectUUID + '>"></div>');
-                                var project = $('<a  class="col-xs-12" style="display:block">' + projects[i].projectName + ' <i style="color:grey">[' + projects[i].pubcount + ']</i></a>');
-                                projectDiv.append(project);
-                                if ($projectsMore.length > 0) {
-                                    $projectsMore.before(projectDiv);
-                                } else {
-                                    div.append(projectDiv);
-                                }
+                        if(results['project'].length > 0){
+                            this.filters.append('<h4 class="col-xs-12">Project</h4>');
+                            var projectsDiv = $('<div class="col-xs-12"></div>');
+                            
+                            function insertProjects(projects, div) {
+                                var $projectsMore = div.find('#filters-show-more-projects');
+                                for (var i=0; i<projects.length; i++){
+                                    var projectDiv = $('<div class="search-filter search-filter-project" ' +
+                                        'data-oVal="<' + projects[i].projectUUID + '>"></div>');
+                                    var project = $('<a  class="col-xs-12" style="display:block">' + projects[i].projectName + ' <i style="color:grey">[' + projects[i].pubcount + ']</i></a>');
+                                    projectDiv.append(project);
+                                    if ($projectsMore.length > 0) {
+                                        $projectsMore.before(projectDiv);
+                                    } else {
+                                        div.append(projectDiv);
+                                    }
 
-                                if('filters' in searchOptions && 'project' in searchOptions['filters']){
-                                    if(searchOptions.filters.project.indexOf(projectDiv.attr('data-oVal')) > -1){
-                                        projectDiv.attr('data-selected', 'selected');
+                                    if('filters' in searchOptions && 'project' in searchOptions['filters']){
+                                        if(searchOptions.filters.project.indexOf(projectDiv.attr('data-oVal')) > -1){
+                                            projectDiv.attr('data-selected', 'selected');
+                                        }
                                     }
                                 }
                             }
+
+                            if (results['project'].length === 15){
+                                var projectsShowMore = $('<a id="filters-show-more-projects" class="search-filter-more" ' +
+                                    'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
+                                    projectsDiv.append(projectsShowMore);
+                                    projectsShowMore.click(function(that) {
+                                    return function() {
+                                        $this = $(this);
+                                        $this.before(that.filterLoader.clone().css('position', 'absolute').show());
+                                        $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
+
+                                        var options = $.extend(true, {}, searchOptions);
+                                        options['filter_keys'] = 'project';
+                                        options['limit'] = 15;
+                                        options['offset'] = parseInt($this.attr('data-offset'));
+
+                                        $.when(that.getFilters(options)).done(function(response) {
+                                            $this.siblings('.filterLoader').remove();
+                                            response = JSON.parse(response);
+                                            insertTags(response['project'], projectsDiv).bind(that);
+                                            if (response.project.length < 15) {
+                                                projectsDiv.find('#filters-show-more-projects').remove();
+                                            }
+                                            projectsDiv.find('.search-filter').off('click');
+                                            projectsDiv.find('.search-filter').off('click').click(onFilterClick(that));
+                                        });
+                                    }
+                                }(this));
+                            }
+
+                            insertProjects(results['project'], projectsDiv);
+                            this.filters.append(projectsDiv);
                         }
-
-                        if (results['project'].length === 15){
-                            var projectsShowMore = $('<a id="filters-show-more-projects" class="search-filter-more" ' +
-                                'class="col-xs-12" style="display:block;" data-offset="0">Show More</a>');
-                                projectsDiv.append(projectsShowMore);
-                                projectsShowMore.click(function(that) {
-                                return function() {
-                                    $this = $(this);
-                                    $this.before(that.filterLoader.clone().css('position', 'absolute').show());
-                                    $this.attr('data-offset', parseInt($this.attr('data-offset')) + 15);
-
-                                    var options = $.extend(true, {}, searchOptions);
-                                    options['filter_keys'] = 'project';
-                                    options['limit'] = 15;
-                                    options['offset'] = parseInt($this.attr('data-offset'));
-
-                                    $.when(that.getFilters(options)).done(function(response) {
-                                        $this.siblings('.filterLoader').remove();
-                                        response = JSON.parse(response);
-                                        insertTags(response['project'], projectsDiv).bind(that);
-                                        if (response.project.length < 15) {
-                                            projectsDiv.find('#filters-show-more-projects').remove();
-                                        }
-                                        projectsDiv.find('.search-filter').off('click');
-                                        projectsDiv.find('.search-filter').off('click').click(onFilterClick(that));
-                                    });
-                                }
-                            }(this));
-                        }
-
-                        insertProjects(results['project'], projectsDiv);
-                        this.filters.append(projectsDiv);
                         break;
                     default:
                         break;
