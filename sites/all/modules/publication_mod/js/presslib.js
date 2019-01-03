@@ -383,6 +383,8 @@
                                 '<small class="col-sm-10"><a href="' + this.base_url + '/' + results[i][key].value + '" target="_blank">Current File</a>' +
                                 '. Leave blank to keep the same file</small></div>');
                             this.localLink = results[i][key].value;
+                        }else if (key === 'publicationUrl'){
+                            this.publicationUrl = results[i][key].value;
                         } else {
                             $('#' + key, this.element).val(results[i][key].value); //TODO: FIX localLink, pdf edit
                         }
@@ -1675,6 +1677,9 @@
                 if(this.editMode){
                     options['uuid'] = this.editPublication.uuid;
                     options['creationDate'] = this.creationDate;
+                    if(!!this.publicationUrl){
+                        options['publicationUrl'] = this.publicationUrl;
+                    }
                 }else{
                     // options['uuid'] = response.uuid;
                 }
@@ -1781,7 +1786,7 @@
             .done(function(response) {
                 loader.hide();
                 // console.log(response);
-                window.location.href = base_url + '/' + response.pub_url;
+                window.location.href = base_url + '/pub/' + response.pub_url;
             })
             .fail(function(response) {
                 loader.hide();

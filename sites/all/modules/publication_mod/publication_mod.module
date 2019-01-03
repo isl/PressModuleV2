@@ -35,34 +35,9 @@ function publication_mod_menu(){
     'type' => MENU_CALLBACK
   );
 
-  $menu['ajax/add_publication_page'] = array(
-    'title' => '',
-    'page callback' => 'publication_mod_ajax_callback',
-    // 'page arguments' => array(2),
-    'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('authenticated user'),
-    'type' => MENU_CALLBACK
-  );
-
   $menu['ajax/get_path_from_uuid'] = array(
     'title' => '',
     'page callback' => 'publication_mod_ajax_callback_get_path',
-    'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('authenticated user'),
-    'type' => MENU_CALLBACK
-  );
-
-  $menu['ajax/edit_publication_page'] = array(
-    'title' => '',
-    'page callback' => 'publication_mod_ajax_callback_edit_pub',
-    'access callback' => 'publication_mod_user_has_role',
-    'access arguments' => array('authenticated user'),
-    'type' => MENU_CALLBACK
-  );
-
-  $menu['ajax/update_pub_pages'] = array(
-    'title' => '',
-    'page callback' => 'publication_mod_update_pubs',
     'access callback' => 'publication_mod_user_has_role',
     'access arguments' => array('authenticated user'),
     'type' => MENU_CALLBACK
@@ -1105,500 +1080,6 @@ function _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $co
   return $element;
 }
 
-function publication_mod_add_publication($title, $summary, $body, $category, $contributors, $file){
-  global $user;
-
-  $values = array(
-    'type'=> 'publication_mod_publications',
-    'uid' => $user->uid,
-    'status' => 1,
-    'comment' => 0,
-    'promote' => 0
-  );
-
-  $entity = entity_create('node', $values);
-  $ewrapper = entity_metadata_wrapper('node', $entity);
-
-  $ewrapper->title->set($title);
-
-  $ewrapper->pub_mod_field_category->set($category);
-
-  $ewrapper->body->set(array('value'=> $body, 'format' => 'full_html'));
-  if(isset($summary) && !empty($summary) && $summary != ''){
-    $ewrapper->body->summary->set($summary);
-  }
-
-  $file_path = '';
-
-  if(isset($file['myfile']['tmp_name']) && file_exists($file['myfile']['tmp_name']) && is_uploaded_file($file['myfile']['tmp_name'])){
-    $path = $file['myfile']['tmp_name'];
-    $filename = $file['myfile']['name'];
-
-    $file_temp = file_get_contents($path);
-
-    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
-
-    $entity->field_file = array(
-      'und' => array(
-        0 => array(
-          'fid' => $file_temp->fid,
-          'filename' => $file_temp->filename,
-          'filemime' => $file_temp->filemime,
-          'uid' => $user->uid,
-          'uri' => $file_temp->uri,
-          'status' => 1,
-          'display' => 1
-        )
-      )
-    );
-
-    $file_real_path;
-    if($fwrapper = file_stream_wrapper_get_instance_by_uri($file_temp->uri)){
-      $file_real_path = $fwrapper->realpath();
-      $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
-    }
-  }
-  $ewrapper->save();
-  $ewrapper->pub_mod_field_blazegraph_uuid->set("urn:uuid:" . $ewrapper->value()->uuid);
-  $ewrapper->save();
-  $path = drupal_get_path_alias("node/". $ewrapper->value()->nid, null);
-
-  /*
-  // TODO: FIX THIS BELLOW 
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
-  libxml_use_internal_errors(true);
-  $doc = new DOMDocument();
-
-  $doc->loadHTML($blazegraph_info['all_pubs']);
-  $div = $doc->getElementById('all_pubs');
-  
-  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
-  
-  $div->appendChild($element);
-  $html = $doc->saveHTML();
-
-  _publication_mod_set_blazegraph_info('all_pubs', $html);
-  */
- 
-  return array(
-    'uuid' => "urn:uuid:" . $ewrapper->value()->uuid,
-    'path' => $path,
-    'file_url' => $file_path
-  );
-}
-
-function publication_mod_edit_publication($uuid, $title, $summary, $body, $category, $contributors, $file){
-  global $user;
-
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', 'publication_mod_publications')
-    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
-  
-  $result = $query->execute();
-  if (!isset($result['node']) || count($result['node']) == 0){
-    //TODO Create node
-  }
-
-  $ids = array_keys($result['node']);
-  $entity = node_load($ids[0]);
-
-  $ewrapper = entity_metadata_wrapper('node', $entity);
-  $ewrapper->title->set($title);
-  $ewrapper->body->set(array('value'=>$body, 'format'=>'full_html'));
-  $ewrapper->body->summary->set($summary);
-
-  $ewrapper->pub_mod_field_category->set($category);
-  $file_temp;
-  if(isset($file['myfile']['tmp_name']) && file_exists($file['myfile']['tmp_name']) && is_uploaded_file($file['myfile']['tmp_name'])){
-    $path = $file['myfile']['tmp_name'];
-    $filename = $file['myfile']['name'];
-
-    $file_temp = file_get_contents($path);
-
-    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
-
-    $entity->field_file = array(
-      'und' => array(
-        0 => array(
-          'fid' => $file_temp->fid,
-          'filename' => $file_temp->filename,
-          'filemime' => $file_temp->filemime,
-          'uid' => $user->uid,
-          'uri' => $file_temp->uri,
-          'status' => 1,
-          'display' => 1
-        )
-      )
-    );
-
-  }
-  $file_real_path;
-  $file_path = '';
-  if(isset($file_temp) && $fwrapper = file_stream_wrapper_get_instance_by_uri($file_temp->uri)){
-    $file_real_path = $fwrapper->realpath();
-    $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
-  }
-  entity_get_controller('node')->resetCache(array(entity_id('node', $entity)));
-  field_attach_update('node', $entity);
-
-  $ewrapper->save();
-
-  $path = drupal_get_path_alias("node/". $ewrapper->value()->nid, null);
-  /*
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
-  libxml_use_internal_errors(true);
-  $doc = new DOMDocument();
-
-  $doc->loadHTML($blazegraph_info['all_pubs']);
-  $div = $doc->getElementById('all_pubs');
-  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
-  $pub_div = $doc->getElementById($uuid);
-  
-  if($pub_div && $pub_div->parentNode){
-    $pub_div->parentNode->removeChild($pub_div);
-  }
-  $div->appendChild($element);
-  $html = $doc->saveHTML();
-  _publication_mod_set_blazegraph_info('all_pubs', $html);
-*/
-  return array(
-    'uuid' => $uuid,
-    'path' => $path,
-    'file_url' => $file_path
-  );
-}
-
-/*
- * Handles the new publication addition.
- */
-function publication_mod_ajax_callback($title='', $category='', $body='', $summary='', $uuid='', $contributors=array()){
-  global $user;
-  $function_called = true;
-  if(empty($title) && empty($category) && empty($body)){
-    $title = $_POST['title'];
-    $category = $_POST['category'];
-    $body = $_POST['body'];
-    $summary = $_POST['summary'];
-    $contributors = json_decode($_POST['contributors']);
-    $function_called = false;
-  }
-  // $values = explode("&", $value);
-  // print_r($values);
-  // $vals;
-  // $i=0;
-  // foreach($values as $val){
-  //   $vals[$i++] = explode("=", $val);
-  // }
-  // print_r($vals);
-  // echo "<br />";
-  // print_r($_POST);
-  // echo "<br />";
-  // print_r($_FILES);
-  // return;
-
-  // entity_create replaces the procedural steps in the first example of
-  // creating a new object $node and setting its 'type' and uid property
-  $values = array(
-    'type' => 'publication_mod_publications',
-    'uid' => $user->uid,
-    'status' => 1,
-    'comment' => 0,
-    'promote' => 1,
-  );
-  $entity = entity_create('node', $values);
-
-  // The entity is now created, but we have not yet simplified use of it.
-  // Now create an entity_metadata_wrapper around the new node entity
-  // to make getting and setting values easier
-  $ewrapper = entity_metadata_wrapper('node', $entity);
-
-  // Using the wrapper, we do not have to worry about telling Drupal
-  // what language we are using. The Entity API handles that for us.
-  // $ewrapper->format->set('ace_editor');
-
-  $ewrapper->title->set($title);
-
-  $ewrapper->pub_mod_field_category->set($category);
-
-  // Setting the body is a bit different from other properties or fields
-  // because the body can have both its complete value and its
-  // summary
-  $my_body_content = $body;
-  $ewrapper->body->set(array('value' => $my_body_content, 'format' => 'full_html'));
-  if(isset($summary)){
-    $ewrapper->body->summary->set($summary);
-  }
-
-  // Setting the value of an entity reference field only requires passing
-  // the entity id (e.g., nid) of the entity to which you want to refer
-  // The nid 15 here is just an example.
-  // $ref_nid = 15;
-  // Note that the entity id (e.g., nid) must be passed as an integer not a
-  // string
-  // $ewrapper->field_my_entity_ref->set(intval($ref_nid));
-
-  // Now just save the wrapper and the entity
-  // There is some suggestion that the 'true' argument is necessary to
-  // the entity save method to circumvent a bug in Entity API. If there is
-  // such a bug, it almost certainly will get fixed, so make sure to check.
-  $file_path = "";
-  if (array_key_exists("myfile", $_FILES) && file_exists($_FILES['myfile']['tmp_name']) && is_uploaded_file($_FILES['myfile']['tmp_name'])){
-    $path = $_FILES['myfile']['tmp_name'];
-    $filename = $_FILES['myfile']['name'];
-
-    $file_temp = file_get_contents($path);
-
-    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
-
-    $entity->field_file = array(
-      'und' => array(
-          0 => array(
-            'fid' => $file_temp->fid,
-            'filename' => $file_temp->filename,
-            'filemime' => $file_temp->filemime,
-            'uid' => $user->uid,
-            'uri' => $file_temp->uri,
-            'status' => 1,
-            'display' => 1
-          )
-        )
-      );
-    $file_real_path;
-    if($fwrapper = file_stream_wrapper_get_instance_by_uri($file_temp->uri)){
-      $file_real_path = $fwrapper->realpath();
-      $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
-    }
-  }
-  $ewrapper->save();
-  header('Content-Type: application/json');
-  if(isset($uuid) && !empty($uuid)){
-    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
-  }else{
-    $ewrapper->pub_mod_field_blazegraph_uuid->set("urn:uuid:" . $ewrapper->value()->uuid);
-  }
-  $ewrapper->save();
-  if(!isset($uuid) || empty($uuid)){
-    $uuid = "urn:uuid:" . $ewrapper->value()->uuid;
-  }
-  $path = drupal_get_path_alias("node/" . $ewrapper->value()->nid, null);
-  $result = array(
-    'uuid' => $uuid,
-    'path' => $path,
-    'file_url' => $file_path
-  );
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
-  libxml_use_internal_errors(true);
-  $doc = new DOMDocument();
-
-  $doc->loadHTML($blazegraph_info['all_pubs']);
-  $div = $doc->getElementById('all_pubs');
-  
-  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
-  
-  $div->appendChild($element);
-  $html = $doc->saveHTML();
-
-  _publication_mod_set_blazegraph_info('all_pubs', $html);
-
-
-  if($function_called){
-    return $result;
-  }
-  echo json_encode($result, true);
-  return;
-  // echo $ewrapper->value()->uuid;
-  // echo '<br/>';
-  // echo drupal_get_path_alias("node/" . $ewrapper->value()->nid, null);
-}
-
-function publication_mod_update_pubs($blazegraph_uris = array()){
-  if(empty($blazegraph_uris)){
-    if(!in_array('blazegraph_uris', $_POST))
-      return;
-    $blazegraph_uris = $_POST['blazegraph_uris'];
-    $function_called = false;
-  }
-
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', 'publication_mod_publications')
-    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $blazegraph_uris, 'IN');
-
-  $result = $query->execute();
-
-  if (isset($result['node'])){
-    $ids = array_keys($result['node']);
-  }else{
-    return;
-  }
-
-  foreach($ids as $id){
-    $entity = node_load($id);
-    $pub_page = _publication_mod_create_page_body_from_uri($entity->pub_mod_field_blazegraph_uuid['und'][0]['value']);
-
-    $entity->title= $pub_page['title'];
-    $entity->body['und'][0]['value'] = $pub_page['html'];
-    $entity->body['und'][0]['summary'] = $pub_page['summary'];
-    $entity->pub_mod_field_category['und'][0]['value'] = $pub_page['category'];
-    node_save($entity);
-  }
-  http_response_code(200);
-  return;
-}
-
-function publication_mod_ajax_callback_edit_pub(){
-  global $user;
-  $uuid = $_POST['uuid'];
-  $delete = false;
-  if (array_key_exists("delete", $_POST)){
-    if ($_POST['delete'] === 'true'){
-      $delete = true;
-    }
-  }
-
-  if ($delete === false){
-    $body_content = $_POST['body'];
-    $title = $_POST['title'];
-    $summary = $_POST['summary'];
-    $category = $_POST['category'];
-  }
-
-  $file_path = '';
-
-  $ewrappers;
-  $entity = null;
-
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'node')
-    ->entityCondition('bundle', 'publication_mod_publications')
-    ->fieldCondition('pub_mod_field_blazegraph_uuid', 'value', $uuid, '=');
-
-  $result = $query->execute();
-  $new_entity = false;
-  if (isset($result['node']) && count($result['node']) == 1){
-    $ids = array_keys($result['node']);
-    $entity = node_load($ids[0]);
-  }else{
-    $values = array(
-      'type' => 'publication_mod_publications',
-      'uid' => $user->uid,
-      'status' => 1,
-      'comment' => 0,
-      'promote' => 1,
-    );
-    $entity = entity_create('node', $values);
-    $new_entity = true;
-  }
-  if ($delete === true){
-    if ($entity){
-      node_delete($entity->nid);
-    }
-    $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
-    libxml_use_internal_errors(true);
-    $doc = new DOMDocument();
-
-    $doc->loadHTML($blazegraph_info['all_pubs']);
-    $div = $doc->getElementById('all_pubs');
-    $pub_div = $doc->getElementById($uuid);
-    
-    if($pub_div && $pub_div->parentNode){
-      $pub_div->parentNode->removeChild($pub_div);
-    }
-    $html = $doc->saveHTML();
-    _publication_mod_set_blazegraph_info('all_pubs', $html);
-
-    echo '{"result": "success"}';
-    exit();
-  }
-  
-  $ewrapper = entity_metadata_wrapper('node', $entity);
-  $contributors = json_decode($_POST['contributors']);
-
-  $ewrapper->title->set($title);
-
-  $ewrapper->body->set(array('value' => $body_content, 'format' => 'full_html'));
-
-  if(isset($summary)){
-    $ewrapper->body->summary->set($summary);
-  }
-
-  $ewrapper->pub_mod_field_category->set($category);
-
-  if($new_entity){
-    $ewrapper->pub_mod_field_blazegraph_uuid->set($uuid);
-  }
-
-  if (array_key_exists("myfile", $_FILES) &&    //If file exists, update it
-      file_exists($_FILES['myfile']['tmp_name']) &&   //TODO does it delete it?
-      is_uploaded_file($_FILES['myfile']['tmp_name'])){
-
-    $path = $_FILES['myfile']['tmp_name'];
-    $filename = $_FILES['myfile']['name'];
-
-    $file_temp = file_get_contents($path);
-
-    $file_temp = file_save_data($file_temp, 'public://publication_mod_publications/' . $filename, FILE_EXISTS_RENAME);
-
-    $entity->field_file = array(
-      'und' => array(
-          0 => array(
-            'fid' => $file_temp->fid,
-            'filename' => $file_temp->filename,
-            'filemime' => $file_temp->filemime,
-            'uid' => $user->uid,
-            'uri' => $file_temp->uri,
-            'status' => 1,
-            'display' => 1
-          )
-        )
-      );
-  }
-  // print_r($ewrapper->field_file->raw());
-  $file_real_path;
-  if(isset($entity->field_file) && $fwrapper = file_stream_wrapper_get_instance_by_uri($entity->field_file['und'][0]['uri'])){
-    $file_real_path = $fwrapper->realpath();
-    $file_path = str_replace($_SERVER['DOCUMENT_ROOT'].'/','',$file_real_path);
-  }
-  entity_get_controller('node')->resetCache(array(entity_id('node', $entity)));
-  if(!$new_entity){
-    field_attach_update('node', $entity);
-  }
-
-  // node_save($entity);
-  $ewrapper->save();
-
-  header('Content-Type: application/json');
-  
-  // $uuid = $entity->uuid;
-  $path = drupal_get_path_alias("node/" . $entity->nid, null);
-  $result = array(
-    'uuid' => $uuid,
-    'path' => $path,
-    'file_url' => $file_path
-  );
-
-  $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
-  libxml_use_internal_errors(true);
-  $doc = new DOMDocument();
-
-  $doc->loadHTML($blazegraph_info['all_pubs']);
-  $div = $doc->getElementById('all_pubs');
-  $element = _publication_mod_create_pub_dom_element($doc, $uuid, $title, $path, $contributors);
-  $pub_div = $doc->getElementById($uuid);
-  
-  if($pub_div && $pub_div->parentNode){
-    $pub_div->parentNode->removeChild($pub_div);
-  }
-  $div->appendChild($element);
-  $html = $doc->saveHTML();
-  _publication_mod_set_blazegraph_info('all_pubs', $html);
-  
-  echo json_encode($result, true);
-  exit();
-}
-
 /**
  * Returns the path alias by uuid.
  */
@@ -1920,15 +1401,6 @@ function publication_mod_user_presave(&$edit, $account, $category){
 
       $result = drupal_http_request($blazegraph_url, $options);
 
-      if($delete_from_blzg){
-        $affected_pub_results = json_decode($result_affected_pubs->data);
-        $affected_pubs = array();
-
-        foreach ($affected_pub_results->results->bindings as $key => $value) {
-          $affected_pubs[] = $value->pub->value;
-        }
-        publication_mod_update_pubs($affected_pubs);
-      }
       watchdog("Blazegraph Person Update", print_r($result, true), array(), WATCHDOG_NOTICE);
     }
   }
@@ -2440,6 +1912,52 @@ function publication_mod_get_pub_info($uri){
   prefix press:<$blzg_prefix>
   select * where{
     ?pub press:publicationUuid "$uri";
+    {
+      ?pub ?p ?o.
+      optional{?o rdfs:label ?oLabel}.
+    } UNION {
+      ?contributorType rdfs:subPropertyOf* press:contributorType.
+      ?pub press:hasContributor ?con.
+      ?con ?contributorType ?person.
+      ?contributorType rdfs:label ?conLabel.
+      ?con press:listIndex ?index.
+      ?person foaf:givenName ?givenName.
+      ?person foaf:familyName ?familyName.
+      optional{?person press:apaName ?apaName}.
+    } UNION {
+      ?pub press:belongsTo ?org.
+      ?org press:organizationName ?orgName.
+    } UNION {
+      ?pub press:appearsIn ?project.
+      ?project press:projectName ?projectName.
+    }
+  }
+EOT;
+
+  $q = http_build_query(array('query'=>$query));
+
+  $options = array(
+  'headers' => array(
+    'Accept'=>'application/sparql-results+json',
+    'content-type'=> 'application/x-www-form-urlencoded'
+  ),
+  'method' => 'POST',
+  'data' => $q
+  );
+
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
+
+  return json_decode($result->data, TRUE);
+}
+
+function publication_mod_get_pub_info_from_url($url){
+  $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
+	$blzg_prefix = $blazegraph_info['blazegraph_prefix'];
+
+  $query = <<<EOT
+  prefix press:<$blzg_prefix>
+  select * where{
+    ?pub press:publicationUrl "$url";
     {
       ?pub ?p ?o.
       optional{?o rdfs:label ?oLabel}.

@@ -304,22 +304,6 @@ function publication_mod_delete_pub_pages_urls_callback($form, $form_state){
 
   //Get all pubs with a publicationUrl
 
-  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
-  $result = db_query($sql, array(':type' => 'publication_mod_publications'));
-  $nids = array();
-  foreach ($result as $row) {
-    $nids[] = $row->nid;
-  }
-
-    variable_set('publication_mod_import_message', 'Deleting...');
-
-  $nids_count = count($nids);
-  $form['checkboxes_fieldset']['#value'] = $nids_count;
-  for($i=0; $i<$nids_count; $i+=20){
-  	node_delete_multiple(array_slice($nids, $i, 20));
-  	variable_set('publication_mod_import_status', round(($i/$nids_count)*100));
-  }
-
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('all_pubs'));
   libxml_use_internal_errors(true);
   $doc = new DOMDocument();
@@ -375,13 +359,11 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
 
-  //Get all pubs without a publicationUrl
-
+  
   $query = 'prefix press: <'. $ontologyPrefix. '>
-      select * where{
+      select ?publicationUrl where{
         ?pub rdf:type [rdfs:subClassOf* press:Publication].
-        FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
-        ?pub rdf:type ?type.
+        ?pub press:publicationUrl ?publicationUrl.
       }';
 
   $q = http_build_query(array('query' => $query));
@@ -396,18 +378,76 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
 
   $result = drupal_http_request($dbURL, $options);
 
-  $obj = json_decode($result->data);
-  $pub_count = count($obj->results->bindings);
+  $obj = json_decode($result->data, true);
+  $pub_count = count($obj['results']['bindings']);
+  $pub_urls = array();
+  foreach($obj['results']['bindings'] as $pub){
+    $pub_urls[] = urlencode($pub['publicationUrl']['value']);
+  }
+  $pub_urls_string = implode(',', $pub_urls);
+  $pub_urls_string .= ',';
+  //Get all pubs without a publicationUrl
+
+  $query = 'prefix press: <'. $ontologyPrefix. '>
+      select * where{
+        ?pub rdf:type [rdfs:subClassOf* press:Publication].
+        FILTER NOT EXISTS{?pub press:publicationUrl ?publicationUrl}.
+        ?pub rdf:type ?type.
+        optional{ ?pub press:englishTitle ?englishTitle}.
+        optional{ ?pub press:chapterTitle ?chapterTitle}.
+        optional{ ?pub press:bookTitle ?bookTitle}.
+      }';
+
+  $q = http_build_query(array('query' => $query));
+
+  $options = array(
+  'headers' => array(
+    'Accept'=>'application/sparql-results+json',
+    'content-type'=> 'application/x-www-form-urlencoded'),
+  'method' => 'POST',
+  'data' => $q
+  );
+
+  $result = drupal_http_request($dbURL, $options);
+
+  $obj = json_decode($result->data, true);
+  $pub_count = count($obj['results']['bindings']);
   $pubs = array();
-  foreach ($obj->results->bindings as $pub) {
-    $pubs[] = array('uri'=> $pub->pub->value, 'type'=>explode('#', $pub->type->value)[1]);
+  foreach ($obj['results']['bindings'] as $pub) {
+    $title = '';
+    switch (explode('#', $pub['type']['value'])[1]) {
+      case 'Edited_Proceeding':
+      case 'Editor':
+      case 'Whole_Book':
+      case 'Monograph':
+        if(isset($pub['bookTitle'])){
+          $title = $pub['bookTitle']['value'];
+        }
+        break;
+      case 'Chapter_In_Book':
+        if(isset($pub['chapterTitle'])){
+          $title = $pub['chapterTitle']['value'];
+        }
+        break;
+      default:
+        if(isset($pub['englishTitle'])){
+          $title = $pub['englishTitle']['value'];
+        }
+        break;
+    }
+    if($title == ''){
+      if(isset($pub['englishTitle'])){
+        $title = $pub['englishTitle']['value'];
+      }
+    }
+    $pubs[] = array('uri'=> $pub['pub']['value'], 'title' => $title);
   }
 
   // Split into chunks of size $per
   $array_chunks = array_chunk($pubs, $per);
 
   $batch = array(
-    'operations' => array(array('publication_mod_batch_import_run', array($array_chunks, $pub_count))),
+    'operations' => array(array('publication_mod_batch_import_run', array($array_chunks, $pub_count, $pub_urls_string))),
     'finished' => 'publication_mod_batch_import_finished',
     'title' => t('Publication Batch Import'),
     'init_message' => t('Publication Batch Import is starting.'),
@@ -426,33 +466,51 @@ function publication_mod_import_pubs_form_submit($form, $form_state){
  * @param int $max The number of publications to be imported
  * @param Array &$context The batch context array
  */
-function publication_mod_batch_import_run($pubs, $max, &$context){
+function publication_mod_batch_import_run($pubs, $max, $pub_urls, &$context){
   if (!isset($context['sandbox']['progress'])){
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_chunk'] = 0;
     $context['sandbox']['max'] = $max;
+    $context['sandbox']['pub_urls'] = $pub_urls;
   }
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
   $dbURL = $blazegraph_info['blazegraph_url'];
   $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
+  module_load_include('inc', 'pathauto', 'pathauto');
 
   //Import only the current chunk
   foreach($pubs[$context['sandbox']['current_chunk']] as $pub){
     $pub_uri = $pub['uri'];
-    $pub_type = $pub['type'];
 
-    $pub_page = _publication_mod_create_page_body_from_uri($pub_uri);
+    $alias = pathauto_cleanstring($pub['title']);
+    $alias_encoded = urlencode($alias);
 
-    $new_node_info = publication_mod_ajax_callback($pub_page['title'], $pub_type, $pub_page['html'], $pub_page['summary'], $pub_uri, $pub_page['contributors']);
+    $re = "/$alias_encoded,/m";
+    if(preg_match($re, $context['sandbox']['pub_urls']) === 1){
 
+      $matches = array();
+      preg_match_all($re, $context['sandbox']['pub_urls'], $matches, PREG_SET_ORDER, 0);
+      
+      $i = 0;
+  
+      $original_alias = $alias;
+      do{
+        $alias = $original_alias . '-' . $i++;
+        $alias_encoded = urlencode($alias);
+        $re = "/$alias_encoded,/m";
+      }while(preg_match($re, $context['sandbox']['pub_urls']) === 1);
+    }
+
+    $context['sandbox']['pub_urls'] .= $alias_encoded . ',';
+    
     //Add publicationUrl to created publication.
     $update = 'prefix press: <'. $ontologyPrefix. '>
         delete{
           ?pub press:publicationUrl ?old_url.
         }
         insert{
-          ?pub press:publicationUrl "'.$new_node_info['path'].'".
+          ?pub press:publicationUrl "'.$alias.'".
         }
         where{
           BIND (<'. $pub_uri .'> as ?pub).
@@ -476,7 +534,7 @@ function publication_mod_batch_import_run($pubs, $max, &$context){
     $context['results'][] = $pub_uri;
     $context['message'] = t('Now processing chunk %chunk, imported %progress from %max',
       array(
-        '%title'=>$pub_page['title'],
+        '%title'=>$pub['title'],
         '%chunk' => $context['sandbox']['current_chunk'],
         '%progress' => $context['sandbox']['progress'],
         '%max' => $context['sandbox']['max'],

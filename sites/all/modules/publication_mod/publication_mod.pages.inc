@@ -2,7 +2,7 @@
 // Copyright FORTH-ICS, Emmanouil Dermitzakis
 // -*- mode: php;-*-
 
-function publication_mod_get_pub_page($uri){
+function publication_mod_get_pub_page($url){
   
   // echo "<pre>";
   // print_r($results);
@@ -10,11 +10,13 @@ function publication_mod_get_pub_page($uri){
   
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix'));
   $blzg_prefix = $blazegraph_info['blazegraph_prefix'];
-  if(substr($uri, 0, 9) === "urn:uuid:"){
-    $results = publication_mod_get_pub_info($uri);
-  }else{
-    $results = publication_mod_get_pub_info($blzg_prefix . 'publication/' . $uri);
-  }
+  // if(substr($uri, 0, 9) === "urn:uuid:"){
+  //   $results = publication_mod_get_pub_info($uri);
+  // }else{
+  //   $results = publication_mod_get_pub_info($blzg_prefix . 'publication/' . $uri);
+  // }
+
+  $results = publication_mod_get_pub_info_from_url($url);
   
   
   if(count($results['results']['bindings']) === 0){
