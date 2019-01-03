@@ -1257,7 +1257,7 @@
 
             $ul = $('<ul id="tag-editable" class="list-group editable" style="display:none"></ul>');
             var $taggroup = $('<div id="tag-group" class="form-group '+required+'"></div>');
-            var $col_div = $('<div class="col-sm-10"></div>');
+            var $col_div = $('<div class="col-sm-10 scrollable-dropdown-menu"></div>');
             $taggroup.append($('<label class="col-sm-2 control-label" for="tag-input">' + 'Tags:</label>'));
             $taggroup.append($col_div);
             $col_div.append($input);
