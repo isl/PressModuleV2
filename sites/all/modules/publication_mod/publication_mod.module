@@ -1705,7 +1705,19 @@ function publication_mod_form_alter(&$form, &$form_state, $form_id){
  * @param bool $power_user If the user is a power user
  * @return bool
  */
-function publication_mod_can_user_edit($pub, $user_uuid, $user_org, $power_user){
+function publication_mod_can_user_edit($pub, $user_uuid = '', $user_org = '', $power_user = false){
+  global $user;
+  if(user_is_anonymous()){
+    return false;
+  }
+
+  if($user_uuid === '' && $user_org === ''){
+    $user_data = user_load($user->uid);
+    $user_uuid = $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'];
+    $user_org = $user_data->pub_mod_field_organization['und'][0]['option'];
+    $power_user = in_array('Publication Mod Power User', array_values($user_data->roles));
+  }
+
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
 
   $query = "prefix press:<". $blazegraph_info['blazegraph_prefix'] ."> \n".

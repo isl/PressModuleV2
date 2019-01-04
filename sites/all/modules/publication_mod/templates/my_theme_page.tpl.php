@@ -36,6 +36,23 @@
                 <?php endif; ?>
             </p>
         </div>
+        <?php if(publication_mod_can_user_edit($pub_info['publicationUuid'])): ?>
+                <div>
+                    <ul class="tabs primary clearfix">
+                        <li class="active">
+                            <a href="#" class="active">View</a>
+                        </li>
+                        <li>
+                            <?php print l('Edit', 'publication/edit', array(
+                                        // 'attributes' => array('target' => '_blank'),
+                                        'query' => array(
+                                            'uuid' => $pub_info['publicationUuid'],
+                                            'category' => $pub_info['type']['id'],
+                                        ))); ?>
+                        </li>
+                    </ul>
+                </div>
+        <?php endif; ?>
     </div>
     <div class="mainContentLines">
         <div class="mainside">
