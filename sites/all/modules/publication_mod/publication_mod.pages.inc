@@ -154,6 +154,7 @@ function publication_mod_get_pub_page($url){
     array(
       'title' =>$defaultTitle,
       'pub_info' => $pub_properties,
+      'templateLocation' => '/'. drupal_get_path('module', 'publication_mod') . '/templates/',
       'json_encoded' => json_encode($pub_properties),
       'cslProperties' => json_encode($cslProperties)
     )
