@@ -273,7 +273,7 @@ function publication_mod_menu(){
   }
 
   // RESTful API urls & callbacks
-  
+
   $menu['ajax/publications/get_publication_info'] = array(
     'title' => '',
     'page callback' => '_get_publication_info',
@@ -622,7 +622,7 @@ function _create_publication_page_body($options, $labels){
   $tagsExist = false;
 
   $except = array('uuid', 'category', 'delete', 'contributors', 'creationDate', 'modifiedDate');
-  
+
   foreach ($options as $property => $value) {
     if(in_array($property, $except)){
       continue;
@@ -686,9 +686,9 @@ function _create_publication_page_body($options, $labels){
         break;
     }
   }
-  
+
   $html .= $contributors_html;
-  
+
   $tags .= '</td>';
   if($tagsExist){
     $restFields .= $tags;
@@ -699,7 +699,7 @@ function _create_publication_page_body($options, $labels){
   if($abstractExists){
     $html .= $abstracts;
   }
-  
+
   $html .= $restFields;
 
   if(strlen($title)>128){
@@ -802,10 +802,10 @@ function _publication_mod_create_page_body_from_uri($pub_uri){
   $contributors_html = '<div class="col-sm-12">';
   foreach($contributors as $con_type=>$cons){
     $concat = '<div class="col-sm-3"><h3>' . $con_type . '</h3>';
-    ksort($cons); 
+    ksort($cons);
     foreach($cons as $key=>$con){
-      $concat .= '<a target="_blank" data-index="'. $key .'" href="'. $base_url . 
-        '/publication/search-pub?type=advanced&reviewed=false&authors0='. 
+      $concat .= '<a target="_blank" data-index="'. $key .'" href="'. $base_url .
+        '/publication/search-pub?type=advanced&reviewed=false&authors0='.
         urlencode($con['uri']) .'">'. $con['name'] . '</a><br/>';
     }
 
@@ -841,7 +841,7 @@ function _publication_mod_create_page_body_from_uri($pub_uri){
       $abstractExists = true;
       $abstract ='<div class="col-sm-12"><h3>'. $d->plabel->value  .'</h3><p>'. $d->o->value . '</p></div>';
       $abstracts .= $abstract;
-      
+
     }elseif ($d->plabel->value == 'Tags') {
       if($tagsExist){
         $tags .= ', ';
@@ -953,14 +953,14 @@ function _get_user_info_to_json(){
       drupal_set_message('Your Laboratory is not set. Please set it in your account edit page.', 'warning');
       $info_missing = TRUE;
     }
-    
+
     if(isset($user_data->pub_mod_field_first_name['und'][0]['value'])){
       $first_name = $user_data->pub_mod_field_first_name['und'][0]['value'];
     }else{
       drupal_set_message('Your First Name is not set. Please set it in your account edit page.', 'warning');
       $info_missing = TRUE;
     }
-    
+
     if(isset($user_data->pub_mod_field_last_name['und'][0]['value'])){
       $last_name = $user_data->pub_mod_field_last_name['und'][0]['value'];
     }else{
@@ -972,12 +972,15 @@ function _get_user_info_to_json(){
       return json_encode(array('anonymous' => TRUE));
     }
     $cu = array(
-      'uuid' => $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'],
+      // 'uuid' => $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'],
       'name' => $first_name . " " . $last_name,
       'mail' => $user_data->mail,
       'lab' => $org,
       'roles' => array_values($user_data->roles)
     );
+    if(array_key_exists('und', $user_data->pub_mod_field_blazegraph_uuid)){
+        $cu['uuid'] = $user_data->pub_mod_field_blazegraph_uuid['und'][0]['value'];
+    }
   }else{
     $cu = array('anonymous' => TRUE);
   }
@@ -1107,18 +1110,18 @@ function publication_mod_ajax_callback_get_path(){
 function publication_mod_user_presave(&$edit, $account, $category){
   $add_again_to_blzg = false;
   $delete_from_blzg = false;
-  
+
   $account_add_to_blazegraph = 0;
   $edit_add_to_blazegraph = 0;
 
   if(isset($account->pub_mod_field_add_to_blzg['und'][0]['value'])){
     $account_add_to_blazegraph = $account->pub_mod_field_add_to_blzg['und'][0]['value'];
   }
-  
+
   if(isset($edit['pub_mod_field_add_to_blzg']['und'][0]['value'])){
     $edit_add_to_blazegraph = $edit['pub_mod_field_add_to_blzg']['und'][0]['value'];
   }
-  
+
   if($account_add_to_blazegraph == 0){  // Was 0
     if($edit_add_to_blazegraph == 0){  //Stays 0, do nothing with BLZG.
       return;
@@ -1132,7 +1135,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
   }
 
   $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_prefix', 'blazegraph_url', 'blazegraph_orgs'));
-  
+
   // watchdog("publication_mod_user_presave", "edit: <pre>%edit</pre><br/> account: <pre>%account</pre><br/> category: <pre>%category</pre><br/>", array(
   //   '%edit' => print_r($edit, true),
   //   '%account' => print_r($account, true),
@@ -1263,7 +1266,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
       !empty($edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'])){
       $uuid = $edit['pub_mod_field_blazegraph_uuid']['und'][0]['value'];
       $needs_update = TRUE;
-    }elseif(isset($account->pub_mod_field_blazegraph_uuid['und'][0]['value']) && 
+    }elseif(isset($account->pub_mod_field_blazegraph_uuid['und'][0]['value']) &&
       !empty($account->pub_mod_field_blazegraph_uuid['und'][0]['value'])){
       $uuid = $account->pub_mod_field_blazegraph_uuid['und'][0]['value'];
     }else{
@@ -1278,10 +1281,10 @@ function publication_mod_user_presave(&$edit, $account, $category){
       $needs_update = TRUE;
     }elseif (isset($account->pub_mod_field_last_name['und'][0]['value']) &&
       !empty($account->pub_mod_field_last_name['und'][0]['value'])) {
-    
+
       $last_name = $account->pub_mod_field_last_name['und'][0]['value'];
     }
-    
+
     if(isset($edit['pub_mod_field_first_name']['und'][0]['value']) &&
         !empty($edit['pub_mod_field_first_name']['und'][0]['value'])){
       $first_name = $edit['pub_mod_field_first_name']['und'][0]['value'];
@@ -1290,7 +1293,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
         !empty($account->pub_mod_field_first_name['und'][0]['value'])){
       $first_name = $account->pub_mod_field_first_name['und'][0]['value'];
     }
-    
+
     if(isset($edit['mail']) && !empty($edit['mail'])){
       $mail = $edit['mail'];
       $needs_update = TRUE;
@@ -1372,7 +1375,7 @@ function publication_mod_user_presave(&$edit, $account, $category){
        $sparql .= "<". $uuid."> rdf:type foaf:Person;".
         "foaf:familyName ?familyName;".
         "foaf:givenName ?givenName; ".
-        "press:personGroup ?group. ". 
+        "press:personGroup ?group. ".
         "OPTIONAL{<". $uuid."> foaf:mbox ?mbox.}. ".
         "OPTIONAL{<". $uuid."> press:username ?username.}. ".
         "OPTIONAL{<". $uuid."> press:memberOf ?org.}";
@@ -1516,7 +1519,7 @@ function publication_mod_user_insert(&$edit, $account, $category){
     'data' => $q
   );
 
-  $result = drupal_http_request($blazegraph_url, $options);   
+  $result = drupal_http_request($blazegraph_url, $options);
   watchdog("Blazegraph New User Insert", print_r($result, true), array(), WATCHDOG_NOTICE);
 }
 
@@ -1544,7 +1547,7 @@ function publication_mod_get_pub_count_per_lab($lab = '*', $category = '*') {
     '{ '.
       'SELECT (COUNT(?pub) as ?pubCounter) ?low ?lab WHERE { ' .
         '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
-        'OPTIONAL { '. 
+        'OPTIONAL { '.
         '?pub rdf:type [rdfs:subClassOf* ?low]. '.
         $lab_sparql .
         '}. ' .
@@ -1565,7 +1568,7 @@ function publication_mod_get_pub_count_per_lab($lab = '*', $category = '*') {
     'data' => $q
   );
 
-  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);   
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
   $num_json = json_decode($result->data);
   $result_array = array();
   foreach($num_json->results->bindings as $cat){
@@ -1577,7 +1580,7 @@ function publication_mod_get_pub_count_per_lab($lab = '*', $category = '*') {
     }
   }
 
-  // watchdog("publication_mod get_pub_count_per_lab", '<pre>%array</pre>' , 
+  // watchdog("publication_mod get_pub_count_per_lab", '<pre>%array</pre>' ,
   //   array(
   //     '%array' => print_r($result_array, true),
   //   ), WATCHDOG_NOTICE);
@@ -1600,7 +1603,7 @@ function publication_mod_get_pub_count($category = '*') {
     '{ '.
       'SELECT (COUNT(?pub) as ?pubCounter) ?low WHERE { ' .
         '?low rdfs:subClassOf* press:'. $cat_sparql .'. ' .
-        'OPTIONAL { '. 
+        'OPTIONAL { '.
         '?pub rdf:type [rdfs:subClassOf* ?low]. '.
         '}. ' .
       '} GROUP BY ?low ' .
@@ -1620,14 +1623,14 @@ function publication_mod_get_pub_count($category = '*') {
     'data' => $q
   );
 
-  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);   
+  $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
   $num_json = json_decode($result->data);
   $result_array = array();
   foreach($num_json->results->bindings as $cat){
       $result_array[$cat->lowid->value] = $cat->pubCounter->value;
   }
 
-  // watchdog("publication_mod get_pub_count", '<pre>%array</pre>' , 
+  // watchdog("publication_mod get_pub_count", '<pre>%array</pre>' ,
   //   array(
   //     '%array' => print_r($result_array, true),
   //   ), WATCHDOG_NOTICE);
@@ -1648,7 +1651,7 @@ function publication_mod_save_project($id, $name, $acronym) {
       'press:projectAcronym "' . $acronym . '"; '.
       'press:projectId "' . $id . '". '.
     "}".
-    "WHERE {" . 
+    "WHERE {" .
       "OPTIONAL{ <" . $blazegraph_info['blazegraph_prefix'] . "projects/" . $id . "> ?p ?o }." .
     "}";
 
@@ -1664,7 +1667,7 @@ function publication_mod_save_project($id, $name, $acronym) {
 
   $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
 
-  watchdog("publication_mod save_project", '<pre>%array</pre>' , 
+  watchdog("publication_mod save_project", '<pre>%array</pre>' ,
     array(
       '%array' => print_r($result, true),
     ), WATCHDOG_NOTICE);
@@ -1732,7 +1735,7 @@ function publication_mod_can_user_edit($pub, $user_uuid = '', $user_org = '', $p
 "   ?pub press:belongsTo ?org. \n".
 " } \n".
 "} \n";
-  
+
   $q = http_build_query(array('query' => $query));
 
   $options = array(
@@ -1745,12 +1748,12 @@ function publication_mod_can_user_edit($pub, $user_uuid = '', $user_org = '', $p
   );
 
   $result = drupal_http_request($blazegraph_info['blazegraph_url'], $options);
-  
+
   $data = json_decode($result->data);
 
   $belongsToOrg = FALSE;
   $isContributor = FALSE;
-  
+
   foreach ($data->results->bindings as $key => $value) {
     if(!$belongsToOrg && property_exists($value, 'org')){
       $ex_orgs = explode("/", $value->org->value);
@@ -1785,21 +1788,21 @@ function publication_mod_block_info(){
 function publication_mod_block_view($delta = ''){
   global $user;
   global $base_url;
-  
+
   switch($delta){
     case 'publication_mod_search_block':
       $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
       $dbURL = $blazegraph_info['blazegraph_url'];
       $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-    
+
       $JSONGet = json_encode($_GET);
-    
+
       _add_presslib_library();
-    
+
       $current_user = _get_user_info_to_json();
-    
+
       $labs = _get_labs_to_json();
-    
+
       $path = drupal_get_path_alias();
       $block['subject'] = t('');
       $block['content'] = <<<EOT
@@ -1817,7 +1820,7 @@ function publication_mod_block_view($delta = ''){
               },
               External_Author: {
                 label: 'External Authors',
-              }  
+              }
             },
             current_user: $current_user,
             labs: $labs,
@@ -1836,15 +1839,15 @@ EOT;
       $blazegraph_info = _publication_mod_get_blazegraph_info(array('blazegraph_url', 'blazegraph_prefix'));
       $dbURL = $blazegraph_info['blazegraph_url'];
       $ontologyPrefix = $blazegraph_info['blazegraph_prefix'];
-    
+
       $JSONGet = json_encode($_GET);
-    
+
       _add_presslib_library();
-    
+
       $current_user = _get_user_info_to_json();
-    
+
       $labs = _get_labs_to_json();
-    
+
       $path = drupal_get_path_alias();
       $block['subject'] = t('');
       $lab = strtoupper(explode('/', $path)[0]);
@@ -1863,7 +1866,7 @@ EOT;
               },
               External_Author: {
                 label: 'External Authors',
-              }  
+              }
             },
             current_user: $current_user,
             labs: $labs,

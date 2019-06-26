@@ -84,13 +84,13 @@ function publication_mod_uninstall() {
   }
 
   user_role_delete('Publication Mod Power User');
-  
+
   menu_rebuild();
 }
 
 /**
  * Implements hook_schema().
- * 
+ *
  * Defines the database table used by this module.
  * @see hook_schema()
  */
@@ -128,6 +128,7 @@ function publication_mod_enable() {
   field_info_cache_clear();
   // Check if our field is not already created.
 
+
   if (!field_info_field('pub_mod_field_first_name')) {
     $field = array(
       'field_name' => 'pub_mod_field_first_name',
@@ -135,7 +136,9 @@ function publication_mod_enable() {
     );
     field_create_field($field);
 
+  }
     // Create the instance on the bundle.
+  if(!field_info_instance('user', 'pub_mod_field_first_name', 'user')){
     $instance = array(
       'field_name' => 'pub_mod_field_first_name',
       'entity_type' => 'user',
@@ -170,8 +173,9 @@ function publication_mod_enable() {
       'type' => 'text',
     );
     field_create_field($field);
-
+  }
     // Create the instance on the bundle.
+  if(!field_info_instance('user', 'pub_mod_field_last_name', 'user')){
     $instance = array(
       'field_name' => 'pub_mod_field_last_name',
       'entity_type' => 'user',
@@ -207,10 +211,10 @@ function publication_mod_enable() {
       'type' => 'pub_mod_organization',
     );
     field_create_field($field);
-
+  }
     // Create the instance on the bundle.
 
-  // if(!field_info_instance('pub_mod_field_organization')){
+  if(!field_info_instance('user', 'pub_mod_field_organization', 'user')){
     $instance = array(
       'field_name' => 'pub_mod_field_organization',
       'entity_type' => 'user',
@@ -229,6 +233,14 @@ function publication_mod_enable() {
     field_create_instance($instance);
   }
 
+  if(!field_info_field('pub_mod_field_blazegraph_uuid')){
+    $field = array(
+          'field_name'  => 'pub_mod_field_blazegraph_uuid',
+          'type' => 'text',
+          'cardinality' => 1
+    );
+    field_create_field($field);
+  }
   if(!field_info_instance('user', 'pub_mod_field_blazegraph_uuid', 'user')){
     $instance = array(
       'field_name' => 'pub_mod_field_blazegraph_uuid',
