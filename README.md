@@ -45,3 +45,14 @@ If you already have a database loaded in Blazegraph, you can import the Publicat
 * When you enable for the first time the PRESS Publication Module, it adds three fields for the user account and one user role called "Power User"
   * You have to enable role "Publication Mod Power User" for the selected user to add a Publication without being a contributor. The module assigns automatically the admin as Power User
   * You will also have to fill the above fields for your account in order to use the module.
+
+### Module Uninstallation
+
+To uninstall the module, you follow the standard procedure for a Drupal Module uninstallation, by first uninstalling the PRESS Publication Module and then the PRESS Organization Field module.
+
+* Disable the PRESS Publication Module from the administration module panel ([yourwebsite]/admin/modules) by unticking the module.
+* In the same page, in the uninstall tab on the top right corner, you can uninstall the PRESS Publication Module.
+
+After uninstalling the module, you can disable and uninstall the PRESS Organization Field module.
+In case you are unable to disable the PRESS Organization Field module, you have to run Cron a couple of times to delete the fields that are using the organization field type. You can run Cron in the admin configuration page, under Cron (or [yourwebsite]/admin/config/system/cron) and press Run Cron. It might need to be run a couple of times.
+Now you can disable and uninstall the PRESS Organization Field following the above procedure.
