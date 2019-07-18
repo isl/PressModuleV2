@@ -1,13 +1,13 @@
 Working Dev Deployment: http://139.91.183.97:28004/
 
 # PRESS Forth Version
-### Publication REpository Semantic System
+## Publication REpository Semantic System
 
 Publication management systems can be instrumental in disseminating research results across academia and industry, by providing facilities for uploading, editing and searching for publications. Usually, these systems can be used by individuals to assist them in their research or by organizations to help them classify and promote their publication items.
 
 **PRESS** is an open-source publication system that exploits semantic technologies in order to cover the needs of both individuals and organizations. Thus, it supports fast data entry, advanced query capabilities and integration with other systems or datasets.
 
-#### Module Installation
+### Module Installation
 
 * Install [Drupal 7](https://www.drupal.org/docs/7/install)
 * Install and enable the following modules
@@ -21,12 +21,27 @@ Publication management systems can be instrumental in disseminating research res
 * Enable PRESS Organization Field & PRESS Publication Module
 * In case not all menus appear, please clear all caches from "[yourwebsite]/admin/config/development/performance"
 
-#### Module Configuration
+### Module Configuration
+
+#### Empty Database
 
 * Go at "[yourwebsite]/admin/config/publications/publication_mod"
   * Add Blazegraph REST API URL
   * Add the Ontology Prefix
-  * Import the Organizations. Go to Configuration -> PRESS Publication Module -> Edit Organizations Tab (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then click on "Import Organizations from Blazegraph" and then "Submit Changes"
+  * Create the Organizations that are going to be used for PRESS. Go to Configuration -> PRESS Publication Module -> Edit Organizations (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then add the Organizations based on the Format provided,  "[Label] | [Blazegraph_value] | [array of possible values (for LDAP)]".
 * When you enable for the first time the PRESS Publication Module, it adds three fields for the user account and one user role called "Power User"
-  * You have to be a Power User to add a Publication without being a contributor. The module assigns automatically the admin as Power User
+  * You have to enable role "Publication Mod Power User" for the selected user to add a Publication without being a contributor. The module assigns automatically the admin as Power User
+  * You will also have to fill the above fields for your account in order to use the module.
+
+#### Importing a Database
+
+If you already have a database loaded in Blazegraph, you can import the Publications and create the static pages for each publication, as well as import the Organizations from the database.
+
+* Go at "[yourwebsite]/admin/config/publications/publication_mod"
+  * Add Blazegraph REST API URL
+  * Add the Ontology Prefix
+  * Import the Organizations. Go to Configuration -> PRESS Publication Module -> Edit Organizations (or "[yourwebsite]/admin/config/publications/publication_mod/edit_orgs"). Then click on "Import Organizations from Blazegraph" and then "Submit Changes"
+  * Import the Publications. Go to Configuration -> PRESS Publication Module -> Import Publications (or "[yourwebsite]/admin/config/publications/publication_mod/import_pubs"). Then click on "Import from Blazegraph".
+* When you enable for the first time the PRESS Publication Module, it adds three fields for the user account and one user role called "Power User"
+  * You have to enable role "Publication Mod Power User" for the selected user to add a Publication without being a contributor. The module assigns automatically the admin as Power User
   * You will also have to fill the above fields for your account in order to use the module.
